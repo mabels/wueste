@@ -1,0 +1,47 @@
+{
+  "name": "wueste",
+  "version": "1.0.0",
+  "description": "A Serialization and Generator Framework",
+  "scripts": {
+    "clean": "npx rimraf dist",
+    "prebuild": "npm run wasm-generator",
+    "build": "tsc",
+    "test": "go test ./... ; jest",
+    "prewasm-generator": "mkdir -p dist; cp \"$(go env GOROOT)/misc/wasm/wasm_exec.js\"  \"$(go env GOROOT)/misc/wasm/wasm_exec_node.js\"  dist/; GOOS=js GOARCH=wasm go build -o dist/generator.wasm entity-generator/cmd/generator.go",
+    "wasm-generator": "node dist/wasm_exec_node.js dist/generator.wasm --input-file ./src-generated/go/simple_type.schema.json --eg-from-wueste ../../src/wueste --eg-from-result ../../src/result --output-dir ./src-generated/wasm"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mabels/wueste.git"
+  },
+  "keywords": [
+    "serialization",
+    "generator",
+    "typescript"
+  ],
+  "author": "Meno Abels <meno.abels@adviser.com>",
+  "license": "AFL-2.0",
+  "bugs": {
+    "url": "https://github.com/mabels/wueste/issues"
+  },
+  "homepage": "https://github.com/mabels/wueste#readme",
+  "devDependencies": {
+    "@types/jest": "^29.5.3",
+    "esbuild": "^0.18.14",
+    "jest": "^29.6.1",
+    "rimraf": "^5.0.1",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.1.6"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "directories": {
+    "generator": "bin/generator"
+  },
+  "dependencies": {
+    "wueste": "file:wueste-1.0.0.tgz"
+  }
+}

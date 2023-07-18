@@ -1,0 +1,4 @@
+**/dist/
+**/generated-ts/
+**/node_modules/
+**/src-generated/

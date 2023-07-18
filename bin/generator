@@ -1,0 +1,5 @@
+#!/usr/bin/env node
+const path = require('path');
+const dist=`${__dirname}/../dist`;
+process.argv = ['node', path.join(dist, 'wasm_exec_node.js'), path.join(dist, 'generator.wasm'), ...process.argv];
+require(path.join(dist, 'wasm_exec_node'));

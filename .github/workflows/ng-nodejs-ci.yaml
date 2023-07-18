@@ -1,0 +1,57 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Build - wueste
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    #tags:
+    #  - 'dev'
+    #  - 'prod'
+    branches: [ main ]
+
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.20
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+          node-version: ${{ matrix.node-version }}
+
+    - name: Patch Version ${{ env.GITHUB_REF }}
+      run: |
+       node .github/workflow/patch-package.json.js "origin/head/0.0.0-smoke"
+       git diff
+
+    - name: Build JS wueste
+      run: |
+        npm run clean
+        npm run build
+        npm run test
+        npm pack
+
+    - name: Smoke JS wueste
+      run: |
+        cd smoke
+        npm init -y -f
+        npm install ../wueste-0.0.0-smoke.tgz
+        npm install ts-node --global
+        ts-node smoke.ts
