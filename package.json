@@ -1,6 +1,6 @@
 {
   "name": "wueste",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "A Serialization and Generator Framework",
   "scripts": {
     "clean": "npx rimraf dist",
