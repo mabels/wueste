@@ -482,11 +482,11 @@ func (g *goGenerator) generateFactory() {
 }
 
 func toAttributeType[T string | int | uint | uint64 | uint32 | uint16 | uint8 | int8 | int16 | int32 | int64 | bool | float32 | float64](lang ForIfWhileLang, prop eg.Property) string {
-	litProp, ok := prop.(eg.PropertyLiteralType[T])
-	if !ok {
-		panic("not implemented")
-	}
-	attribute := fmt.Sprintf("wueste.Attribute[%s]", lang.AsTypeOptional(litProp))
+	// litProp, ok := prop.(eg.PropertyInteger[T])
+	// if !ok {
+	panic("not implemented")
+	// }
+	// attribute := fmt.Sprintf("wueste.Attribute[%s]", lang.AsTypeOptional(litProp))
 	// if litProp.Optional() {
 	// 	if litProp.Default().IsNone() {
 	// 		// attribute = fmt.Sprintf("wueste.OptionalAttribute[%s]", g.lang.AsTypeOptional(litProp))
@@ -507,78 +507,78 @@ func toAttributeType[T string | int | uint | uint64 | uint32 | uint16 | uint8 | 
 	// 		attribute = fmt.Sprintf("wueste.MustAttribute[%s]", lang.AsTypeOptional(litProp))
 	// 	}
 	// }
-	return attribute
+	// return attribute
 }
 
 func toAttributeCreation[T string | int | uint | uint64 | uint32 | uint16 | uint8 | int8 | int16 | int32 | int64 | bool | float32 | float64](lang ForIfWhileLang, prop eg.Property) string {
-	litProp, ok := prop.(eg.PropertyLiteralType[T])
-	if !ok {
-		panic("not implemented")
-	}
-	var attribute string
-	if litProp.Optional() {
-		if litProp.Default().IsNone() {
-			attribute = fmt.Sprintf("wueste.OptionalAttribute[%s]()", lang.AsTypeOptional(litProp))
-		} else {
-			attribute = fmt.Sprintf("wueste.DefaultAttribute[%s](%s(%s))",
-				lang.AsTypeOptional(litProp),
-				lang.AsTypeOptional(litProp, "rusty.Some"),
-				*litProp.Default().Value().String())
-		}
-	} else {
-		if !litProp.Default().IsNone() {
-			attribute = fmt.Sprintf("wueste.DefaultAttribute[%s](%s)",
-				lang.AsTypeOptional(litProp), *litProp.Default().Value().String())
-		} else {
-			attribute = fmt.Sprintf("wueste.MustAttribute[%s]()", lang.AsTypeOptional(litProp))
-		}
-	}
-	return attribute
+	// litProp, ok := prop.(eg.PropertyLiteralType[T])
+	// if !ok {
+	panic("not implemented")
+	// }
+	// var attribute string
+	// if litProp.Optional() {
+	// 	if litProp.Default().IsNone() {
+	// 		attribute = fmt.Sprintf("wueste.OptionalAttribute[%s]()", lang.AsTypeOptional(litProp))
+	// 	} else {
+	// 		attribute = fmt.Sprintf("wueste.DefaultAttribute[%s](%s(%s))",
+	// 			lang.AsTypeOptional(litProp),
+	// 			lang.AsTypeOptional(litProp, "rusty.Some"),
+	// 			*litProp.Default().Value().String())
+	// 	}
+	// } else {
+	// 	if !litProp.Default().IsNone() {
+	// 		attribute = fmt.Sprintf("wueste.DefaultAttribute[%s](%s)",
+	// 			lang.AsTypeOptional(litProp), *litProp.Default().Value().String())
+	// 	} else {
+	// 		attribute = fmt.Sprintf("wueste.MustAttribute[%s]()", lang.AsTypeOptional(litProp))
+	// 	}
+	// }
+	// return attribute
 }
 
 func toAttributeCreationInteger(lang ForIfWhileLang, prop eg.Property) string {
 
-	_, ok := prop.(eg.PropertyLiteralType[int])
+	_, ok := prop.(eg.PropertyInteger[int])
 	if ok {
 		return toAttributeCreation[int](lang, prop)
 	}
-	_, ok = prop.(eg.PropertyLiteralType[uint])
+	_, ok = prop.(eg.PropertyInteger[uint])
 	if ok {
 		return toAttributeCreation[uint](lang, prop)
 	}
 
-	_, ok = prop.(eg.PropertyLiteralType[uint8])
+	_, ok = prop.(eg.PropertyInteger[uint8])
 	if ok {
 		return toAttributeCreation[uint8](lang, prop)
 	}
-	_, ok = prop.(eg.PropertyLiteralType[int8])
+	_, ok = prop.(eg.PropertyInteger[int8])
 	if ok {
 		return toAttributeCreation[int8](lang, prop)
 	}
 
-	_, ok = prop.(eg.PropertyLiteralType[uint16])
+	_, ok = prop.(eg.PropertyInteger[uint16])
 	if ok {
 		return toAttributeCreation[uint16](lang, prop)
 	}
-	_, ok = prop.(eg.PropertyLiteralType[int16])
+	_, ok = prop.(eg.PropertyInteger[int16])
 	if ok {
 		return toAttributeCreation[int16](lang, prop)
 	}
 
-	_, ok = prop.(eg.PropertyLiteralType[uint32])
+	_, ok = prop.(eg.PropertyInteger[uint32])
 	if ok {
 		return toAttributeCreation[uint32](lang, prop)
 	}
-	_, ok = prop.(eg.PropertyLiteralType[int32])
+	_, ok = prop.(eg.PropertyInteger[int32])
 	if ok {
 		return toAttributeCreation[int32](lang, prop)
 	}
 
-	_, ok = prop.(eg.PropertyLiteralType[uint64])
+	_, ok = prop.(eg.PropertyInteger[uint64])
 	if ok {
 		return toAttributeCreation[uint64](lang, prop)
 	}
-	_, ok = prop.(eg.PropertyLiteralType[int64])
+	_, ok = prop.(eg.PropertyInteger[int64])
 	if ok {
 		return toAttributeCreation[int64](lang, prop)
 	}
@@ -586,11 +586,11 @@ func toAttributeCreationInteger(lang ForIfWhileLang, prop eg.Property) string {
 }
 
 func toAttributeCreationNumber(lang ForIfWhileLang, prop eg.Property) string {
-	_, ok := prop.(eg.PropertyLiteralType[float64])
+	_, ok := prop.(eg.PropertyNumber[float64])
 	if ok {
 		return toAttributeCreation[float64](lang, prop)
 	}
-	_, ok = prop.(eg.PropertyLiteralType[float32])
+	_, ok = prop.(eg.PropertyNumber[float32])
 	if ok {
 		return toAttributeCreation[float32](lang, prop)
 	}
@@ -668,7 +668,7 @@ func (g *goGenerator) genWuesteAttributeCreation(prop eg.Property) string {
 	switch prop.Type() {
 	case eg.STRING:
 		g.includes[WUESTE] = true
-		return toAttributeCreation[string](g.lang, prop.(eg.PropertyLiteralType[string]))
+		return toAttributeCreation[string](g.lang, prop.(eg.PropertyString))
 	case eg.INTEGER:
 		g.includes[WUESTE] = true
 		return toAttributeCreationInteger(g.lang, prop)
@@ -677,7 +677,7 @@ func (g *goGenerator) genWuesteAttributeCreation(prop eg.Property) string {
 		return toAttributeCreationNumber(g.lang, prop)
 	case eg.BOOLEAN:
 		g.includes[WUESTE] = true
-		return toAttributeCreation[bool](g.lang, prop.(eg.PropertyLiteralType[bool]))
+		return toAttributeCreation[bool](g.lang, prop.(eg.PropertyBoolean))
 	case eg.ARRAY:
 		// g.includes[WUESTE] = true
 		return g.genWeuesteAttributeCreation(prop.(eg.PropertyArray).Items())

@@ -11,7 +11,7 @@ func TestDeref(t *testing.T) {
 	tsl := &TestSchemaLoader{
 		registry: NewSchemaRegistry(),
 	}
-	_, err := LoadSchema("base.ts", tsl)
+	_, err := LoadSchema("base.schema.json", tsl)
 	assert.NoError(t, err)
 	// pobj := p.(PropertyObject)
 	// keys := []PropertyObject{}
@@ -50,7 +50,7 @@ func TestResolveRef(t *testing.T) {
 	tsl := &TestSchemaLoader{
 		registry: NewSchemaRegistry(),
 	}
-	p, err := LoadSchema("base.ts", tsl)
+	p, err := LoadSchema("base.schema.json", tsl)
 	assert.NoError(t, err)
 
 	po := p.(PropertyObject)
@@ -62,8 +62,8 @@ func TestResolveRef(t *testing.T) {
 	po1 := items[1].Property().(PropertyObject)
 	assert.Equal(t, po1.Properties().Items()[0].Name(), "sub")
 	assert.Equal(t, po1.Properties().Items()[0].Property().(PropertyString).Type(), "string")
-	assert.Equal(t, po1.FileName(), "/abs/sub.ts")
+	assert.Equal(t, po1.FileName(), "/abs/sub.schema.json")
 	po2 := po1.Properties().Items()[1].Property().(PropertyObject)
-	assert.Equal(t, po2.FileName(), "/abs/sub2.ts")
+	assert.Equal(t, po2.FileName(), "/abs/sub2.schema.json")
 
 }

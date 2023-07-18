@@ -35,8 +35,28 @@ type PropertyStringParam struct {
 }
 
 type propertyString struct {
-	propertyLiteral[string]
+	// propertyLiteral[string]
 	param PropertyStringParam
+}
+
+// Description implements PropertyString.
+func (p *propertyString) Description() rusty.Optional[string] {
+	return p.param.Description
+}
+
+// Id implements PropertyString.
+func (p *propertyString) Id() string {
+	return p.param.Id
+}
+
+// Optional implements PropertyString.
+func (p *propertyString) Optional() bool {
+	return p.param.Optional
+}
+
+// SetOptional implements PropertyString.
+func (p *propertyString) SetOptional() {
+	p.param.Optional = true
 }
 
 // Enum implements PropertyString.

@@ -6,7 +6,14 @@ import (
 )
 
 type PropertyNumber[T float32 | float64] interface {
-	PropertyLiteralType[T]
+	Id() string
+	Type() Type
+	Description() rusty.Optional[string]
+	Format() rusty.Optional[string]
+	Optional() bool
+	SetOptional()
+	Default() rusty.Optional[wueste.Literal[T]] // match Type
+	Enum() []T
 	Maximum() rusty.Optional[T]
 	Minimum() rusty.Optional[T]
 
@@ -16,8 +23,16 @@ type PropertyNumber[T float32 | float64] interface {
 }
 
 type PropertyNumberParam[T float32 | float64] struct {
-	PropertyLiteralParam[T]
-	Default rusty.Optional[T]
+	Id          string
+	Type        Type
+	Description rusty.Optional[string]
+	Optional    bool
+	Format      rusty.Optional[string]
+	Default     rusty.Optional[T]
+	Enum        []T
+	// Format rusty.Optional[string]
+	// PropertyLiteralParam[T]
+	// Default rusty.Optional[T]
 	Maximum rusty.Optional[T]
 	Minimum rusty.Optional[T]
 	// ExclusiveMinimum() rusty.Optional[int]
@@ -26,7 +41,6 @@ type PropertyNumberParam[T float32 | float64] struct {
 }
 
 type propertyNumber[T float32 | float64] struct {
-	propertyLiteral[T]
 	param PropertyNumberParam[T]
 }
 
@@ -34,6 +48,33 @@ func NewPropertyNumber[T float32 | float64](p PropertyNumberParam[T]) PropertyNu
 	return &propertyNumber[T]{
 		param: p,
 	}
+}
+
+func (p *propertyNumber[T]) Enum() []T {
+	panic("implement me")
+}
+func (p *propertyNumber[T]) Description() rusty.Optional[string] {
+	return p.param.Description
+}
+
+// Format implements PropertyBoolean.
+func (p *propertyNumber[T]) Format() rusty.Optional[string] {
+	return p.param.Format
+}
+
+// Id implements PropertyBoolean.
+func (p *propertyNumber[T]) Id() string {
+	return p.param.Id
+}
+
+// Optional implements PropertyBoolean.
+func (p *propertyNumber[T]) Optional() bool {
+	return p.param.Optional
+}
+
+// SetOptional implements PropertyBoolean.
+func (p *propertyNumber[T]) SetOptional() {
+	p.param.Optional = true
 }
 
 func (p *propertyNumber[T]) Default() rusty.Optional[wueste.Literal[T]] {

@@ -50,7 +50,7 @@ func PropertiesToJson(props PropertiesObject) JSONProperties {
 				jsp.Default = p.Default().Value()
 			}
 		case "boolean":
-			p := p.Property().(*propertyBoolean)
+			p := p.Property().(PropertyBoolean)
 			if p.Default().IsSome() {
 				jsp.Default = p.Default().Value()
 			}

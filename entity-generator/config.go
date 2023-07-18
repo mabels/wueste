@@ -11,9 +11,10 @@ type Config struct {
 }
 
 type GeneratorConfig struct {
-	OutputDir  string
-	InputFiles []string
-	EntityCfg  Config
+	OutputDir       string
+	InputFiles      []string
+	EntityCfg       Config
+	WriteTestSchema bool
 }
 
 func FromArgs(prefix string, cfg *Config) *Config {

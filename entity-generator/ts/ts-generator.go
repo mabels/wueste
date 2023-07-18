@@ -878,7 +878,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 
 func getDefaultForProperty(prop eg.Property) *string {
 	{
-		p, ok := prop.(eg.PropertyLiteralType[string])
+		p, ok := prop.(eg.PropertyString)
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -888,7 +888,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[bool])
+		p, ok := prop.(eg.PropertyBoolean)
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -898,7 +898,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[float32])
+		p, ok := prop.(eg.PropertyNumber[float32])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -908,7 +908,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[float64])
+		p, ok := prop.(eg.PropertyNumber[float64])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -918,7 +918,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[int])
+		p, ok := prop.(eg.PropertyInteger[int])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -928,7 +928,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[uint])
+		p, ok := prop.(eg.PropertyInteger[uint])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -938,7 +938,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[int8])
+		p, ok := prop.(eg.PropertyInteger[int8])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -948,7 +948,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[uint8])
+		p, ok := prop.(eg.PropertyInteger[uint8])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -958,7 +958,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[int16])
+		p, ok := prop.(eg.PropertyInteger[int16])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -968,7 +968,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[uint16])
+		p, ok := prop.(eg.PropertyInteger[uint16])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -978,7 +978,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[int32])
+		p, ok := prop.(eg.PropertyInteger[int32])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -988,7 +988,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[uint32])
+		p, ok := prop.(eg.PropertyInteger[uint32])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -998,7 +998,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[int64])
+		p, ok := prop.(eg.PropertyInteger[int64])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()
@@ -1008,7 +1008,7 @@ func getDefaultForProperty(prop eg.Property) *string {
 		}
 	}
 	{
-		p, ok := prop.(eg.PropertyLiteralType[uint64])
+		p, ok := prop.(eg.PropertyInteger[uint64])
 		if ok {
 			if p.Default().IsSome() {
 				return p.Default().Value().String()

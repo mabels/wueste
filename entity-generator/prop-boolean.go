@@ -6,18 +6,52 @@ import (
 )
 
 type PropertyBoolean interface {
-	Property
+	Id() string
+	Type() Type
+	Description() rusty.Optional[string]
+	Optional() bool
+	SetOptional()
+	Format() rusty.Optional[string]
+	// Property
 	Default() rusty.Optional[wueste.Literal[bool]] // match Type
 }
 
 type PropertyBooleanParam struct {
-	PropertyParam
-	Default rusty.Optional[bool]
+	Id          string
+	Type        Type
+	Description rusty.Optional[string]
+	Default     rusty.Optional[bool]
+	Optional    bool
 }
 
 type propertyBoolean struct {
-	propertyLiteral[bool]
+	// property
+	// propertyLiteral[bool]
 	param PropertyBooleanParam
+}
+
+// Description implements PropertyBoolean.
+func (p *propertyBoolean) Description() rusty.Optional[string] {
+	return p.param.Description
+}
+
+func (p *propertyBoolean) Format() rusty.Optional[string] {
+	panic("implement me")
+}
+
+// Id implements PropertyBoolean.
+func (p *propertyBoolean) Id() string {
+	return p.param.Id
+}
+
+// Optional implements PropertyBoolean.
+func (p *propertyBoolean) Optional() bool {
+	return p.param.Optional
+}
+
+// SetOptional implements PropertyBoolean.
+func (p *propertyBoolean) SetOptional() {
+	p.param.Optional = true
 }
 
 func (p *propertyBoolean) Default() rusty.Optional[wueste.Literal[bool]] {

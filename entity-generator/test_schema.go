@@ -3,6 +3,8 @@ package entity_generator
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -48,11 +50,11 @@ func (l *TestSchemaLoader) Abs(path string) (string, error) {
 // ReadFile implements SchemaLoader.
 func (l *TestSchemaLoader) ReadFile(path string) ([]byte, error) {
 	switch filepath.Base(path) {
-	case "base.ts":
+	case "base.schema.json":
 		return JSONBase(), nil
-	case "sub.ts":
+	case "sub.schema.json":
 		return JSONSub(), nil
-	case "sub2.ts":
+	case "sub2.schema.json":
 		return JSONSub2(), nil
 	default:
 		return nil, fmt.Errorf("Test file not found: %s", path)
@@ -65,7 +67,7 @@ func (l *TestSchemaLoader) Unmarshal(bytes []byte, v interface{}) error {
 }
 
 var BaseSchema = JSONSchema{
-	FileName:    "base.ts",
+	FileName:    "base.schema.json",
 	Id:          "http://example.com/base.schema.json",
 	Schema:      "http://json-schema.org/draft-07/schema#",
 	Title:       "Base",
@@ -76,7 +78,7 @@ var BaseSchema = JSONSchema{
 			Type: "string",
 		},
 		"sub": {
-			Ref: toPtrString("file://sub.ts"),
+			Ref: toPtrString("file://sub.schema.json"),
 		},
 	},
 	Required: []string{"foo", "sub"},
@@ -88,7 +90,7 @@ func JSONBase() []byte {
 }
 
 var SubSchema = JSONSchema{
-	FileName:    "sub.ts",
+	FileName:    "sub.schema.json",
 	Id:          "http://example.com/sub.schema.json",
 	Schema:      "http://json-schema.org/draft-07/schema#",
 	Title:       "Sub",
@@ -99,7 +101,7 @@ var SubSchema = JSONSchema{
 			Type: "string",
 		},
 		"sub-down": {
-			Ref: toPtrString("file://sub2.ts"),
+			Ref: toPtrString("file://sub2.schema.json"),
 		},
 	},
 	Required: []string{"bar", "sub-down"},
@@ -111,7 +113,7 @@ func JSONSub() []byte {
 }
 
 var Sub2Schema = JSONSchema{
-	FileName:    "sub2.ts",
+	FileName:    "sub2.schema.json",
 	Id:          "http://example.com/sub2.schema.json",
 	Schema:      "http://json-schema.org/draft-07/schema#",
 	Title:       "Sub2",
@@ -414,4 +416,12 @@ func TestSchema(sl SchemaLoader) Property {
 			"arrayarrayFlatSchema",
 		}, fls.Required()...)).
 		Build()
+}
+
+func WriteTestSchema(cfg *GeneratorConfig) string {
+	bytes, _ := json.MarshalIndent(TestJsonFlatSchema(), "", "  ")
+	schemaFile := path.Join(cfg.OutputDir, "simple_type.schema.json")
+	os.WriteFile(schemaFile, bytes, 0644)
+	fmt.Println("Wrote schema to -> ", schemaFile)
+	return schemaFile
 }

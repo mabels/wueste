@@ -56,14 +56,11 @@ func (b *PropertiesBuilder) FromJson(js JSONProperties, req []string) *Propertie
 			})
 		case "boolean":
 			pn = NewPropertyBoolean(PropertyBooleanParam{
-				PropertyParam: PropertyParam{
-					Id:          p.Id,
-					Type:        p.Type,
-					Description: rusty.OptionalFromPtr(p.Description),
-					Format:      rusty.OptionalFromPtr(p.Format),
-					Optional:    isOptional(name, req),
-				},
-				Default: rusty.OptionalFromPtr(p.Default.(*bool)),
+				Id:          p.Id,
+				Type:        p.Type,
+				Description: rusty.OptionalFromPtr(p.Description),
+				Optional:    isOptional(name, req),
+				Default:     rusty.OptionalFromPtr(p.Default.(*bool)),
 			})
 		case "integer":
 			var format string
@@ -75,78 +72,58 @@ func (b *PropertiesBuilder) FromJson(js JSONProperties, req []string) *Propertie
 			switch format {
 			case "int":
 				pn = NewPropertyInteger[int](PropertyIntegerParam[int]{
-					PropertyLiteralParam: PropertyLiteralParam[int]{
-						PropertyParam: PropertyParam{
-							Id:          p.Id,
-							Type:        p.Type,
-							Description: rusty.OptionalFromPtr(p.Description),
-							Format:      rusty.Some("int"),
-							Optional:    isOptional(name, req),
-						},
-					},
-					Default: rusty.OptionalFromPtr(p.Default.(*int)),
-					Maximum: rusty.OptionalFromPtr(p.Maximum.(*int)),
-					Minimum: rusty.OptionalFromPtr(p.Minimum.(*int)),
+					Id:          p.Id,
+					Type:        p.Type,
+					Description: rusty.OptionalFromPtr(p.Description),
+					Format:      rusty.Some("int"),
+					Optional:    isOptional(name, req),
+					Default:     rusty.OptionalFromPtr(p.Default.(*int)),
+					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*int)),
+					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*int)),
 				})
 			case "int8":
 				pn = NewPropertyInteger[int8](PropertyIntegerParam[int8]{
-					PropertyLiteralParam: PropertyLiteralParam[int8]{
-						PropertyParam: PropertyParam{
-							Id:          p.Id,
-							Type:        p.Type,
-							Description: rusty.OptionalFromPtr(p.Description),
-							Format:      rusty.Some("int8"),
-							Optional:    isOptional(name, req),
-						},
-					},
-					Default: rusty.OptionalFromPtr(p.Default.(*int8)),
-					Maximum: rusty.OptionalFromPtr(p.Maximum.(*int8)),
-					Minimum: rusty.OptionalFromPtr(p.Minimum.(*int8)),
+					Id:          p.Id,
+					Type:        p.Type,
+					Description: rusty.OptionalFromPtr(p.Description),
+					Format:      rusty.Some("int8"),
+					Optional:    isOptional(name, req),
+					Default:     rusty.OptionalFromPtr(p.Default.(*int8)),
+					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*int8)),
+					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*int8)),
 				})
 			case "int16":
 				pn = NewPropertyInteger[int16](PropertyIntegerParam[int16]{
-					PropertyLiteralParam: PropertyLiteralParam[int16]{
-						PropertyParam: PropertyParam{
-							Id:          p.Id,
-							Type:        p.Type,
-							Description: rusty.OptionalFromPtr(p.Description),
-							Format:      rusty.Some("float32"),
-							Optional:    isOptional(name, req),
-						},
-					},
-					Default: rusty.OptionalFromPtr(p.Default.(*int16)),
-					Maximum: rusty.OptionalFromPtr(p.Maximum.(*int16)),
-					Minimum: rusty.OptionalFromPtr(p.Minimum.(*int16)),
+					Id:          p.Id,
+					Type:        p.Type,
+					Description: rusty.OptionalFromPtr(p.Description),
+					Format:      rusty.Some("float32"),
+					Optional:    isOptional(name, req),
+					Default:     rusty.OptionalFromPtr(p.Default.(*int16)),
+					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*int16)),
+					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*int16)),
 				})
 			case "int32":
 				pn = NewPropertyInteger[int32](PropertyIntegerParam[int32]{
-					PropertyLiteralParam: PropertyLiteralParam[int32]{
-						PropertyParam: PropertyParam{
-							Id:          p.Id,
-							Type:        p.Type,
-							Description: rusty.OptionalFromPtr(p.Description),
-							Format:      rusty.Some("float32"),
-							Optional:    isOptional(name, req),
-						},
-					},
-					Default: rusty.OptionalFromPtr(p.Default.(*int32)),
-					Maximum: rusty.OptionalFromPtr(p.Maximum.(*int32)),
-					Minimum: rusty.OptionalFromPtr(p.Minimum.(*int32)),
+					Id:          p.Id,
+					Type:        p.Type,
+					Description: rusty.OptionalFromPtr(p.Description),
+					Format:      rusty.Some("float32"),
+					Optional:    isOptional(name, req),
+					Default:     rusty.OptionalFromPtr(p.Default.(*int32)),
+					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*int32)),
+					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*int32)),
 				})
 			case "int64":
 				pn = NewPropertyInteger[int64](PropertyIntegerParam[int64]{
-					PropertyLiteralParam: PropertyLiteralParam[int64]{
-						PropertyParam: PropertyParam{
-							Id:          p.Id,
-							Type:        p.Type,
-							Description: rusty.OptionalFromPtr(p.Description),
-							Format:      rusty.Some("float32"),
-							Optional:    isOptional(name, req),
-						},
-					},
-					Default: rusty.OptionalFromPtr(p.Default.(*int64)),
-					Maximum: rusty.OptionalFromPtr(p.Maximum.(*int64)),
-					Minimum: rusty.OptionalFromPtr(p.Minimum.(*int64)),
+					Id:          p.Id,
+					Type:        p.Type,
+					Description: rusty.OptionalFromPtr(p.Description),
+					Format:      rusty.Some("float32"),
+					Optional:    isOptional(name, req),
+					Default:     rusty.OptionalFromPtr(p.Default.(*int64)),
+					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*int64)),
+					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*int64)),
 				})
 			default:
 				panic("unknown format")
@@ -161,33 +138,25 @@ func (b *PropertiesBuilder) FromJson(js JSONProperties, req []string) *Propertie
 			switch format {
 			case "float32":
 				pn = NewPropertyNumber[float32](PropertyNumberParam[float32]{
-					PropertyLiteralParam: PropertyLiteralParam[float32]{
-						PropertyParam: PropertyParam{
-							Id:          p.Id,
-							Type:        p.Type,
-							Description: rusty.OptionalFromPtr(p.Description),
-							Format:      rusty.Some("float32"),
-							Optional:    isOptional(name, req),
-						},
-					},
-					Default: rusty.OptionalFromPtr(p.Default.(*float32)),
-					Maximum: rusty.OptionalFromPtr(p.Maximum.(*float32)),
-					Minimum: rusty.OptionalFromPtr(p.Minimum.(*float32)),
+					Id:          p.Id,
+					Type:        p.Type,
+					Description: rusty.OptionalFromPtr(p.Description),
+					Format:      rusty.Some("float32"),
+					Optional:    isOptional(name, req),
+					Default:     rusty.OptionalFromPtr(p.Default.(*float32)),
+					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*float32)),
+					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*float32)),
 				})
 			case "float64":
 				pn = NewPropertyNumber[float64](PropertyNumberParam[float64]{
-					PropertyLiteralParam: PropertyLiteralParam[float64]{
-						PropertyParam: PropertyParam{
-							Id:          p.Id,
-							Type:        p.Type,
-							Description: rusty.OptionalFromPtr(p.Description),
-							Format:      rusty.Some("float32"),
-							Optional:    isOptional(name, req),
-						},
-					},
-					Default: rusty.OptionalFromPtr(p.Default.(*float64)),
-					Maximum: rusty.OptionalFromPtr(p.Maximum.(*float64)),
-					Minimum: rusty.OptionalFromPtr(p.Minimum.(*float64)),
+					Id:          p.Id,
+					Type:        p.Type,
+					Description: rusty.OptionalFromPtr(p.Description),
+					Format:      rusty.Some("float32"),
+					Optional:    isOptional(name, req),
+					Default:     rusty.OptionalFromPtr(p.Default.(*float64)),
+					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*float64)),
+					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*float64)),
 				})
 			default:
 				panic("unknown format")

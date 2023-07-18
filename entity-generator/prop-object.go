@@ -217,23 +217,15 @@ func addJSONProperty(v *JSONProperty, loader SchemaLoader) Property {
 		switch *v.Format {
 		case "float32":
 			p := PropertyNumberParam[float32]{
-				PropertyLiteralParam: PropertyLiteralParam[float32]{
-					PropertyParam: PropertyParam{
-						Format: rusty.Some("float32"),
-						Type:   v.Type,
-					},
-				},
+				Format: rusty.Some("float32"),
+				Type:   v.Type,
 			}
 			p.Default = coerceFloat32(v.Default)
 			return NewPropertyNumber(p)
 		case "float64":
 			p := PropertyNumberParam[float64]{
-				PropertyLiteralParam: PropertyLiteralParam[float64]{
-					PropertyParam: PropertyParam{
-						Format: rusty.Some("float64"),
-						Type:   v.Type,
-					},
-				},
+				Format: rusty.Some("float64"),
+				Type:   v.Type,
 			}
 			p.Default = coerceFloat64(v.Default)
 			return NewPropertyNumber(p)
@@ -244,56 +236,36 @@ func addJSONProperty(v *JSONProperty, loader SchemaLoader) Property {
 		switch *v.Format {
 		case "int":
 			p := PropertyIntegerParam[int]{
-				PropertyLiteralParam: PropertyLiteralParam[int]{
-					PropertyParam: PropertyParam{
-						Format: rusty.Some("int"),
-						Type:   v.Type,
-					},
-				},
+				Format: rusty.Some("int"),
+				Type:   v.Type,
 			}
 			p.Default = coerceInt(v.Default)
 			return NewPropertyInteger(p)
 		case "int8":
 			p := PropertyIntegerParam[int8]{
-				PropertyLiteralParam: PropertyLiteralParam[int8]{
-					PropertyParam: PropertyParam{
-						Format: rusty.Some("int8"),
-						Type:   v.Type,
-					},
-				},
+				Format: rusty.Some("int8"),
+				Type:   v.Type,
 			}
 			p.Default = coerceInt8(v.Default)
 			return NewPropertyInteger(p)
 		case "int16":
 			p := PropertyIntegerParam[int16]{
-				PropertyLiteralParam: PropertyLiteralParam[int16]{
-					PropertyParam: PropertyParam{
-						Format: rusty.Some("int16"),
-						Type:   v.Type,
-					},
-				},
+				Format: rusty.Some("int16"),
+				Type:   v.Type,
 			}
 			p.Default = coerceInt16(v.Default)
 			return NewPropertyInteger(p)
 		case "int32":
 			p := PropertyIntegerParam[int32]{
-				PropertyLiteralParam: PropertyLiteralParam[int32]{
-					PropertyParam: PropertyParam{
-						Format: rusty.Some("int32"),
-						Type:   v.Type,
-					},
-				},
+				Format: rusty.Some("int32"),
+				Type:   v.Type,
 			}
 			p.Default = coerceInt32(v.Default)
 			return NewPropertyInteger(p)
 		case "int64":
 			p := PropertyIntegerParam[int64]{
-				PropertyLiteralParam: PropertyLiteralParam[int64]{
-					PropertyParam: PropertyParam{
-						Format: rusty.Some("int64"),
-						Type:   v.Type,
-					},
-				},
+				Format: rusty.Some("int64"),
+				Type:   v.Type,
 			}
 			p.Default = coerceInt64(v.Default)
 			return NewPropertyInteger(p)
@@ -302,9 +274,7 @@ func addJSONProperty(v *JSONProperty, loader SchemaLoader) Property {
 		}
 	case "boolean":
 		p := PropertyBooleanParam{
-			PropertyParam: PropertyParam{
-				Type: v.Type,
-			},
+			Type: v.Type,
 		}
 		p.Default = coerceBool(v.Default)
 		return NewPropertyBoolean(p)

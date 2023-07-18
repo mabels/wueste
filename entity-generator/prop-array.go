@@ -1,11 +1,14 @@
 package entity_generator
 
-import (
-	"github.com/mabels/wueste/entity-generator/rusty"
-)
+import "github.com/mabels/wueste/entity-generator/rusty"
 
 type PropertyArray interface {
-	Property
+	Id() string
+	Type() Type
+	Description() rusty.Optional[string]
+	Format() rusty.Optional[string]
+	Optional() bool
+	SetOptional()
 	MinItems() rusty.Optional[int]
 	MaxItems() rusty.Optional[int]
 	Items() Property
@@ -15,10 +18,14 @@ type PropertyArray interface {
 }
 
 type PropertyArrayParam struct {
-	PropertyParam
-	MinItems rusty.Optional[int]
-	MaxItems rusty.Optional[int]
-	Items    Property
+	Id          string
+	Type        Type
+	Description rusty.Optional[string]
+	Format      rusty.Optional[string]
+	Optional    bool
+	MinItems    rusty.Optional[int]
+	MaxItems    rusty.Optional[int]
+	Items       Property
 	// Default rusty.Optional[string]
 	// Enum      []string
 	// MinLength rusty.Optional[int]
@@ -27,8 +34,32 @@ type PropertyArrayParam struct {
 }
 
 type propertyArray struct {
-	propertyLiteral[string]
 	param PropertyArrayParam
+}
+
+// Description implements PropertyArray.
+func (p *propertyArray) Description() rusty.Optional[string] {
+	return p.param.Description
+}
+
+// Format implements PropertyArray.
+func (p *propertyArray) Format() rusty.Optional[string] {
+	return p.param.Format
+}
+
+// Id implements PropertyArray.
+func (p *propertyArray) Id() string {
+	return p.param.Id
+}
+
+// Optional implements PropertyArray.
+func (p *propertyArray) Optional() bool {
+	return p.param.Optional
+}
+
+// SetOptional implements PropertyArray.
+func (p *propertyArray) SetOptional() {
+	p.param.Optional = true
 }
 
 // Items implements PropertyArray.

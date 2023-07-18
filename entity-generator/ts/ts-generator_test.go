@@ -2,16 +2,14 @@ package ts
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"path"
 	"strings"
 	"testing"
 
 	eg "github.com/mabels/wueste/entity-generator"
+	"github.com/stretchr/testify/assert"
 )
 
 func runCmd(cmdStr string) error {
@@ -45,21 +43,22 @@ func getConfig() *eg.GeneratorConfig {
 	}
 }
 
-func writeSchema() string {
-	cfg := getConfig()
-	bytes, _ := json.MarshalIndent(eg.TestJsonFlatSchema(), "", "  ")
-	schemaFile := path.Join(cfg.OutputDir, "simple_type.schema.json")
-	os.WriteFile(schemaFile, bytes, 0644)
-	return schemaFile
-}
-
 func TestTypescript(t *testing.T) {
 	cfg := getConfig()
 	sl := eg.NewTestSchemaLoader()
 
-	writeSchema()
+	tfs := eg.TestFlatSchema(sl)
 
-	TsGenerator(cfg, eg.TestFlatSchema(sl), sl)
+	tfsObj := tfs.(eg.PropertyObject)
+	for _, pi := range tfsObj.Properties().Items() {
+		if pi.Name() == "sub" {
+			po := pi.Property().(eg.PropertyObject).Properties()
+			assert.Equal(t, po.Items()[1].Name(), "opt-Test")
+			assert.Equal(t, po.Items()[1].Property().(eg.PropertyString).Optional(), true)
+		}
+	}
+
+	TsGenerator(cfg, tfs, sl)
 	TsGenerator(cfg, eg.TestSchema(sl), sl)
 	for _, p := range sl.SchemaRegistry().Items() {
 		if !p.Written() {
@@ -67,15 +66,11 @@ func TestTypescript(t *testing.T) {
 		}
 		TsGenerator(cfg, p.PropertItem().Property(), sl)
 	}
-	err := runCmd("npm install")
+	err := runCmd("npm run build:js")
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = runCmd("npm run build")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = runCmd("npx jest ./typescript.test.ts")
+	err = runCmd("npm run test:js ./typescript.test.ts")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,9 +80,10 @@ func TestMainAction(t *testing.T) {
 	cfg := getConfig()
 
 	MainAction([]string{
-		"--input-file", writeSchema(),
+		"--write-test-schema", "true",
+		"--input-file", "../../src-generated/go/simple_type.schema.json",
 		"--eg-from-wueste", cfg.EntityCfg.FromWueste,
 		"--eg-from-result", cfg.EntityCfg.FromResult,
-		"--output-dir", "../../src-generated/wasm",
+		"--output-dir", "../../src-generated/go",
 	})
 }
