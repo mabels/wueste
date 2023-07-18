@@ -43,6 +43,7 @@ jobs:
 
     - name: Build JS wueste
       run: |
+	npm install
         npm run clean
         npm run build
         npm run test
