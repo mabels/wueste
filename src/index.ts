@@ -1,7 +1,7 @@
-import * as Result from "./result";
-import * as Wueste from "./wueste";
+import * as result from "./result";
+import * as wueste from "./wueste";
 
-export default {
-  Result,
-  Wueste,
+export {
+  result,
+  wueste,
 };
