@@ -1,5 +1,3 @@
-
-
 export class ResultOK<T> implements Result<T, Error> {
   private _t: T;
   constructor(t: T) {
@@ -30,7 +28,7 @@ export class ResultError<T extends Error> implements Result<never, T> {
   is_err(): boolean {
     return true;
   }
-  unwrap(): never{
+  unwrap(): never {
     throw new Error("Result is Err");
   }
   unwrap_err(): T {

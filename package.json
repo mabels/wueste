@@ -12,7 +12,9 @@
     "test:go": "go test ./...",
     "pregenerator": "npm run build:wasm",
     "generator": "bin/generator --write-test-schema  --input-file ./src-generated/wasm/simple_type.schema.json --eg-from-wueste ../../src/wueste --eg-from-result ../../src/result --output-dir ./src-generated/wasm",
-    "postgenerator": "npm run build:js"
+    "postgenerator": "npm run build:js",
+    "lint": "eslint . --ext .ts",
+    "prettier": "prettier ."
   },
   "repository": {
     "type": "git",
@@ -31,8 +33,13 @@
   "homepage": "https://github.com/mabels/wueste#readme",
   "devDependencies": {
     "@types/jest": "^29.5.3",
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.1.0",
     "esbuild": "^0.18.14",
+    "eslint": "^8.45.0",
+    "husky": "^8.0.3",
     "jest": "^29.6.1",
+    "prettier": "^3.0.0",
     "rimraf": "^5.0.1",
     "ts-jest": "^29.1.1",
     "typescript": "^5.1.6"
@@ -44,8 +51,5 @@
   "types": "dist/src/index.d.ts",
   "directories": {
     "generator": "bin/generator"
-  },
-  "dependencies": {
-    "wueste": "file:wueste-1.0.0.tgz"
   }
 }

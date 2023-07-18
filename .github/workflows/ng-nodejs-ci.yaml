@@ -9,14 +9,13 @@ on:
     #tags:
     #  - 'dev'
     #  - 'prod'
-    branches: [ main ]
+    branches: [main]
 
   pull_request:
-    branches: [ '**' ]
+    branches: ["**"]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     strategy:
@@ -24,35 +23,36 @@ jobs:
         node-version: [18.x]
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: "1.20"
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.20"
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
           node-version: ${{ matrix.node-version }}
 
-    - name: Patch Version ${{ env.GITHUB_REF }}
-      run: |
-       node .github/workflows/patch-package.json.js "origin/head/0.0.0-smoke"
-       git diff
+      - name: Patch Version ${{ env.GITHUB_REF }}
+        run: |
+          node .github/workflows/patch-package.json.js "origin/head/0.0.0-smoke"
+          git diff
 
-    - name: Build JS wueste
-      run: |
-        npm install
-        npm run clean
-        npm run build
-        npm run test
-        npm pack
+      - name: Build JS wueste
+        run: |
+          npm install
+          npm run prettier -- --check
+          npm run lint
+          npm run build
+          npm run test
+          npm pack
 
-    - name: Smoke JS wueste
-      run: |
-        cd smoke
-        npm init -y -f
-        npm install ../wueste-0.0.0-smoke.tgz
-        npm install ts-node --global
-        ts-node smoke.ts
+      - name: Smoke JS wueste
+        run: |
+          cd smoke
+          npm init -y -f
+          npm install ../wueste-0.0.0-smoke.tgz
+          npm install ts-node --global
+          ts-node smoke.ts
