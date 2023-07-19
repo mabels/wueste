@@ -4,7 +4,7 @@ smoke
 .github
 go.*
 src
-src/generated
+**/generated/
 *.tgz
 .prettierrc
 jest.config.js
