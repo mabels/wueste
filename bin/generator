@@ -6,6 +6,19 @@ let distDir=path.join(dist, "../dist")
 if (fs.existsSync(distDir)) {
 	dist=distDir
 }
-// console.log("DIST:", dist)
+// the wasm env is limited in size
+const whiteListEnv = {
+	HOME: true,
+	USER: true,
+	SHELL: true,
+	PATH: true
+}
+
+process.env = Object.keys(process.env).reduce((a, i) => {
+	if (!whiteListEnv[i]) {
+		delete a[i]
+	}
+	return a
+}, process.env)
 process.argv = ['node', path.join(dist, 'wasm_exec_node.js'), path.join(dist, 'generator.wasm'), ...process.argv];
 require(path.join(dist, 'wasm_exec_node'));
