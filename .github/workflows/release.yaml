@@ -57,7 +57,8 @@ jobs:
           npm run build
           npm run test
           npm run smoke
-          npm run publish publish --otp=$(neckless kv ls --onlyValue "NPM_TOTP@Totp()")
+          npm run pack
+          cd pubdir ; npm publish --otp=$(neckless kv ls --onlyValue "NPM_TOTP@Totp()")
 
 #      - name: Publish wueste latest
 #        run: |
