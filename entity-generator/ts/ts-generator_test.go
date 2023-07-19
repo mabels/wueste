@@ -33,12 +33,12 @@ func runCmd(cmdStr string) error {
 
 func getConfig() *eg.GeneratorConfig {
 	return &eg.GeneratorConfig{
-		OutputDir: "../../src-generated/go",
+		OutputDir: "../../src/generated/go",
 		EntityCfg: eg.Config{
 			Indent: "  ",
 			// PackageName: "test",
-			FromWueste: "../../src/wueste",
-			FromResult: "../../src/result",
+			FromWueste: "../../wueste",
+			FromResult: "../../result",
 		},
 	}
 }
@@ -81,9 +81,9 @@ func TestMainAction(t *testing.T) {
 
 	MainAction([]string{
 		"--write-test-schema", "true",
-		"--input-file", "../../src-generated/go/simple_type.schema.json",
+		"--input-file", "../../src/generated/go/simple_type.schema.json",
 		"--eg-from-wueste", cfg.EntityCfg.FromWueste,
 		"--eg-from-result", cfg.EntityCfg.FromResult,
-		"--output-dir", "../../src-generated/go",
+		"--output-dir", "../../src/generated/go",
 	})
 }

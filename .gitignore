@@ -1,4 +1,5 @@
 **/dist/
+**/pubdir/
 **/generated-ts/
 **/node_modules/
-**/src-generated/
+**/src/generated/

@@ -1,5 +1,5 @@
-import { NestedTypeFactory } from "../../src-generated/go/nested_type";
-import { SimpleTypeFactory } from "../../src-generated/go/simple_type";
+import { NestedTypeFactory } from "../../src/generated/go/nested_type";
+import { SimpleTypeFactory } from "../../src/generated/go/simple_type";
 it("SimpleType-Error", () => {
   const builder = SimpleTypeFactory.Builder();
   builder.sub({ Test: { toString: 5 } as unknown as string });

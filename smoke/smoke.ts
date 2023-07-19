@@ -1,8 +1,8 @@
-import { result } from "wueste";
+import { Result } from "wueste/result";
 
-import { SimpleTypeFactory } from "../src-generated/go/simple_type";
+import { SimpleTypeFactory } from "../src/generated/go/simple_type";
 
-const test = result.Result.Ok(42);
+const test = Result.Ok(42);
 if (test.is_err()) {
   console.log(test.unwrap_err());
 }

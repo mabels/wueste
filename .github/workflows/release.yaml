@@ -56,9 +56,10 @@ jobs:
           npm install
           npm run build
           npm run test
-          npm publish --otp=$(neckless kv ls --onlyValue "NPM_TOTP@Totp()")
+          npm run smoke
+          npm run publish publish --otp=$(neckless kv ls --onlyValue "NPM_TOTP@Totp()")
 
-      - name: Publish wueste latest
-        run: |
-          git tag -f latest
-          git push -f origin latest
+#      - name: Publish wueste latest
+#        run: |
+#          git tag -f latest
+#          git push -f origin latest

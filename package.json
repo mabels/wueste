@@ -3,19 +3,22 @@
   "version": "0.0.0",
   "description": "A Serialization and Generator Framework",
   "scripts": {
-    "clean": "npx rimraf dist src-generated node_modules",
-    "build": "npm run build:js && npm run build:wasm",
+    "clean": "npx rimraf dist src/generated node_modules",
+    "build": "npm run build:wasm; npm run build:js",
     "build:js": "tsc",
     "build:wasm": "mkdir -p dist; cp \"$(go env GOROOT)/misc/wasm/wasm_exec.js\"  \"$(go env GOROOT)/misc/wasm/wasm_exec_node.js\"  dist/; GOOS=js GOARCH=wasm go build -o dist/generator.wasm entity-generator/cmd/generator.go",
     "test": "npm run test:go && npm run test:js",
     "test:js": "jest",
     "test:go": "go test ./...",
+    "prepublish": "npm run build; rm -rf pubdir ; mkdir -p pubdir; cp -pr .gitignore .npmignore package.json README.md bin/generator dist/ pubdir/",
+    "publish": "cd pubdir; npm ",
     "pregenerator": "npm run build:wasm",
-    "generator": "bin/generator --write-test-schema  --input-file ./src-generated/wasm/simple_type.schema.json --eg-from-wueste ../../src/wueste --eg-from-result ../../src/result --output-dir ./src-generated/wasm",
+    "generator": "bin/generator --write-test-schema  --input-file ./src/generated/wasm/simple_type.schema.json --eg-from-wueste ../..wueste --eg-from-result ../../result --output-dir ./src/generated/wasm",
     "postgenerator": "npm run build:js",
+    "presmoke": "npm run publish pack",
+    "smoke": "cd smoke; npm init -y -f ; npm install -f ../pubdir/wueste-*.tgz; npx ts-node smoke.ts; npx wueste wueste-generator --write-test-schema",
     "lint": "eslint . --ext .ts",
-    "prettier": "prettier .",
-    "prepare": "husky install"
+    "prettier": "prettier ."
   },
   "repository": {
     "type": "git",
@@ -48,9 +51,9 @@
   "engines": {
     "node": ">=16"
   },
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
-  "directories": {
-    "generator": "bin/generator"
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "bin": {
+    "wueste-generator": "generator"
   }
 }

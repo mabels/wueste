@@ -47,12 +47,7 @@ jobs:
           npm run lint
           npm run build
           npm run test
-          npm pack
 
       - name: Smoke JS wueste
         run: |
-          cd smoke
-          npm init -y -f
-          npm install ../wueste-0.0.0-smoke.tgz
-          npm install ts-node --global
-          ts-node smoke.ts
+          npm run smoke
