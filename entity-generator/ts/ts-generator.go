@@ -657,7 +657,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 	// export function  NewSimpleTypeFactory(): WuestenFactory<SimpleTypeBuilder, SimpleType>
 	className := g.lang.PrivateName(prop.Title(), "Factory")
 	g.lang.Class(g.bodyWriter, "", g.lang.Implements(className,
-		g.lang.Generics("WuestenFactory", g.lang.PublicName(prop.Title(), "Builder"), g.lang.PublicName(prop.Title()))), prop,
+		g.lang.Generics("WuestenFactory", g.lang.PublicName(prop.Title()))), prop,
 		func(prop eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {
 		}, func(wr *eg.ForIfWhileLangWriter) {
 			wr.WriteBlock("Builder():", g.lang.PublicName(prop.Title(), "Builder"), func(wr *eg.ForIfWhileLangWriter) {
@@ -1500,7 +1500,7 @@ func (g *tsGenerator) generatePropertyObject(prop eg.PropertyObject, sl eg.Schem
 						}
 						wr.FormatLine("%s%s", t, comma)
 					}
-				}, "{", fmt.Sprintf("} from %s;", g.lang.Quote(g.lang.RemoveFileExt(include.fileName))))
+				}, " {", fmt.Sprintf("} from %s;", g.lang.Quote(g.lang.RemoveFileExt(include.fileName))))
 			}
 		}
 		header.WriteLine()

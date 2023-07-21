@@ -376,7 +376,7 @@ class Builder implements WuestenAttribute<Entity> {
   }
 }
 
-class TestFactory implements WuestenFactory<Builder, Entity, Entity> {
+class TestFactory implements WuestenFactory<Entity, Entity> {
   Builder(param?: WuestenAttributeParameter<Entity>): Builder {
     return new Builder(param || { jsonname: "test", varname: "Test", base: "base" });
   }

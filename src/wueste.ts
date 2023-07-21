@@ -92,13 +92,13 @@ export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
   }
 }
 
-export class WuestenAttrOptional<G, T = G | undefined, I = G> implements WuestenAttribute<T, I> {
-  readonly _attr: WuestenAttribute<T, I>;
-  readonly param: WuestenAttributeParameter<T>;
+export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undefined, I | undefined> {
+  readonly _attr: WuestenAttribute<T | undefined, I | undefined>;
+  readonly param: WuestenAttributeParameter<T | undefined>;
   _value: T;
   _idxs: number[] = [];
 
-  constructor(attr: WuestenAttribute<T, I>) {
+  constructor(attr: WuestenAttribute<T | undefined, I | undefined>) {
     this._attr = attr;
     this.param = {
       ...attr.param,
@@ -109,7 +109,7 @@ export class WuestenAttrOptional<G, T = G | undefined, I = G> implements Wuesten
   SetNameSuffix(...idxs: number[]): void {
     this._idxs = idxs;
   }
-  CoerceAttribute(val: unknown): Result<T> {
+  CoerceAttribute(val: unknown): Result<T | undefined> {
     if (!(typeof val === "object" && val !== null)) {
       return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
     }
@@ -138,8 +138,8 @@ export class WuestenAttrOptional<G, T = G | undefined, I = G> implements Wuesten
   }
 }
 
-export interface WuestenFactory<B extends WuestenAttribute<T, I>, T, I = T> {
-  Builder(param?: WuestenAttributeParameter<I>): B;
+export interface WuestenFactory<T, I = T> {
+  Builder(param?: WuestenAttributeParameter<I>): WuestenAttribute<T, I>;
   // Coerce FromObject(object: unknown): Result<T>;
   ToObject(typ: T): unknown;
   Clone(typ: T): Result<T>;
@@ -200,9 +200,9 @@ function booleanCoerce(value: unknown): Result<boolean> {
   return Result.Err("not a boolean: " + value);
 }
 
-export class WuestenAttributeObject<B extends WuestenAttribute<T, I>, T, I> extends WuestenAttr<T, I> {
+export class WuestenAttributeObject<T, I> extends WuestenAttr<T, I> {
   private readonly _builder: WuestenAttribute<T, I>;
-  constructor(param: WuestenAttributeParameter<I>, factory: WuestenFactory<B, T, I>) {
+  constructor(param: WuestenAttributeParameter<I>, factory: WuestenFactory<T, I>) {
     const builder = factory.Builder(param);
     super(param, builder.Coerce.bind(builder));
     this._builder = builder;
@@ -371,17 +371,14 @@ export const wuesten = {
     return new WuestenAttrOptional(new WuestenAttr(def, booleanCoerce));
   },
 
-  AttributeObject: <A extends WuestenAttribute<E, I>, E, I>(
-    def: WuestenAttributeParameter<I>,
-    factory: WuestenFactory<A, E, I>,
-  ): WuestenAttribute<E, I> => {
-    return new WuestenAttributeObject<A, E, I>(def, factory);
+  AttributeObject: <E, I>(def: WuestenAttributeParameter<I>, factory: WuestenFactory<E, I>): WuestenAttribute<E, I> => {
+    return new WuestenAttributeObject<E, I>(def, factory);
   },
-  AttributeObjectOptional: <A extends WuestenAttribute<E, I>, E, I>(
+  AttributeObjectOptional: <E, I>(
     def: WuestenAttributeParameter<I>,
-    factory: WuestenFactory<A, E, I>,
+    factory: WuestenFactory<E, I>,
   ): WuestenAttribute<E | undefined, I | undefined> => {
-    return new WuestenAttrOptional<A, E, I>(new WuestenAttributeObject<A, E, I>(def, factory));
+    return new WuestenAttrOptional<E, I>(new WuestenAttributeObject<E, I>(def, factory));
   },
 
   //   AttributeArray: <T>(): WuestenAttribute<T> => {
