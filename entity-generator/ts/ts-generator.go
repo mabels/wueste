@@ -187,11 +187,13 @@ func (l *tsLang) AsTypeNullable(p eg.Property, withs ...string) string {
 }
 
 func (l *tsLang) Line(line string, tails ...string) string {
-	tail := ""
-	if len(tails) > 0 {
-		tail = tails[0]
-	}
+	tail := strings.Join(tails, "")
 	return line + ";" + tail
+}
+
+func (l *tsLang) Comma(line string, tails ...string) string {
+	tail := strings.Join(tails, "")
+	return line + "," + tail
 }
 
 func (l *tsLang) ReturnType(line string, retType string) string {
@@ -695,6 +697,16 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 								g.lang.CallDot("oth", g.lang.PublicName(prop.Name())))))
 				}
 				wr.WriteLine("return builder.Get();")
+			})
+
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenSchema").activated = true
+			wr.WriteBlock("", g.lang.ReturnType(
+				g.lang.Call("Schema"), "WuestenSchema"), func(wr *eg.ForIfWhileLangWriter) {
+				wr.WriteBlock("return", "", func(wr *eg.ForIfWhileLangWriter) {
+					wr.WriteLine(g.lang.Comma(g.lang.ReturnType("Id", g.lang.Quote(prop.Id()))))
+					wr.WriteLine(g.lang.Comma(g.lang.ReturnType("Schema", g.lang.Quote(prop.Schema()))))
+					wr.WriteLine(g.lang.ReturnType("Title", g.lang.Quote(prop.Title())))
+				})
 			})
 
 		})

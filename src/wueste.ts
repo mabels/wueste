@@ -138,11 +138,18 @@ export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undef
   }
 }
 
+export interface WuestenSchema {
+  readonly Id: string;
+  readonly Schema: string;
+  readonly Title: string;
+}
+
 export interface WuestenFactory<T, I = T> {
   Builder(param?: WuestenAttributeParameter<I>): WuestenAttribute<T, I>;
   // Coerce FromObject(object: unknown): Result<T>;
   ToObject(typ: T): unknown;
   Clone(typ: T): Result<T>;
+  Schema(): WuestenSchema;
 }
 
 function stringCoerce(value: unknown): Result<string> {

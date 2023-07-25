@@ -1,5 +1,5 @@
 import { Result } from "./result";
-import { WuestenAttribute, WuestenAttributeParameter, WuestenFactory, wuesten, WuesteIterable } from "./wueste";
+import { WuestenAttribute, WuestenAttributeParameter, WuestenFactory, wuesten, WuesteIterable, WuestenSchema } from "./wueste";
 
 it("WuesteIterate", () => {
   expect(WuesteIterable(3)).toBeUndefined();
@@ -395,6 +395,9 @@ class TestFactory implements WuestenFactory<Entity, Entity> {
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Clone(typ: Entity): Result<Entity, Error> {
+    throw new Error("Method not implemented.");
+  }
+  Schema(): WuestenSchema {
     throw new Error("Method not implemented.");
   }
 }
