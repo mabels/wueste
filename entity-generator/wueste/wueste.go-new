@@ -1,0 +1,418 @@
+package wueste
+
+import (
+	"strings"
+	"time"
+
+	"github.com/mabels/wueste/entity-generator/optional"
+	"github.com/mabels/wueste/entity-generator/result"
+)
+
+type WuestenAttributeParameter[T any] struct {
+	Base     string
+	Varname  string
+	Jsonname string
+	Default  optional.Optional[T]
+}
+
+type WuestenAttribute[G any, I any] interface {
+	// param: WuestenAttributeParameter<G>;
+	SetNameSuffix(idxs ...int)
+	CoerceAttribute(val interface{}) result.Result[G]
+	Coerce(value I) result.Result[G]
+	Get() result.Result[G]
+}
+
+func coerceAttribute[T any, I any](val interface{}, param WuestenAttributeParameter[T], coerce func(t I) result.Result[T]) result.Result[T] {
+	panic("implement me")
+	// const rec = val as Record<string, unknown>;
+	// for (const key of [param.jsonname, param.varname]) {
+	//   if (rec[key] === undefined || rec[key] === null) {
+	//     continue;
+	//   }
+	//   const my = coerce(rec[key] as I);
+	//   return my;
+	// }
+	// if (param.default !== undefined) {
+	//   return coerce(param.default as I);
+	// }
+	// return Result.Err(`not found:${param.jsonname}`);
+}
+
+func WuestenAttributeName[T any](param WuestenAttributeParameter[T]) string {
+	names := []string{}
+	if param.Base != "" {
+		names = append(names, param.Base)
+	}
+	names = append(names, param.Jsonname)
+	return strings.Join(names, ".")
+}
+
+type WuestenAttr[G any, I any] struct {
+	value  *G
+	idxs   []int
+	Param  WuestenAttributeParameter[G]
+	coerce func(t I) result.Result[G]
+}
+
+func NewWuestenAttr[G any, I any](param WuestenAttributeParameter[I], coerce func(t I) result.Result[G]) WuestenAttribute[G, I] {
+	// var def *G = nil
+	ret := WuestenAttr[G, I]{}
+	ret.coerce = coerce
+	// res:= coerce(param.default);
+	// if res.is_ok() {
+	// 	def = res.unwrap()
+	// }
+	panic("implement me")
+	// ret.param = {
+	//   ...param,
+	//   default: def,
+	// };
+}
+
+func (my WuestenAttr[G, I]) SetNameSuffix(idxs ...int) {
+	my.idxs = idxs
+}
+
+func (my WuestenAttr[G, I]) CoerceAttribute(val interface{}) result.Result[G] {
+	panic("implement me")
+	// if (!(typeof val === "object" && val !== null)) {
+	//   return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
+	// }
+	// const res = coerceAttribute<G, I>(val, this.param, this.Coerce.bind(this));
+	// if (res.is_err()) {
+	//   return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] ${res.unwrap_err().message}`);
+	// }
+	// return res;
+}
+func (my WuestenAttr[G, I]) Coerce(value I) result.Result[G] {
+	panic("implement me")
+	// const result = this._coerce(value);
+	// if (result.is_ok()) {
+	//   this._value = result.unwrap();
+	//   return result;
+	// }
+	// return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is ${result.unwrap_err().message}`);
+}
+func (my WuestenAttr[G, I]) Get() result.Result[G] {
+	panic("implement me")
+	// if (this.param.default === undefined && this._value === undefined) {
+	//   return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is required`);
+	// }
+	// if (this._value !== undefined) {
+	//   return Result.Ok(this._value);
+	// }
+	// // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	// return Result.Ok(this.param.default! as G);
+}
+
+type WuestenAttrOptional[T any, I any] struct {
+	// export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undefined, I | undefined> {
+	attr  WuestenAttribute[*T, *I]
+	param WuestenAttributeParameter[*T]
+	value T
+	idxs  []int
+}
+
+func NewWuestenAttrOptional[T any, I any](attr WuestenAttribute[*T, *I]) WuestenAttribute[*T, *I] {
+	ret := WuestenAttrOptional[T, I]{}
+	ret.attr = attr
+	panic("implement me")
+	// this.param = {
+	//   ...attr.param,
+	//   default: attr.param.default as T,
+	// };
+	// this._value = attr.param.default as T;
+}
+
+func (my WuestenAttrOptional[T, I]) SetNameSuffix(idxs ...int) {
+	my.idxs = idxs
+}
+func (my WuestenAttrOptional[T, I]) CoerceAttribute(val interface{}) result.Result[*T] {
+	panic("implement me")
+	// if (!(typeof val === "object" && val !== null)) {
+	//   return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
+	// }
+	// const res = coerceAttribute(val, this.param, this.Coerce.bind(this));
+	// if (res.is_ok()) {
+	//   this._value = res.unwrap() as T;
+	//   return res;
+	// }
+	// return Result.Ok(this.param.default as T);
+}
+
+func (my WuestenAttrOptional[T, I]) Coerce(value I) result.Result[T] {
+	panic("implement me")
+	// if (value === undefined || value === null) {
+	//   this._value = undefined as T;
+	//   return Result.Ok(this._value);
+	// }
+	// const res = this._attr.Coerce(value);
+	// if (res.is_ok()) {
+	//   this._value = res.unwrap() as unknown as T;
+	//   return Result.Ok(this._value);
+	// }
+	// return Result.Err(res.unwrap_err());
+}
+func (my WuestenAttrOptional[T, I]) Get() result.Result[T] {
+	return result.Ok(my.value)
+}
+
+type WuestenFactory[T any, I any] interface {
+	Builder(param ...WuestenAttributeParameter[I]) WuestenAttribute[T, I]
+	// Coerce FromObject(object: unknown): Result<T>;
+	ToObject(typ T) interface{}
+	Clone(typ T) result.Result[T]
+}
+
+func stringCoerce(value string) result.Result[string] {
+	panic("implement me")
+	// if (typeof value === "string") {
+	//   return Result.Ok(value);
+	// }
+	// if (typeof value === "number") {
+	//   return Result.Ok("" + value);
+	// }
+	// if (typeof value === "bool") {
+	//   return Result.Ok(value ? "true" : "false");
+	// }
+	// if (
+	//   (typeof value === "object" || typeof value === "func") &&
+	//   value !== null &&
+	//   typeof (value as { toString: () => string })["toString"] === "func"
+	// ) {
+	//   return stringCoerce((value as { toString: () => string }).toString());
+	// }
+	// try {
+	//   return Result.Err("not a string: " + value);
+	// } catch (err) {
+	//   return Result.Err("not a string: " + err);
+	// }
+}
+
+func dateTimeCoerce(value time.Time) result.Result[time.Time] {
+	panic("implement me")
+	// if (typeof value === "string") {
+	//   return Result.Ok(NewDate(value));
+	// }
+	// if (typeof value === "number") {
+	//   return Result.Ok(NewDate(value));
+	// }
+	// if (value instanceof Date) {
+	//   return Result.Ok(value);
+	// }
+	// return Result.Err("not a Date: " + value);
+}
+
+func boolCoerce(value bool) result.Result[bool] {
+	panic("implement me")
+	// if (typeof value === "bool") {
+	//   return Result.Ok(value);
+	// }
+	// if (typeof value === "string") {
+	//   if (["true", "1", "yes", "on"].includes(value.toLowerCase())) {
+	//     return Result.Ok(true);
+	//   }
+	//   if (["false", "0", "no", "off"].includes(value.toLowerCase())) {
+	//     return Result.Ok(false);
+	//   }
+	// }
+	// if (typeof value === "number") {
+	//   return Result.Ok(!!value);
+	// }
+	// return Result.Err("not a bool: " + value);
+}
+
+type WuestenAttributeObject[T any, I any] struct {
+	_builder WuestenAttribute[T, I]
+}
+
+func NewWuestenAttributeObject[T any, I any](param WuestenAttributeParameter[I], factory WuestenFactory[T, I]) WuestenAttribute[T, I] {
+	// builder := factory.Builder(param)
+	// super(param, builder.Coerce.bind(builder));
+	panic("implement me")
+	// this.builder = builder
+}
+
+func (my WuestenAttributeObject[T, I]) Coerce(value I) result.Result[T] {
+	panic("implement me")
+	// res := my._builder.Coerce(value)
+	// if res.IsOk() {
+	// 	my.value = res.Unwrap()
+	// }
+	// return res
+}
+
+func (my WuestenAttributeObject[T, I]) Get() result.Result[T] {
+	panic("implement me")
+	// if (this.param.default === undefined && this._value === undefined) {
+	//   return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is required`);
+	// }
+	// if (this._value !== undefined) {
+	//   return Result.Ok(this._value);
+	// }
+	// // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	// return Result.Ok(this.param.default!);
+}
+
+func numberCoerce(parse func(i interface{}) int) func(value interface{}) result.Result[int] {
+	return func(value interface{}) result.Result[int] {
+		panic("implement me")
+		// const val = parse(value as string);
+		// if (isNaN(val)) {
+		//   return Result.Err(`not a number: ${value}`);
+		// }
+		// return Result.Ok(val);
+	}
+}
+
+// func WuesteIterable[T](obj interface{}): IterableIterator<T> | undefined {
+//   if (Array.isArray(obj)) {
+//     const range = {
+//       [Symbol.iterator]() {
+//         // (1)
+//         return {
+//           current: 0,
+//           next() {
+//             // (2)
+//             const aobj = obj as ArrayLike<T>;
+//             if (this.current < aobj.length) {
+//               return { done: false, value: aobj[this.current++] };
+//             } else {
+//               return { done: true };
+//             }
+//           },
+//         };
+//       },
+//     };
+//     return range as unknown as IterableIterator<T>;
+//   }
+//   if (typeof obj === "func") {
+//     obj = obj();
+//   }
+//   if (typeof obj === "object") {
+//     if (Symbol.iterator in (obj as { [Symbol.iterator]: unknown })) {
+//       // const iter = (obj as unknown as Iterable<unknown>)[Symbol.iterator]()
+//       // const range = {
+//       //     [Symbol.iterator]() { // (1)
+//       //         return {
+//       //             current: 0,
+//       //             next() { // (2)
+//       //                 return iter.next()
+//       //             }
+//       //         };
+//       //     }
+//       // };
+//       return obj as unknown as IterableIterator<T>;
+//     }
+//     // if (Symbol.asyncIterator in (obj as { [Symbol.asyncIterator]: unknown })) {
+//     //     return obj as unknown as AsyncIterableIterator<unknown>
+//     // }
+//     if (obj !== null) {
+//       const vobj = Object.values(obj);
+//       const range = {
+//         [Symbol.iterator]() {
+//           // (1)
+//           return {
+//             current: 0,
+//             next() {
+//               // (2)
+//               if (this.current < vobj.length) {
+//                 return { done: false, value: vobj[this.current++] };
+//               } else {
+//                 return { done: true };
+//               }
+//             },
+//           };
+//         },
+//       };
+//       return range as unknown as IterableIterator<T>;
+//     }
+//   }
+//   return undefined;
+// }
+
+// type WuesteCoerceTypeDate = time.Time | string;
+// type WuesteCoerceTypebool = bool | string | int;
+// type WuesteCoerceTypenumber = int | string;
+// type WuesteCoerceTypestring = string | bool | int
+
+func AttributeString(def WuestenAttributeParameter[string]) WuestenAttribute[string, string] {
+	return NewWuestenAttr(def, stringCoerce)
+}
+func AttributeStringOptional(
+	def WuestenAttributeParameter[string],
+) WuestenAttribute[*string, string] {
+	return NewWuestenAttrOptional(NewWuestenAttr(def, stringCoerce))
+}
+
+func AttributeDateTime(def WuestenAttributeParameter[interface{}]) WuestenAttribute[time.Time, interface{}] {
+	return NewWuestenAttr(def, dateTimeCoerce)
+}
+func AttributeDateTimeOptional(
+	def WuestenAttributeParameter[interface{}],
+) WuestenAttribute[*time.Time, interface{}] {
+	return NewWuestenAttrOptional(NewWuestenAttr(def, dateTimeCoerce))
+}
+
+func AttributeInteger(def WuestenAttributeParameter[int]) WuestenAttribute[int, interface{}] {
+	return NewWuestenAttr(
+		def,
+		numberCoerce(func(a) {
+			panic("implement me")
+			//  parseInt(a as string, 10)),
+		}),
+	)
+}
+func AttributeIntegerOptional(
+	def WuestenAttributeParameter[int],
+) WuestenAttribute[*int, interface{}] {
+	return NewWuestenAttrOptional(
+		NewWuestenAttr(
+			def,
+			numberCoerce(func(a) {
+				// parseInt(a as string, 10)
+				panic("implement me")
+			}),
+		),
+	)
+}
+
+func AttributeNumber(def WuestenAttributeParameter[float64]) WuestenAttribute[float64, float64] {
+	return NewWuestenAttr(
+		def,
+		numberCoerce(func(a) {
+			panic("implement me")
+			//  parseFloat(a as string)),
+		}))
+}
+func AttributeNumberOptional(
+	def WuestenAttributeParameter[float64],
+) WuestenAttribute[*float64, *float64] {
+	return NewWuestenAttrOptional(
+		NewWuestenAttr(
+			def,
+			numberCoerce(func(a) {
+				panic("implement me")
+				// parseFloat(a as string)),
+			}),
+		),
+	)
+}
+
+func AttributeBoolean(def WuestenAttributeParameter[bool]) WuestenAttribute[bool, bool] {
+	return NewWuestenAttr(def, boolCoerce)
+}
+func AttributeBooleanOptional(def WuestenAttributeParameter[bool]) WuestenAttribute[*bool, *bool] {
+	return NewWuestenAttrOptional(NewWuestenAttr(def, boolCoerce))
+}
+
+func AttributeObject[E any, I any](def WuestenAttributeParameter[I], factory WuestenFactory[E, I]) WuestenAttribute[E, I] {
+	return NewWuestenAttributeObject[E, I](def, factory)
+}
+func AttributeObjectOptional[E any, I any](
+	def WuestenAttributeParameter[I],
+	factory WuestenFactory[E, I],
+) WuestenAttribute[*E, *I] {
+	return NewWuestenAttrOptional[E, I](NewWuestenAttributeObject(def, factory))
+}
