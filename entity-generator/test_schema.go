@@ -156,7 +156,7 @@ func toPtrString(s string) *string {
 func TestJSONSubSchema() JSONProperty {
 	return JSONProperty{
 		JSONSchema: JSONSchema{
-			Id:          "Sub",
+			Id:          "https://Sub",
 			Title:       "Sub",
 			Description: toPtrString("Description"),
 			Properties: map[string]JSONProperty{
@@ -175,7 +175,7 @@ func TestJSONSubSchema() JSONProperty {
 
 func TestJsonFlatSchema() JSONSchema {
 	json := JSONSchema{
-		Id:          "SimpleType",
+		Id:          "https://SimpleType",
 		Schema:      "",
 		Title:       "SimpleType",
 		Type:        "object",
@@ -287,7 +287,7 @@ func TestJsonFlatSchema() JSONSchema {
 
 func TestSubSchema(sl SchemaLoader) Property {
 	return NewSchemaBuilder(sl).
-		Id("Sub").
+		Id("https://Sub").
 		Title("Sub").
 		Type("object").
 		Description("Description").
@@ -301,7 +301,7 @@ func TestSubSchema(sl SchemaLoader) Property {
 
 func TestFlatSchema(sl SchemaLoader) Property {
 	return NewSchemaBuilder(sl).
-		Id("SimpleType").
+		Id("https://SimpleType").
 		Type("object").
 		Title("SimpleType").
 		Description("Jojo SimpleType").
@@ -363,7 +363,7 @@ func TestSchema(sl SchemaLoader) Property {
 		ps.Add(item)
 	}
 	return NewSchemaBuilder(sl).
-		Id("NestedType").
+		Id("https://NestedType").
 		Type("object").
 		Title("NestedType").
 		Description("Jojo NestedType").

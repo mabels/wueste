@@ -44,7 +44,7 @@ func getConfig() *eg.GeneratorConfig {
 }
 
 func TestGolang(t *testing.T) {
-	cfg := getConfig()
+	// cfg := getConfig()
 	sl := eg.NewTestSchemaLoader()
 
 	tfs := eg.TestFlatSchema(sl)

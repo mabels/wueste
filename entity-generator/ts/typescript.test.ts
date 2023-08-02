@@ -55,6 +55,28 @@ it("SimpleType-BuilderSet", () => {
 
 it(`SimpleType-Builder Object-JSON-Object`, () => {
   const builder = SimpleTypeFactory.Builder();
+  expect(
+    builder
+      .Coerce({
+        bool: true,
+        float64: 42.42,
+      })
+      .unwrap_err().message,
+  ).toEqual(
+    [
+      "Attribute[SimpleType] is Attribute[SimpleType.createdAt] not found:createdAt",
+      "Attribute[SimpleType.int64] not found:int64",
+      "Attribute[SimpleType.string] not found:string",
+      "Attribute[SimpleType.sub] not found:sub",
+    ].join("\n"),
+  );
+  expect(builder._attr._bool.Get().unwrap()).toEqual(true);
+  expect(builder._attr._int64.Get().is_err()).toBeTruthy();
+  expect(builder._attr._float64.Get().unwrap()).toEqual(42.42);
+});
+
+it(`SimpleType-Builder Object-JSON-Object`, () => {
+  const builder = SimpleTypeFactory.Builder();
   const now = new Date();
   expect(
     builder
@@ -79,9 +101,10 @@ it(`SimpleType-Builder Object-JSON-Object`, () => {
       .is_ok(),
   ).toBeTruthy();
   builder.float64("42.43");
-  const json = JSON.stringify(SimpleTypeFactory.ToObject(builder.Get().unwrap()));
+  const payload = builder.AsPayload().unwrap();
+  expect(payload.Type).toBe("https://SimpleType");
   const fromJson = SimpleTypeFactory.Builder();
-  fromJson.Coerce(JSON.parse(json));
+  fromJson.Coerce(JSON.parse(new TextDecoder().decode(payload.Data)));
   expect(fromJson.Get().unwrap()).toEqual(builder.Get().unwrap());
   expect(fromJson.Get().unwrap().float64).toEqual(42.43);
 });

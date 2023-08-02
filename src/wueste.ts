@@ -1,5 +1,15 @@
 import { Result } from "./result";
 
+export interface Payload {
+  readonly Type: string;
+  readonly Data: Uint8Array;
+}
+
+const txtEncoder = new TextEncoder();
+export function WuesteJsonEncoder<T>(payload: T): Result<Uint8Array> {
+  return Result.Ok(txtEncoder.encode(JSON.stringify(payload)));
+}
+
 export interface WuestenAttributeParameter<T> {
   readonly base: string;
   readonly varname: string;
@@ -9,7 +19,6 @@ export interface WuestenAttributeParameter<T> {
   // setError?: (err : string | Error) => void;
   // format?: string // date-time
 }
-
 export interface WuestenAttribute<G, I = G> {
   readonly param: WuestenAttributeParameter<G>;
   SetNameSuffix(...idxs: number[]): void;
