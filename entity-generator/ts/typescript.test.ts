@@ -1,7 +1,6 @@
 import { NestedTypeFactory } from "../../src/generated/go/nested_type";
 import { SimpleTypeFactory, SimpleTypeParam } from "../../src/generated/go/simple_type";
 
-
 const simpleTypeParam: SimpleTypeParam = {
   bool: true,
   createdAt: new Date(),
@@ -98,11 +97,7 @@ it(`SimpleType-Builder Object-JSON-Object`, () => {
 
 it(`SimpleType-Builder Object-JSON-Object`, () => {
   const builder = SimpleTypeFactory.Builder();
-  expect(
-    builder
-      .Coerce(simpleTypeParam)
-      .is_ok(),
-  ).toBeTruthy();
+  expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
   builder.float64("42.43");
   const payload = builder.AsPayload().unwrap();
   expect(payload.Type).toBe("https://SimpleType");
@@ -112,14 +107,9 @@ it(`SimpleType-Builder Object-JSON-Object`, () => {
   expect(fromJson.Get().unwrap().float64).toEqual(42.43);
 });
 
-
 it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   const builder = SimpleTypeFactory.Builder();
-  expect(
-    builder
-      .Coerce(simpleTypeParam)
-      .is_ok(),
-  ).toBeTruthy();
+  expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
   const payload = builder.AsPayload().unwrap();
   const fromPayload = SimpleTypeFactory.Builder();
   fromPayload.FromPayload(payload);
@@ -128,15 +118,13 @@ it(`SimpleType-Builder Payload-JSON-Payload`, () => {
 
 it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   const builder = SimpleTypeFactory.Builder();
-  expect(
-    builder
-      .Coerce(simpleTypeParam)
-      .is_ok(),
-  ).toBeTruthy();
+  expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
   const payload = builder.AsPayload().unwrap();
   const fromPayload = SimpleTypeFactory.Builder();
-  (payload as {Type: string}).Type = "Kaput"
-  expect(fromPayload.FromPayload(payload).unwrap_err().message).toEqual('Payload Type mismatch:[https://SimpleType,SimpleType] != Kaput')
+  (payload as { Type: string }).Type = "Kaput";
+  expect(fromPayload.FromPayload(payload).unwrap_err().message).toEqual(
+    "Payload Type mismatch:[https://SimpleType,SimpleType] != Kaput",
+  );
 });
 
 it(`SimpleType-Builder Object-Clone`, () => {
