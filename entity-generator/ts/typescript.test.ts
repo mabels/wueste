@@ -1,5 +1,26 @@
 import { NestedTypeFactory } from "../../src/generated/go/nested_type";
-import { SimpleTypeFactory } from "../../src/generated/go/simple_type";
+import { SimpleTypeFactory, SimpleTypeParam } from "../../src/generated/go/simple_type";
+
+
+const simpleTypeParam: SimpleTypeParam = {
+  bool: true,
+  createdAt: new Date(),
+  float64: "42.42",
+  int64: "42",
+  string: "String42",
+  sub: {
+    Test: "Test42",
+  },
+  opt_sub: {
+    Test: "Test32",
+  },
+  optional_bool: true,
+  optional_createdAt: new Date(),
+  optional_float32: 32.32,
+  optional_int32: 32,
+  optional_string: "String32",
+};
+
 it("SimpleType-Error", () => {
   const builder = SimpleTypeFactory.Builder();
   builder.sub({ Test: { toString: 5 } as unknown as string });
@@ -77,27 +98,9 @@ it(`SimpleType-Builder Object-JSON-Object`, () => {
 
 it(`SimpleType-Builder Object-JSON-Object`, () => {
   const builder = SimpleTypeFactory.Builder();
-  const now = new Date();
   expect(
     builder
-      .Coerce({
-        bool: true,
-        createdAt: now,
-        float64: "42.42",
-        int64: "42",
-        string: "String42",
-        sub: {
-          Test: "Test42",
-        },
-        opt_sub: {
-          Test: "Test32",
-        },
-        optional_bool: true,
-        optional_createdAt: now,
-        optional_float32: 32.32,
-        optional_int32: 32,
-        optional_string: "String32",
-      })
+      .Coerce(simpleTypeParam)
       .is_ok(),
   ).toBeTruthy();
   builder.float64("42.43");
@@ -107,6 +110,33 @@ it(`SimpleType-Builder Object-JSON-Object`, () => {
   fromJson.Coerce(JSON.parse(new TextDecoder().decode(payload.Data)));
   expect(fromJson.Get().unwrap()).toEqual(builder.Get().unwrap());
   expect(fromJson.Get().unwrap().float64).toEqual(42.43);
+});
+
+
+it(`SimpleType-Builder Payload-JSON-Payload`, () => {
+  const builder = SimpleTypeFactory.Builder();
+  expect(
+    builder
+      .Coerce(simpleTypeParam)
+      .is_ok(),
+  ).toBeTruthy();
+  const payload = builder.AsPayload().unwrap();
+  const fromPayload = SimpleTypeFactory.Builder();
+  fromPayload.FromPayload(payload);
+  expect(fromPayload.Get().unwrap()).toEqual(builder.Get().unwrap());
+});
+
+it(`SimpleType-Builder Payload-JSON-Payload`, () => {
+  const builder = SimpleTypeFactory.Builder();
+  expect(
+    builder
+      .Coerce(simpleTypeParam)
+      .is_ok(),
+  ).toBeTruthy();
+  const payload = builder.AsPayload().unwrap();
+  const fromPayload = SimpleTypeFactory.Builder();
+  (payload as {Type: string}).Type = "Kaput"
+  expect(fromPayload.FromPayload(payload).unwrap_err().message).toEqual('Payload Type mismatch:[https://SimpleType,SimpleType] != Kaput')
 });
 
 it(`SimpleType-Builder Object-Clone`, () => {

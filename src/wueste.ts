@@ -10,6 +10,16 @@ export function WuesteJsonEncoder<T>(payload: T): Result<Uint8Array> {
   return Result.Ok(txtEncoder.encode(JSON.stringify(payload)));
 }
 
+const txtDecoder = new TextDecoder();
+export function WuesteJsonDecoder<T>(payload: Uint8Array): Result<T> {
+  try {
+    const str = txtDecoder.decode(payload);
+    return Result.Ok(JSON.parse(str));
+  } catch (err) {
+    return Result.Err(err as Error);
+  }
+}
+
 export interface WuestenAttributeParameter<T> {
   readonly base: string;
   readonly varname: string;
