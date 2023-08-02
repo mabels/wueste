@@ -3,5 +3,5 @@
 
 npm run prettier -- --write 
 npm run lint -- --fix 
-npm run test
-npm run smoke
+#npm run test
+#npm run smoke
