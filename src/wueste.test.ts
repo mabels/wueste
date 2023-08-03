@@ -1,5 +1,15 @@
 import { Result } from "./result";
-import { WuestenAttribute, WuestenAttributeParameter, WuestenFactory, wuesten, WuesteIterable, WuestenSchema } from "./wueste";
+import {
+  WuestenAttributeParameter,
+  WuestenFactory,
+  wuesten,
+  WuesteIterable,
+  WuestenSchema,
+  WuestenBuilder,
+  Payload,
+  WuestenDecoder,
+  WuestenEncoder,
+} from "./wueste";
 
 it("WuesteIterate", () => {
   expect(WuesteIterable(3)).toBeUndefined();
@@ -315,7 +325,7 @@ interface Entity {
   test: number;
 }
 
-class Builder implements WuestenAttribute<Entity> {
+class Builder implements WuestenBuilder<Entity, Entity, Entity> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   CoerceAttribute(val: unknown): Result<Entity, Error> {
     throw new Error("Method not implemented.");
@@ -336,6 +346,14 @@ class Builder implements WuestenAttribute<Entity> {
     this._id.CoerceAttribute(param);
     this._test = wuesten.AttributeInteger({ jsonname: "test", varname: "Test", base });
     this._test.CoerceAttribute(param);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  AsPayload(encoder: WuestenEncoder<Entity>): Result<Payload> {
+    throw new Error("Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  FromPayload(val: Payload, decoder: WuestenDecoder<Entity>): Result<Builder> {
+    throw new Error("Method not implemented.");
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -376,7 +394,7 @@ class Builder implements WuestenAttribute<Entity> {
   }
 }
 
-class TestFactory implements WuestenFactory<Entity, Entity> {
+class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
   Builder(param?: WuestenAttributeParameter<Entity>): Builder {
     return new Builder(param || { jsonname: "test", varname: "Test", base: "base" });
   }
@@ -390,7 +408,7 @@ class TestFactory implements WuestenFactory<Entity, Entity> {
   //     return builder.Validate()
   // }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  ToObject(typ: Entity): unknown {
+  ToObject(typ: Entity): Entity {
     throw new Error("Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

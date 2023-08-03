@@ -672,8 +672,12 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 
 	// export function  NewSimpleTypeFactory(): WuestenFactory<SimpleTypeBuilder, SimpleType>
 	className := g.lang.PrivateName(prop.Title(), "Factory")
+	partialType := g.lang.OrType(
+		g.lang.Generics("Partial", g.lang.PublicName(prop.Title())),
+		g.lang.Generics("Partial", g.lang.PublicName(prop.Title(), "Param")),
+		g.lang.Generics("Partial", g.lang.PublicName(prop.Title(), "Object")))
 	g.lang.Class(g.bodyWriter, "", g.lang.Implements(className,
-		g.lang.Generics("WuestenFactory", g.lang.PublicName(prop.Title()))), prop,
+		g.lang.Generics("WuestenFactory", g.lang.PublicName(prop.Title()), partialType, g.lang.PublicName(prop.Title(), "Object"))), prop,
 		func(prop eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {
 		}, func(wr *eg.ForIfWhileLangWriter) {
 			wr.WriteBlock("Builder():", g.lang.PublicName(prop.Title(), "Builder"), func(wr *eg.ForIfWhileLangWriter) {
@@ -1189,10 +1193,24 @@ func (g *tsGenerator) genWuesteBuilderAttribute(name string, prop eg.Property, p
 		p := prop.(eg.PropertyObject)
 		factory := g.lang.PublicName(p.Title(), "Factory")
 		g.includes.AddProperty(g.lang.FileName(g.lang.AsType(p)), factory, p)
+		param := g.lang.PublicName(p.Title(), "Param")
+		g.includes.AddProperty(g.lang.FileName(g.lang.AsType(p)), param, p)
+		object := g.lang.PublicName(p.Title(), "Object")
+		g.includes.AddProperty(g.lang.FileName(g.lang.AsType(p)), object, p)
+		plain := g.lang.PublicName(p.Title())
+		g.includes.AddProperty(g.lang.FileName(g.lang.AsType(p)), plain, p)
+		generics := []string{
+			g.lang.PublicName(p.Title()),
+			g.lang.OrType(
+				g.lang.Generics("Partial", plain),
+				g.lang.Generics("Partial", param),
+				g.lang.Generics("Partial", object)),
+			g.lang.PublicName(p.Title(), "Object"),
+		}
 		if prop.Optional() {
-			return g.lang.Call("wuesten.AttributeObjectOptional", paramFn(), factory)
+			return g.lang.Call(g.lang.Generics("wuesten.AttributeObjectOptional", generics...), paramFn(), factory)
 		} else {
-			return g.lang.Call("wuesten.AttributeObject", paramFn(), factory)
+			return g.lang.Call(g.lang.Generics("wuesten.AttributeObject", generics...), paramFn(), factory)
 		}
 	default:
 		panic("not implemented")
@@ -1258,7 +1276,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 	for _, p := range prop.Properties().Items() {
 		pa, ok := p.Property().(eg.PropertyArray)
 		if ok {
-			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttribute").activated = true
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttr").activated = true
 			className := g.lang.PublicName(p.Name(), "Attribute")
 			g.lang.Class(g.bodyWriter, "", g.lang.Extends(className,
 				g.lang.Generics("WuestenAttr",
@@ -1288,8 +1306,6 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 			g.bodyWriter.WriteLine()
 		}
 	}
-
-	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttr").activated = true
 
 	resultsClassName := g.lang.PublicName(prop.Title(), "Results")
 
@@ -1383,12 +1399,20 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 		})
 
 	className := g.lang.PublicName(prop.Title(), "Builder")
-	g.lang.Class(g.bodyWriter, "export ", g.lang.Extends(className,
-		g.lang.Generics("WuestenAttr", g.lang.PublicName(prop.Title()),
-			g.lang.OrType(
-				g.lang.Generics("Partial", g.lang.PublicName(prop.Title())),
-				g.lang.Generics("Partial", g.lang.PublicName(prop.Title(), "Param")),
-				g.lang.Generics("Partial", g.lang.PublicName(prop.Title(), "Object"))))), prop,
+	// extends WuestenAttr<Sub, Partial<Sub>|Partial<SubParam>|Partial<SubObject>>
+	// implements WuestenBuilder<Sub, Partial<Sub>|Partial<SubParam>|Partial<SubObject>>
+
+	partialType := g.lang.OrType(
+		g.lang.Generics("Partial", g.lang.PublicName(prop.Title())),
+		g.lang.Generics("Partial", g.lang.PublicName(prop.Title(), "Param")),
+		g.lang.Generics("Partial", g.lang.PublicName(prop.Title(), "Object")))
+	genericType := []string{g.lang.PublicName(prop.Title()), partialType}
+
+	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenBuilder").activated = true
+	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttr").activated = true
+	g.lang.Class(g.bodyWriter, "export ", g.lang.Implements(
+		g.lang.Extends(className, g.lang.Generics("WuestenAttr", genericType...)),
+		g.lang.Generics("WuestenBuilder", genericType[0], genericType[1], g.lang.PublicName(prop.Title(), "Object"))), prop,
 		func(prop eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {
 			wr.WriteBlock(
 				g.lang.ReturnType(
@@ -1427,7 +1451,8 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteJsonEncoder").activated = true
 			wr.WriteBlock("",
 				g.lang.ReturnType(
-					g.lang.Call("AsPayload", "encoder = WuesteJsonEncoder"),
+					g.lang.Call("AsPayload",
+						g.lang.Generics("encoder = WuesteJsonEncoder", g.lang.PublicName(prop.Title(), "Object"))),
 					g.lang.Generics("Result", "Payload")),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.FormatLine("const val = this.Get();")
@@ -1451,7 +1476,8 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteJsonDecoder").activated = true
 			wr.WriteBlock("",
 				g.lang.ReturnType(
-					g.lang.Call("FromPayload", g.lang.ReturnType("val", "Payload"), "decoder = WuesteJsonDecoder"),
+					g.lang.Call("FromPayload", g.lang.ReturnType("val", "Payload"),
+						g.lang.Generics("decoder = WuesteJsonDecoder", partialType)),
 					g.lang.Generics("Result", g.lang.PublicName(prop.Title(), "Builder"))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					ids := []string{}
@@ -1469,9 +1495,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 						wr.FormatLine("return Result.Err(new Error(`Payload Type mismatch:[%s] != ${val.Type}`));", strings.Join(ids, ","))
 					})
 					// <Partial<SimpleTypeParam>>
-					wr.FormatLine("const data = %s;", g.lang.Call(
-						g.lang.Generics("decoder", g.lang.Generics("Partial", g.lang.PublicName(prop.Title(), "Param"))),
-						"val.Data"))
+					wr.FormatLine("const data = %s", g.lang.Call("decoder", "val.Data"))
 					wr.WriteBlock("if", "(data.is_err())", func(wr *eg.ForIfWhileLangWriter) {
 						wr.WriteLine("return Result.Err(data.unwrap_err());")
 					})
