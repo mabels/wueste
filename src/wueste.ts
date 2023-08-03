@@ -172,7 +172,7 @@ export interface WuestenBuilder<T, I, O> extends WuestenAttribute<T, I> {
 
 export interface WuestenFactory<T, I, O> {
   Builder(param?: WuestenAttributeParameter<I>): WuestenBuilder<T, I, O>;
-  FromPayload(val: Payload, decoder?: WuestenDecoder<I>): Result<WuestenBuilder<T, I, O>>;
+  FromPayload(val: Payload, decoder?: WuestenDecoder<I>): Result<T>;
   ToObject(typ: T): O; // Record<string, unknown>; keys are json notation
   Clone(typ: T): Result<T>;
   Schema(): WuestenSchema;

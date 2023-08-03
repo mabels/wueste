@@ -112,7 +112,7 @@ it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
   const payload = builder.AsPayload().unwrap();
   const fromPayload = SimpleTypeFactory.FromPayload(payload).unwrap();
-  expect(fromPayload.Get().unwrap()).toEqual(builder.Get().unwrap());
+  expect(fromPayload).toEqual(builder.Get().unwrap());
 });
 
 it(`SimpleType-Builder Payload-JSON-Payload`, () => {

@@ -707,7 +707,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 				g.lang.ReturnType(
 					g.lang.Call("FromPayload", g.lang.ReturnType("val", "Payload"),
 						g.lang.Generics("decoder = WuesteJsonDecoder", partialType)),
-					g.lang.Generics("Result", g.lang.PublicName(prop.Title(), "Builder"))),
+					g.lang.Generics("Result", g.lang.PublicName(prop.Title()))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					ids := []string{}
 					if prop.Id() != "" {
@@ -730,11 +730,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 					})
 
 					wr.WriteLine(g.lang.Call("const builder = new ", g.lang.PublicName(prop.Title(), "Builder")))
-					wr.WriteLine("const res = builder.Coerce(data.unwrap());")
-					wr.WriteBlock("if", "(res.is_err())", func(wr *eg.ForIfWhileLangWriter) {
-						wr.WriteLine("return Result.Err(res.unwrap_err());")
-					})
-					wr.WriteLine("return Result.Ok(builder);")
+					wr.WriteLine("return builder.Coerce(data.unwrap());")
 				})
 
 			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result").activated = true

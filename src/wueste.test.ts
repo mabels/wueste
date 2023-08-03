@@ -408,7 +408,7 @@ class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
     throw new Error("Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  FromPayload(val: Payload, decoder: WuestenDecoder<Entity>): Result<Builder> {
+  FromPayload(val: Payload, decoder: WuestenDecoder<Entity>): Result<Entity> {
     throw new Error("Method not implemented.");
   }
 
