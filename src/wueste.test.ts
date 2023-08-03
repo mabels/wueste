@@ -351,10 +351,6 @@ class Builder implements WuestenBuilder<Entity, Entity, Entity> {
   AsPayload(encoder: WuestenEncoder<Entity>): Result<Payload> {
     throw new Error("Method not implemented.");
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  FromPayload(val: Payload, decoder: WuestenDecoder<Entity>): Result<Builder> {
-    throw new Error("Method not implemented.");
-  }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   SetNameSuffix(...idxs: number[]): void {
@@ -411,6 +407,11 @@ class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
   ToObject(typ: Entity): Entity {
     throw new Error("Method not implemented.");
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  FromPayload(val: Payload, decoder: WuestenDecoder<Entity>): Result<Builder> {
+    throw new Error("Method not implemented.");
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Clone(typ: Entity): Result<Entity, Error> {
     throw new Error("Method not implemented.");

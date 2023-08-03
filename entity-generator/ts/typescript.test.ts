@@ -111,8 +111,7 @@ it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   const builder = SimpleTypeFactory.Builder();
   expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
   const payload = builder.AsPayload().unwrap();
-  const fromPayload = SimpleTypeFactory.Builder();
-  fromPayload.FromPayload(payload);
+  const fromPayload = SimpleTypeFactory.FromPayload(payload).unwrap();
   expect(fromPayload.Get().unwrap()).toEqual(builder.Get().unwrap());
 });
 
@@ -120,9 +119,9 @@ it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   const builder = SimpleTypeFactory.Builder();
   expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
   const payload = builder.AsPayload().unwrap();
-  const fromPayload = SimpleTypeFactory.Builder();
+  // const fromPayload = SimpleTypeFactory.Builder();
   (payload as { Type: string }).Type = "Kaput";
-  expect(fromPayload.FromPayload(payload).unwrap_err().message).toEqual(
+  expect(SimpleTypeFactory.FromPayload(payload).unwrap_err().message).toEqual(
     "Payload Type mismatch:[https://SimpleType,SimpleType] != Kaput",
   );
 });

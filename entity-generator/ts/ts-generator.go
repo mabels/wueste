@@ -702,6 +702,41 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 
 			})
 
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteJsonDecoder").activated = true
+			wr.WriteBlock("",
+				g.lang.ReturnType(
+					g.lang.Call("FromPayload", g.lang.ReturnType("val", "Payload"),
+						g.lang.Generics("decoder = WuesteJsonDecoder", partialType)),
+					g.lang.Generics("Result", g.lang.PublicName(prop.Title(), "Builder"))),
+				func(wr *eg.ForIfWhileLangWriter) {
+					ids := []string{}
+					if prop.Id() != "" {
+						ids = append(ids, prop.Id())
+					}
+					if prop.Title() != "" {
+						ids = append(ids, prop.Title())
+					}
+					conditions := []string{}
+					for _, id := range ids {
+						conditions = append(conditions, fmt.Sprintf("val.Type === %s", g.lang.Quote(id)))
+					}
+					wr.WriteBlock("if", fmt.Sprintf("(!(%s))", strings.Join(conditions, " || ")), func(wr *eg.ForIfWhileLangWriter) {
+						wr.FormatLine("return Result.Err(new Error(`Payload Type mismatch:[%s] != ${val.Type}`));", strings.Join(ids, ","))
+					})
+					// <Partial<SimpleTypeParam>>
+					wr.FormatLine("const data = %s", g.lang.Call("decoder", "val.Data"))
+					wr.WriteBlock("if", "(data.is_err())", func(wr *eg.ForIfWhileLangWriter) {
+						wr.WriteLine("return Result.Err(data.unwrap_err());")
+					})
+
+					wr.WriteLine(g.lang.Call("const builder = new ", g.lang.PublicName(prop.Title(), "Builder")))
+					wr.WriteLine("const res = builder.Coerce(data.unwrap());")
+					wr.WriteBlock("if", "(res.is_err())", func(wr *eg.ForIfWhileLangWriter) {
+						wr.WriteLine("return Result.Err(res.unwrap_err());")
+					})
+					wr.WriteLine("return Result.Ok(builder);")
+				})
+
 			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result").activated = true
 			wr.WriteBlock("", g.lang.ReturnType(
 				g.lang.Call("Clone", g.lang.ReturnType("oth", g.lang.PublicName(prop.Title()))),
@@ -1471,39 +1506,6 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 						wr.FormatLine("Type: %s,", g.lang.Quote(id))
 						wr.FormatLine("Data: data.unwrap()")
 					}, "({", "});")
-				})
-
-			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteJsonDecoder").activated = true
-			wr.WriteBlock("",
-				g.lang.ReturnType(
-					g.lang.Call("FromPayload", g.lang.ReturnType("val", "Payload"),
-						g.lang.Generics("decoder = WuesteJsonDecoder", partialType)),
-					g.lang.Generics("Result", g.lang.PublicName(prop.Title(), "Builder"))),
-				func(wr *eg.ForIfWhileLangWriter) {
-					ids := []string{}
-					if prop.Id() != "" {
-						ids = append(ids, prop.Id())
-					}
-					if prop.Title() != "" {
-						ids = append(ids, prop.Title())
-					}
-					conditions := []string{}
-					for _, id := range ids {
-						conditions = append(conditions, fmt.Sprintf("val.Type === %s", g.lang.Quote(id)))
-					}
-					wr.WriteBlock("if", fmt.Sprintf("(!(%s))", strings.Join(conditions, " || ")), func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return Result.Err(new Error(`Payload Type mismatch:[%s] != ${val.Type}`));", strings.Join(ids, ","))
-					})
-					// <Partial<SimpleTypeParam>>
-					wr.FormatLine("const data = %s", g.lang.Call("decoder", "val.Data"))
-					wr.WriteBlock("if", "(data.is_err())", func(wr *eg.ForIfWhileLangWriter) {
-						wr.WriteLine("return Result.Err(data.unwrap_err());")
-					})
-					wr.WriteLine("const res = this.Coerce(data.unwrap());")
-					wr.WriteBlock("if", "(res.is_err())", func(wr *eg.ForIfWhileLangWriter) {
-						wr.WriteLine("return Result.Err(res.unwrap_err());")
-					})
-					wr.WriteLine("return Result.Ok(this);")
 				})
 
 		})

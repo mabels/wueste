@@ -167,14 +167,13 @@ export interface WuestenSchema {
 
 export interface WuestenBuilder<T, I, O> extends WuestenAttribute<T, I> {
   Get(): Result<T>;
-  AsPayload(encoder: WuestenEncoder<O>): Result<Payload>;
-  FromPayload(val: Payload, decoder: WuestenDecoder<I>): Result<WuestenBuilder<T, I, O>>;
+  AsPayload(encoder?: WuestenEncoder<O>): Result<Payload>;
 }
 
 export interface WuestenFactory<T, I, O> {
   Builder(param?: WuestenAttributeParameter<I>): WuestenBuilder<T, I, O>;
-  // Coerce FromObject(object: unknown): Result<T>;
-  ToObject(typ: T): O;
+  FromPayload(val: Payload, decoder?: WuestenDecoder<I>): Result<WuestenBuilder<T, I, O>>;
+  ToObject(typ: T): O; // Record<string, unknown>; keys are json notation
   Clone(typ: T): Result<T>;
   Schema(): WuestenSchema;
 }
