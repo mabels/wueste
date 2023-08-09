@@ -729,7 +729,9 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 						wr.WriteLine("return Result.Err(data.unwrap_err());")
 					})
 
-					wr.WriteLine(g.lang.Call("const builder = new ", g.lang.PublicName(prop.Title(), "Builder")))
+					wr.WriteLine(
+						g.lang.AssignDefault("const builder",
+							g.lang.New(g.lang.PublicName(prop.Title(), "Builder"))))
 					wr.WriteLine("return builder.Coerce(data.unwrap());")
 				})
 
