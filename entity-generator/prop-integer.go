@@ -2,97 +2,110 @@ package entity_generator
 
 import (
 	"github.com/mabels/wueste/entity-generator/rusty"
-	"github.com/mabels/wueste/entity-generator/wueste"
 )
 
-type PropertyInteger[T uint | int | uint64 | uint32 | uint16 | uint8 | int8 | int16 | int32 | int64] interface {
-	Id() string
+type PropertyInteger interface {
+	// Id() string
 	Type() Type
 	Description() rusty.Optional[string]
 	Format() rusty.Optional[string]
-	Optional() bool
-	SetOptional()
-	Default() rusty.Optional[wueste.Literal[T]] // match Type
-	Enum() []T
-	Maximum() rusty.Optional[T]
-	Minimum() rusty.Optional[T]
+	// Optional() bool
+	// SetOptional()
+	Default() rusty.Optional[int] // match Type
+	// Enum() []T
+	Maximum() rusty.Optional[int]
+	Minimum() rusty.Optional[int]
 
 	// ExclusiveMinimum() rusty.Optional[int]
 	// ExclusiveMaximum() rusty.Optional[int]
 	// MultipleOf() rusty.Optional[int]
 }
 
-type PropertyIntegerParam[T uint | int | uint64 | uint32 | uint16 | uint8 | int8 | int16 | int32 | int64] struct {
+type PropertyIntegerParam struct {
+	__loader    SchemaLoader
 	Id          string
 	Type        Type
 	Description rusty.Optional[string]
 	Optional    bool
 	Format      rusty.Optional[string]
-	Default     rusty.Optional[T]
-	Enum        []T
+	Default     rusty.Optional[int]
+	// Enum        []T
 	// Default rusty.Optional[T]
-	Maximum rusty.Optional[T]
-	Minimum rusty.Optional[T]
+	Maximum rusty.Optional[int]
+	Minimum rusty.Optional[int]
 	// ExclusiveMinimum() rusty.Optional[int]
 	// ExclusiveMaximum() rusty.Optional[int]
 	// MultipleOf() rusty.Optional[int]
 }
 
-type propertyInteger[T uint | int | uint64 | uint32 | uint16 | uint8 | int8 | int16 | int32 | int64] struct {
-	// propertyLiteral[T]
-	param PropertyIntegerParam[T]
+func (b *PropertyIntegerParam) FromJson(js JSONProperty) *PropertyIntegerParam {
+	b.Id = getFromAttributeString(js, "$id")
+	b.Type = "integer"
+	b.Description = getFromAttributeOptionalString(js, "description")
+	b.Format = getFromAttributeOptionalString(js, "format")
+	b.Default = getFromAttributeOptionalInt(js, "default")
+	b.Maximum = getFromAttributeOptionalInt(js, "maximum")
+	b.Minimum = getFromAttributeOptionalInt(js, "minimum")
+	return b
 }
 
-func NewPropertyInteger[T uint | int | uint64 | uint32 | uint16 | uint8 | int8 | int16 | int32 | int64](p PropertyIntegerParam[T]) PropertyInteger[T] {
-	return &propertyInteger[T]{
+func PropertyIntegerToJson(b PropertyInteger) JSONProperty {
+	jsp := JSONProperty{}
+	jsp.setString("type", b.Type())
+	jsp.setOptionalString("format", b.Format())
+	jsp.setOptionalString("description", b.Description())
+	jsp.setOptionalInt("default", b.Default())
+	jsp.setOptionalInt("maximum", b.Maximum())
+	jsp.setOptionalInt("minimum", b.Minimum())
+	return jsp
+}
+
+func (b *PropertyIntegerParam) Build() PropertyInteger {
+	return NewPropertyInteger(*b)
+}
+
+type propertyInteger struct {
+	param PropertyIntegerParam
+}
+
+func NewPropertyInteger(p PropertyIntegerParam) PropertyInteger {
+	p.Type = INTEGER
+	return &propertyInteger{
 		param: p,
 	}
 }
 
-func (p *propertyInteger[T]) Enum() []T {
-	panic("implement me")
-}
-func (p *propertyInteger[T]) Description() rusty.Optional[string] {
+func (p *propertyInteger) Description() rusty.Optional[string] {
 	return p.param.Description
 }
 
 // Format implements PropertyBoolean.
-func (p *propertyInteger[T]) Format() rusty.Optional[string] {
+func (p *propertyInteger) Format() rusty.Optional[string] {
 	return p.param.Format
 }
 
 // Id implements PropertyBoolean.
-func (p *propertyInteger[T]) Id() string {
-	return p.param.Id
-}
+// func (p *propertyInteger) Id() string {
+// 	return p.param.Id
+// }
 
-// Optional implements PropertyBoolean.
-func (p *propertyInteger[T]) Optional() bool {
-	return p.param.Optional
-}
-
-// SetOptional implements PropertyBoolean.
-func (p *propertyInteger[T]) SetOptional() {
-	p.param.Optional = true
-}
-
-func (p *propertyInteger[T]) Type() Type {
+func (p *propertyInteger) Type() Type {
 	return INTEGER
 }
 
-func (p *propertyInteger[T]) Default() rusty.Optional[wueste.Literal[T]] {
+func (p *propertyInteger) Default() rusty.Optional[int] {
 	if p.param.Default.IsSome() {
-		lit := wueste.IntegerLiteral(*p.param.Default.Value())
-		return rusty.Some[wueste.Literal[T]](lit)
+		// lit := wueste.IntegerLiteral(*p.param.Default.Value())
+		return rusty.Some[int](*p.param.Default.Value())
 
 	}
-	return rusty.None[wueste.Literal[T]]()
+	return rusty.None[int]()
 }
 
-func (p *propertyInteger[T]) Maximum() rusty.Optional[T] {
+func (p *propertyInteger) Maximum() rusty.Optional[int] {
 	return p.param.Maximum
 }
 
-func (p *propertyInteger[T]) Minimum() rusty.Optional[T] {
+func (p *propertyInteger) Minimum() rusty.Optional[int] {
 	return p.param.Minimum
 }

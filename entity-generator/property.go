@@ -14,12 +14,11 @@ const (
 )
 
 type Property interface {
-	Id() string
+	// Id() string
 	Type() Type
 	Description() rusty.Optional[string]
-	Format() rusty.Optional[string]
-	Optional() bool
-	SetOptional()
+	// Optional() bool
+	// SetOptional()
 }
 
 type PropertyParam struct {
@@ -53,13 +52,13 @@ func (p *property) Type() Type {
 }
 
 // Required implements PropertyString.
-func (p *property) Optional() bool {
-	return p.param.Optional
-}
+// func (p *property) Optional() bool {
+// 	return p.param.Optional
+// }
 
-func (p *property) SetOptional() {
-	p.param.Optional = true
-}
+// func (p *property) SetOptional() {
+// 	p.param.Optional = true
+// }
 
 // Description implements PropertyString.
 func (p *property) Description() rusty.Optional[string] {

@@ -3,10 +3,12 @@ package entity_generator
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"testing"
 
 	"github.com/mabels/wueste/entity-generator/rusty"
 )
@@ -66,22 +68,22 @@ func (l *TestSchemaLoader) Unmarshal(bytes []byte, v interface{}) error {
 	return json.Unmarshal(bytes, v)
 }
 
-var BaseSchema = JSONSchema{
-	FileName:    "base.schema.json",
-	Id:          "http://example.com/base.schema.json",
-	Schema:      "http://json-schema.org/draft-07/schema#",
-	Title:       "Base",
-	Type:        "object",
-	Description: toPtrString("Base description"),
-	Properties: map[string]JSONProperty{
-		"foo": {
-			Type: "string",
+var BaseSchema = JSONProperty{
+	"fileName":    "base.schema.json",
+	"$id":         "http://example.com/base.schema.json",
+	"$schema":     "http://json-schema.org/draft-07/schema#",
+	"title":       "Base",
+	"type":        "object",
+	"description": "Base description",
+	"properties": JSONProperty{
+		"foo": JSONProperty{
+			"type": "string",
 		},
-		"sub": {
-			Ref: toPtrString("file://sub.schema.json"),
+		"sub": JSONProperty{
+			"$ref": "file://sub.schema.json",
 		},
 	},
-	Required: []string{"foo", "sub"},
+	"required": []string{"foo", "sub"},
 }
 
 func JSONBase() []byte {
@@ -89,22 +91,22 @@ func JSONBase() []byte {
 	return out
 }
 
-var SubSchema = JSONSchema{
-	FileName:    "sub.schema.json",
-	Id:          "http://example.com/sub.schema.json",
-	Schema:      "http://json-schema.org/draft-07/schema#",
-	Title:       "Sub",
-	Type:        "object",
-	Description: toPtrString("Sub description"),
-	Properties: map[string]JSONProperty{
-		"sub": {
-			Type: "string",
+var SubSchema = JSONProperty{
+	"fileName":    "sub.schema.json",
+	"$id":         "http://example.com/sub.schema.json",
+	"$schema":     "http://json-schema.org/draft-07/schema#",
+	"title":       "Sub",
+	"type":        "object",
+	"description": "Sub description",
+	"properties": JSONProperty{
+		"sub": JSONProperty{
+			"type": "string",
 		},
-		"sub-down": {
-			Ref: toPtrString("file://sub2.schema.json"),
+		"sub-down": JSONProperty{
+			"$ref": "file://sub2.schema.json",
 		},
 	},
-	Required: []string{"bar", "sub-down"},
+	"required": []string{"bar", "sub-down"},
 }
 
 func JSONSub() []byte {
@@ -112,19 +114,19 @@ func JSONSub() []byte {
 	return out
 }
 
-var Sub2Schema = JSONSchema{
-	FileName:    "sub2.schema.json",
-	Id:          "http://example.com/sub2.schema.json",
-	Schema:      "http://json-schema.org/draft-07/schema#",
-	Title:       "Sub2",
-	Type:        "object",
-	Description: toPtrString("Sub2 description"),
-	Properties: map[string]JSONProperty{
-		"bar": {
-			Type: "string",
+var Sub2Schema = JSONProperty{
+	"fileName":    "sub2.schema.json",
+	"$id":         "http://example.com/sub2.schema.json",
+	"$schema":     "http://json-schema.org/draft-07/schema#",
+	"title":       "Sub2",
+	"type":        "object",
+	"description": "Sub2 description",
+	"properties": JSONProperty{
+		"bar": JSONProperty{
+			"type": "string",
 		},
 	},
-	Required: []string{"bar"},
+	"required": []string{"bar"},
 }
 
 func JSONSub2() []byte {
@@ -133,19 +135,17 @@ func JSONSub2() []byte {
 }
 
 func SchemaSchema(sl SchemaLoader) Property {
-	return NewSchemaBuilder(sl).
-		Id("JsonSchema").
-		Type("object").
-		Title("JsonSchema").
-		Description("JSON Schema").
-		Properties(NewPropertiesBuilder(sl).
-			Add(NewPropertyItem("$id", NewPropertyString(PropertyStringParam{}))).
-			Add(NewPropertyItem("$schema", NewPropertyString(PropertyStringParam{}))).
-			Add(NewPropertyItem("title", NewPropertyString(PropertyStringParam{}))).
-			Add(NewPropertyItem("type", NewPropertyString(PropertyStringParam{}))).
-			Add(NewPropertyItem("properties", NewPropertyObject(PropertyObjectParam{}))).
-			Add(NewPropertyItem("required", NewPropertyArray(PropertyArrayParam{})))).
-		Required([]string{"$id", "$schema", "title", "type", "properties"}).
+	return NewPropertiesBuilder(sl).BuildObject().
+		id("JsonSchema").
+		title("JsonSchema").
+		description("JSON Schema").
+		propertiesAdd(NewPropertyItem("$id", NewPropertyString(PropertyStringParam{}))).
+		propertiesAdd(NewPropertyItem("$schema", NewPropertyString(PropertyStringParam{}))).
+		propertiesAdd(NewPropertyItem("title", NewPropertyString(PropertyStringParam{}))).
+		propertiesAdd(NewPropertyItem("type", NewPropertyString(PropertyStringParam{}))).
+		propertiesAdd(NewPropertyItem("properties", NewPropertyObject(PropertyObjectParam{}))).
+		propertiesAdd(NewPropertyItem("required", NewPropertyArray(PropertyArrayParam{}))).
+		required([]string{"$id", "$schema", "title", "type", "properties"}).
 		Build()
 }
 
@@ -155,118 +155,116 @@ func toPtrString(s string) *string {
 
 func TestJSONSubSchema() JSONProperty {
 	return JSONProperty{
-		JSONSchema: JSONSchema{
-			Id:          "https://Sub",
-			Title:       "Sub",
-			Description: toPtrString("Description"),
-			Properties: map[string]JSONProperty{
-				"Test": {
-					Type: "string",
-				},
-				"opt-Test": {
-					Type: "string",
-				},
+		"$id":         "https://Sub",
+		"title":       "Sub",
+		"description": "Description",
+		"properties": JSONProperty{
+			"Test": JSONProperty{
+				"type": "string",
 			},
-			Required: []string{"Test"},
+			"opt-Test": JSONProperty{
+				"type": "string",
+			},
 		},
-		Type: "object",
+		"required": []string{"Test"},
+		"type":     "object",
 	}
 }
 
-func TestJsonFlatSchema() JSONSchema {
-	json := JSONSchema{
-		Id:          "https://SimpleType",
-		Schema:      "",
-		Title:       "SimpleType",
-		Type:        "object",
-		Description: toPtrString("Jojo SimpleType"),
-		Properties: map[string]JSONProperty{
-			"string": {
-				Type: "string",
+func TestJsonFlatSchema() JSONProperty {
+	json := JSONProperty{
+		"$id": "https://SimpleType",
+		// "$schema":     "",
+		"title":       "SimpleType",
+		"type":        "object",
+		"description": "Jojo SimpleType",
+		"properties": JSONProperty{
+			"string": JSONProperty{
+				"type": "string",
 			},
-			"default-string": {
-				Type:    "string",
-				Default: "hallo",
+			"default-string": JSONProperty{
+				"type":    "string",
+				"default": "hallo",
 			},
-			"optional-string": {
-				Type: "string",
+			"optional-string": JSONProperty{
+				"type": "string",
 			},
-			"optional-default-string": {
-				Type:    "string",
-				Default: "hallo",
+			"optional-default-string": JSONProperty{
+				"type":    "string",
+				"default": "hallo",
 			},
-			"createdAt": {
-				Type:   "string",
-				Format: toPtrString("date-time"),
+			"createdAt": JSONProperty{
+				"type":   "string",
+				"format": "date-time",
 			},
-			"default-createdAt": {
-				Type:    "string",
-				Default: "2023-12-31T23:59:59Z",
-				Format:  toPtrString("date-time"),
+			"default-createdAt": JSONProperty{
+				"type":    "string",
+				"default": "2023-12-31T23:59:59Z",
+				"format":  "date-time",
 			},
-			"optional-createdAt": {
-				Type:   "string",
-				Format: toPtrString("date-time"),
+			"optional-createdAt": JSONProperty{
+				"type":   "string",
+				"format": "date-time",
 			},
-			"optional-default-createdAt": {
-				Type:    "string",
-				Format:  toPtrString("date-time"),
-				Default: "2023-12-31T23:59:59Z",
+			"optional-default-createdAt": JSONProperty{
+				"type":    "string",
+				"format":  "date-time",
+				"default": "2023-12-31T23:59:59Z",
 			},
-			"float64": {
-				Type:   "number",
-				Format: toPtrString("float64"),
+			"float64": JSONProperty{
+				"type": "number",
+				// "format": "float64",
 			},
-			"default-float64": {
-				Type:    "number",
-				Format:  toPtrString("float64"),
-				Default: float64(4711.4),
+			"default-float64": JSONProperty{
+				"type":    "number",
+				"format":  "float32",
+				"default": 4711.4,
 			},
-			"optional-float32": {
-				Type:   "number",
-				Format: toPtrString("float32"),
+			"optional-float32": JSONProperty{
+				"type":   "number",
+				"format": "float32",
 			},
-			"optional-default-float32": {
-				Type:    "number",
-				Default: float32(49.2),
-				Format:  toPtrString("float32"),
+			"optional-default-float32": JSONProperty{
+				"type":    "number",
+				"default": 49.2,
+				"format":  "float32",
 			},
-			"int64": {
-				Type:   "integer",
-				Format: toPtrString("int64"),
+			"int64": JSONProperty{
+				"type":   "integer",
+				"format": "int64",
 			},
-			"default-int64": {
-				Type:    "integer",
-				Default: int64(64),
-				Format:  toPtrString("int64"),
+			"default-int64": JSONProperty{
+				"type":    "integer",
+				"default": 64,
+				"format":  "int64",
 			},
-			"optional-int32": {
-				Type:   "integer",
-				Format: toPtrString("int32"),
+			"optional-int32": JSONProperty{
+				"type":   "integer",
+				"format": "int32",
 			},
-			"optional-default-int32": {
-				Type:    "integer",
-				Default: int32(32),
-				Format:  toPtrString("int32"),
+			"optional-default-int32": JSONProperty{
+				"type":    "integer",
+				"default": 32,
+				"format":  "int32",
 			},
-			"bool": {
-				Type: "boolean",
+			"bool": JSONProperty{
+				"type": "boolean",
 			},
-			"default-bool": {
-				Type:    "boolean",
-				Default: true,
+			"default-bool": JSONProperty{
+				"type":    "boolean",
+				"default": true,
 			},
-			"optional-bool": {
-				Type: "boolean",
+			"optional-bool": JSONProperty{
+				"type": "boolean",
 			},
-			"optional-default-bool": {
-				Type:    "boolean",
-				Default: true,
+			"optional-default-bool": JSONProperty{
+				"type":    "boolean",
+				"default": true,
 			},
 			"sub":     TestJSONSubSchema(),
 			"opt-sub": TestJSONSubSchema(),
 		},
-		Required: []string{
+		"required": []string{
 			"string",
 			"createdAt",
 			"default-string",
@@ -286,60 +284,54 @@ func TestJsonFlatSchema() JSONSchema {
 }
 
 func TestSubSchema(sl SchemaLoader) Property {
-	return NewSchemaBuilder(sl).
-		Id("https://Sub").
-		Title("Sub").
-		Type("object").
-		Description("Description").
-		Properties(NewPropertiesBuilder(sl).
-			Add(NewPropertyItem("Test", NewPropertyString(PropertyStringParam{}))).
-			Add(NewPropertyItem("opt-Test", NewPropertyString(PropertyStringParam{}))).
-			Build()).
-		Required([]string{"Test"}).
+	return NewPropertiesBuilder(sl).BuildObject().
+		id("https://Sub").
+		title("Sub").
+		description("Description").
+		propertiesAdd(NewPropertyItem("Test", NewPropertyString(PropertyStringParam{}))).
+		propertiesAdd(NewPropertyItem("opt-Test", NewPropertyString(PropertyStringParam{}))).
+		required([]string{"Test"}).
 		Build()
 }
 
 func TestFlatSchema(sl SchemaLoader) Property {
-	return NewSchemaBuilder(sl).
-		Id("https://SimpleType").
-		Type("object").
-		Title("SimpleType").
-		Description("Jojo SimpleType").
-		Properties(NewPropertiesBuilder(sl).
-			Add(NewPropertyItem("string", NewPropertyString(PropertyStringParam{}))).
-			Add(NewPropertyItem("default-string", NewPropertyString(PropertyStringParam{Default: rusty.Some("hallo")}))).
-			Add(NewPropertyItem("optional-string", NewPropertyString(PropertyStringParam{}))).
-			Add(NewPropertyItem("optional-default-string", NewPropertyString(PropertyStringParam{Default: rusty.Some("hallo")}))).
-			Add(NewPropertyItem("createdAt", NewPropertyString(PropertyStringParam{
-				Format: rusty.Some("date-time"),
-			}))).
-			Add(NewPropertyItem("default-createdAt", NewPropertyString(PropertyStringParam{
-				Default: rusty.Some("2023-12-31T23:59:59Z"),
-				Format:  rusty.Some("date-time"),
-			}))).
-			Add(NewPropertyItem("optional-createdAt", NewPropertyString(PropertyStringParam{
-				Format: rusty.Some("date-time"),
-			}))).
-			Add(NewPropertyItem("optional-default-createdAt", NewPropertyString(PropertyStringParam{
-				Default: rusty.Some("2023-12-31T23:59:59Z"),
-				Format:  rusty.Some("date-time"),
-			}))).
-			Add(NewPropertyItem("float64", NewPropertyNumber(PropertyNumberParam[float64]{}))).
-			Add(NewPropertyItem("default-float64", NewPropertyNumber(PropertyNumberParam[float64]{Default: rusty.Some(4711.4)}))).
-			Add(NewPropertyItem("optional-float32", NewPropertyNumber(PropertyNumberParam[float32]{}))).
-			Add(NewPropertyItem("optional-default-float32", NewPropertyNumber(PropertyNumberParam[float32]{Default: rusty.Some(float32(49.2))}))).
-			Add(NewPropertyItem("int64", NewPropertyInteger(PropertyIntegerParam[int64]{}))).
-			Add(NewPropertyItem("default-int64", NewPropertyInteger(PropertyIntegerParam[int64]{Default: rusty.Some(int64(64))}))).
-			Add(NewPropertyItem("optional-int32", NewPropertyInteger(PropertyIntegerParam[int32]{}))).
-			Add(NewPropertyItem("optional-default-int32", NewPropertyInteger(PropertyIntegerParam[int32]{Default: rusty.Some(int32(32))}))).
-			Add(NewPropertyItem("bool", NewPropertyBoolean(PropertyBooleanParam{}))).
-			Add(NewPropertyItem("default-bool", NewPropertyBoolean(PropertyBooleanParam{Default: rusty.Some(true)}))).
-			Add(NewPropertyItem("optional-bool", NewPropertyBoolean(PropertyBooleanParam{}))).
-			Add(NewPropertyItem("optional-default-bool", NewPropertyBoolean(PropertyBooleanParam{Default: rusty.Some(true)}))).
-			Add(NewPropertyItem("sub", TestSubSchema(sl))).
-			Add(NewPropertyItem("opt-sub", TestSubSchema(sl))).
-			Build()).
-		Required([]string{
+	return NewPropertiesBuilder(sl).BuildObject().
+		id("https://SimpleType").
+		title("SimpleType").
+		description("Jojo SimpleType").
+		propertiesAdd(NewPropertyItem("string", NewPropertyString(PropertyStringParam{}))).
+		propertiesAdd(NewPropertyItem("default-string", NewPropertyString(PropertyStringParam{Default: rusty.Some("hallo")}))).
+		propertiesAdd(NewPropertyItem("optional-string", NewPropertyString(PropertyStringParam{}))).
+		propertiesAdd(NewPropertyItem("optional-default-string", NewPropertyString(PropertyStringParam{Default: rusty.Some("hallo")}))).
+		propertiesAdd(NewPropertyItem("createdAt", NewPropertyString(PropertyStringParam{
+			Format: rusty.Some("date-time"),
+		}))).
+		propertiesAdd(NewPropertyItem("default-createdAt", NewPropertyString(PropertyStringParam{
+			Default: rusty.Some("2023-12-31T23:59:59Z"),
+			Format:  rusty.Some("date-time"),
+		}))).
+		propertiesAdd(NewPropertyItem("optional-createdAt", NewPropertyString(PropertyStringParam{
+			Format: rusty.Some("date-time"),
+		}))).
+		propertiesAdd(NewPropertyItem("optional-default-createdAt", NewPropertyString(PropertyStringParam{
+			Default: rusty.Some("2023-12-31T23:59:59Z"),
+			Format:  rusty.Some("date-time"),
+		}))).
+		propertiesAdd(NewPropertyItem("float64", NewPropertyNumber(PropertyNumberParam{}))).
+		propertiesAdd(NewPropertyItem("default-float64", NewPropertyNumber(PropertyNumberParam{Default: rusty.Some(4711.4), Format: rusty.Some("float32")}))).
+		propertiesAdd(NewPropertyItem("optional-float32", NewPropertyNumber(PropertyNumberParam{Format: rusty.Some("float32")}))).
+		propertiesAdd(NewPropertyItem("optional-default-float32", NewPropertyNumber(PropertyNumberParam{Default: rusty.Some(49.2)}))).
+		propertiesAdd(NewPropertyItem("int64", NewPropertyInteger(PropertyIntegerParam{}))).
+		propertiesAdd(NewPropertyItem("default-int64", NewPropertyInteger(PropertyIntegerParam{Default: rusty.Some(64)}))).
+		propertiesAdd(NewPropertyItem("optional-int32", NewPropertyInteger(PropertyIntegerParam{Format: rusty.Some("int32")}))).
+		propertiesAdd(NewPropertyItem("optional-default-int32", NewPropertyInteger(PropertyIntegerParam{Default: rusty.Some(32)}))).
+		propertiesAdd(NewPropertyItem("bool", NewPropertyBoolean(PropertyBooleanParam{}))).
+		propertiesAdd(NewPropertyItem("default-bool", NewPropertyBoolean(PropertyBooleanParam{Default: rusty.Some(true)}))).
+		propertiesAdd(NewPropertyItem("optional-bool", NewPropertyBoolean(PropertyBooleanParam{}))).
+		propertiesAdd(NewPropertyItem("optional-default-bool", NewPropertyBoolean(PropertyBooleanParam{Default: rusty.Some(true)}))).
+		propertiesAdd(NewPropertyItem("sub", TestSubSchema(sl))).
+		propertiesAdd(NewPropertyItem("opt-sub", TestSubSchema(sl))).
+		required([]string{
 			"string",
 			"createdAt",
 			"default-string",
@@ -357,55 +349,52 @@ func TestFlatSchema(sl SchemaLoader) Property {
 }
 
 func TestSchema(sl SchemaLoader) Property {
-	ps := NewPropertiesBuilder(sl)
+	ps := NewPropertiesBuilder(sl).BuildObject()
 	fls := TestFlatSchema(sl).(PropertyObject)
-	for _, item := range fls.Properties().Items() {
-		ps.Add(item)
+	for _, item := range fls.Items() {
+		ps.propertiesAdd(item)
 	}
-	return NewSchemaBuilder(sl).
-		Id("https://NestedType").
-		Type("object").
-		Title("NestedType").
-		Description("Jojo NestedType").
-		Properties(ps.
-			Add(NewPropertyItem("arrayarrayBool", NewPropertyArray(PropertyArrayParam{
+	return NewPropertiesBuilder(sl).BuildObject().
+		id("https://NestedType").
+		title("NestedType").
+		description("Jojo NestedType").
+		propertiesAdd(NewPropertyItem("arrayarrayBool", NewPropertyArray(PropertyArrayParam{
+			Items: NewPropertyArray(PropertyArrayParam{
 				Items: NewPropertyArray(PropertyArrayParam{
 					Items: NewPropertyArray(PropertyArrayParam{
-						Items: NewPropertyArray(PropertyArrayParam{
-							Items: NewPropertyBoolean(PropertyBooleanParam{})}),
-					})})}))).
-			Add(NewPropertyItem("opt-arrayarrayBool", NewPropertyArray(PropertyArrayParam{
+						Items: NewPropertyBoolean(PropertyBooleanParam{})}),
+				})})}))).
+		propertiesAdd(NewPropertyItem("opt-arrayarrayBool", NewPropertyArray(PropertyArrayParam{
+			Items: NewPropertyArray(PropertyArrayParam{
 				Items: NewPropertyArray(PropertyArrayParam{
 					Items: NewPropertyArray(PropertyArrayParam{
-						Items: NewPropertyArray(PropertyArrayParam{
-							Items: NewPropertyBoolean(PropertyBooleanParam{})}),
-					})})}))).
-			Add(NewPropertyItem("arrayString", NewPropertyArray(PropertyArrayParam{Items: NewPropertyString(PropertyStringParam{})}))).
-			Add(NewPropertyItem("opt-arrayString", NewPropertyArray(PropertyArrayParam{Items: NewPropertyString(PropertyStringParam{})}))).
-			Add(NewPropertyItem("arrayNumber", NewPropertyArray(PropertyArrayParam{Items: NewPropertyNumber(PropertyNumberParam[float64]{})}))).
-			Add(NewPropertyItem("opt-arrayNumber", NewPropertyArray(PropertyArrayParam{Items: NewPropertyNumber(PropertyNumberParam[float64]{})}))).
-			Add(NewPropertyItem("arrayInteger", NewPropertyArray(PropertyArrayParam{Items: NewPropertyInteger(PropertyIntegerParam[int]{})}))).
-			Add(NewPropertyItem("opt-arrayInteger", NewPropertyArray(PropertyArrayParam{Items: NewPropertyInteger(PropertyIntegerParam[int]{})}))).
-			Add(NewPropertyItem("arrayBool", NewPropertyArray(PropertyArrayParam{Items: NewPropertyBoolean(PropertyBooleanParam{})}))).
-			Add(NewPropertyItem("opt-arrayBool", NewPropertyArray(PropertyArrayParam{Items: NewPropertyBoolean(PropertyBooleanParam{})}))).
-			Add(NewPropertyItem("arrayarrayFlatSchema", NewPropertyArray(PropertyArrayParam{
+						Items: NewPropertyBoolean(PropertyBooleanParam{})}),
+				})})}))).
+		propertiesAdd(NewPropertyItem("arrayString", NewPropertyArray(PropertyArrayParam{Items: NewPropertyString(PropertyStringParam{})}))).
+		propertiesAdd(NewPropertyItem("opt-arrayString", NewPropertyArray(PropertyArrayParam{Items: NewPropertyString(PropertyStringParam{})}))).
+		propertiesAdd(NewPropertyItem("arrayNumber", NewPropertyArray(PropertyArrayParam{Items: NewPropertyNumber(PropertyNumberParam{})}))).
+		propertiesAdd(NewPropertyItem("opt-arrayNumber", NewPropertyArray(PropertyArrayParam{Items: NewPropertyNumber(PropertyNumberParam{})}))).
+		propertiesAdd(NewPropertyItem("arrayInteger", NewPropertyArray(PropertyArrayParam{Items: NewPropertyInteger(PropertyIntegerParam{})}))).
+		propertiesAdd(NewPropertyItem("opt-arrayInteger", NewPropertyArray(PropertyArrayParam{Items: NewPropertyInteger(PropertyIntegerParam{})}))).
+		propertiesAdd(NewPropertyItem("arrayBool", NewPropertyArray(PropertyArrayParam{Items: NewPropertyBoolean(PropertyBooleanParam{})}))).
+		propertiesAdd(NewPropertyItem("opt-arrayBool", NewPropertyArray(PropertyArrayParam{Items: NewPropertyBoolean(PropertyBooleanParam{})}))).
+		propertiesAdd(NewPropertyItem("arrayarrayFlatSchema", NewPropertyArray(PropertyArrayParam{
+			Items: NewPropertyArray(PropertyArrayParam{
 				Items: NewPropertyArray(PropertyArrayParam{
 					Items: NewPropertyArray(PropertyArrayParam{
-						Items: NewPropertyArray(PropertyArrayParam{
-							Items: TestSubSchema(sl)}),
-					})})}))).
-			Add(NewPropertyItem("opt-arrayarrayFlatSchema", NewPropertyArray(PropertyArrayParam{
+						Items: TestSubSchema(sl)}),
+				})})}))).
+		propertiesAdd(NewPropertyItem("opt-arrayarrayFlatSchema", NewPropertyArray(PropertyArrayParam{
+			Items: NewPropertyArray(PropertyArrayParam{
 				Items: NewPropertyArray(PropertyArrayParam{
 					Items: NewPropertyArray(PropertyArrayParam{
-						Items: NewPropertyArray(PropertyArrayParam{
-							Items: TestSubSchema(sl)}),
-					})})}))).
-			Add(NewPropertyItem("sub-flat", TestSubSchema(sl))).
-			Add(NewPropertyItem("opt-sub-flat", TestSubSchema(sl))).
-			Add(NewPropertyItem("arraySubType", NewPropertyArray(PropertyArrayParam{Items: TestSubSchema(sl)}))).
-			Add(NewPropertyItem("opt-arraySubType", NewPropertyArray(PropertyArrayParam{Items: TestSubSchema(sl)}))).
-			Build()).
-		Required(append([]string{
+						Items: TestSubSchema(sl)}),
+				})})}))).
+		propertiesAdd(NewPropertyItem("sub-flat", TestSubSchema(sl))).
+		propertiesAdd(NewPropertyItem("opt-sub-flat", TestSubSchema(sl))).
+		propertiesAdd(NewPropertyItem("arraySubType", NewPropertyArray(PropertyArrayParam{Items: TestSubSchema(sl)}))).
+		propertiesAdd(NewPropertyItem("opt-arraySubType", NewPropertyArray(PropertyArrayParam{Items: TestSubSchema(sl)}))).
+		required(append([]string{
 			"arrayarrayBool",
 			"sub",
 			"arrayString",
@@ -424,4 +413,44 @@ func WriteTestSchema(cfg *GeneratorConfig) string {
 	os.WriteFile(schemaFile, bytes, 0644)
 	fmt.Println("Wrote schema to -> ", schemaFile)
 	return schemaFile
+}
+
+func TestXxx(tx *testing.T) {
+	dec := json.NewDecoder(strings.NewReader(`{
+		"doof": "doof",
+		"type": "object",
+		"properties": {
+			"xxxx": {
+				"type": "string"
+			}
+		},
+	}`))
+
+	// read open bracket
+	t, err := dec.Token()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%T: %v\n", t, t)
+
+	// while the array contains values
+	for dec.More() {
+		var m struct {
+			Type string `json:"type"`
+		}
+		// decode an array value (Message)
+		err := dec.Decode(&m)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%v\n", m.Type)
+	}
+
+	// read closing bracket
+	t, err = dec.Token()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%T: %v\n", t, t)
+
 }

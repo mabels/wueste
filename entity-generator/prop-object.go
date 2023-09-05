@@ -1,22 +1,17 @@
 package entity_generator
 
 import (
-	"fmt"
-	"path"
-	"strconv"
-	"strings"
+	"sort"
 
 	"github.com/mabels/wueste/entity-generator/rusty"
 )
 
 type PropertyItem interface {
-	Property() Property
+	Property() any
+	Optional() bool
 	// SetOrder(order int)
 	// Order() int
 	Name() string
-}
-type PropertiesObject interface {
-	Items() []PropertyItem
 }
 
 type PropertyObject interface {
@@ -29,343 +24,246 @@ type PropertyObject interface {
 	Description() rusty.Optional[string]
 	FileName() string
 
-	Properties() PropertiesObject
+	Properties() any
+	Items() []PropertyItem
 	Required() []string
 	// Deref() map[string]PropertyItem
 }
 
-type SchemaBuilder struct {
-	id          string
-	fileName    string
-	typ         Type
-	title       string
-	schema      string
-	format      *string
-	ref         *string
-	description *string
-	properties  PropertiesObject
-	required    []string
-	// derefs      map[string]PropertyItem
-	__loader SchemaLoader
-}
+// type SchemaBuilder struct {
+// 	id          string
+// 	fileName    string
+// 	typ         Type
+// 	title       string
+// 	schema      string
+// 	format      *string
+// 	ref         *string
+// 	description *string
+// 	properties  PropertiesObject
+// 	required    []string
+// 	// derefs      map[string]PropertyItem
+// 	__loader SchemaLoader
+// }
 
-func NewSchemaBuilder(loader SchemaLoader) *SchemaBuilder {
-	return &SchemaBuilder{
-		// derefs:   map[string]PropertyItem{},
-		__loader: loader,
-	}
-}
+// func NewSchemaBuilder(loader SchemaLoader) *SchemaBuilder {
+// 	return &SchemaBuilder{
+// 		// derefs:   map[string]PropertyItem{},
+// 		__loader: loader,
+// 	}
+// }
 
-func (b *SchemaBuilder) ResolveRef(v *JSONProperty) (*JSONProperty, error) {
-	if v.Ref != nil {
-		ref := strings.TrimSpace(*v.Ref)
-		if ref[0] == '#' {
-			return nil, fmt.Errorf("local ref not supported")
-		}
-		if !strings.HasPrefix(ref, "file://") {
-			return nil, fmt.Errorf("only file:// ref supported")
-		}
-		fname := ref[len("file://"):]
-		if !strings.HasSuffix(fname, "/") {
-			var err error
-			fname, err = b.__loader.Abs(path.Join(path.Dir(b.fileName), fname))
-			if err != nil {
-				return nil, err
-			}
-		}
-		pl, err := LoadSchema(fname, b.__loader)
-		if err != nil {
-			return nil, err
-		}
-		p := pl.(PropertyObject)
-		// pref := b.__loader.SchemaRegistry().AddSchema(po)
+// func (b *SchemaBuilder) ResolveRef(v *JSONProperty) (*JSONProperty, error) {
+// 	if v.Ref != nil {
+// 		ref := strings.TrimSpace(*v.Ref)
+// 		if ref[0] == '#' {
+// 			return nil, fmt.Errorf("local ref not supported")
+// 		}
+// 		if !strings.HasPrefix(ref, "file://") {
+// 			return nil, fmt.Errorf("only file:// ref supported")
+// 		}
+// 		fname := ref[len("file://"):]
+// 		if !strings.HasSuffix(fname, "/") {
+// 			var err error
+// 			fname, err = b.__loader.Abs(path.Join(path.Dir(b.fileName), fname))
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 		}
+// 		pl, err := LoadSchema(fname, b.__loader)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		p := pl.(PropertyObject)
+// 		// pref := b.__loader.SchemaRegistry().AddSchema(po)
 
-		// p := pref.Property().(PropertyObject)
-		myv := JSONProperty{}
-		myv.FileName = fname
-		myv.Id = p.Id()
-		myv.Schema = p.Schema()
-		myv.Title = p.Title()
-		myv.Type = p.Type()
-		myv.Description = rusty.OptionalToPtr(p.Description())
-		myv.Properties = PropertiesToJson(p.Properties())
-		myv.Required = p.Required()
-		myv.Ref = rusty.OptionalToPtr(p.Ref())
-		return &myv, nil
-	} else if v.Type == "object" && v.Properties != nil {
-		// register schema
-		NewSchemaBuilder(b.__loader).JSON2PropertyObject(v.JSONSchema).Build()
-	}
-	return v, nil
-}
+// 		// p := pref.Property().(PropertyObject)
+// 		myv := JSONProperty{}
+// 		myv.FileName = fname
+// 		myv.Id = p.Id()
+// 		myv.Schema = p.Schema()
+// 		myv.Title = p.Title()
+// 		myv.Type = p.Type()
+// 		myv.Description = rusty.OptionalToPtr(p.Description())
+// 		myv.Properties = PropertiesToJson(p.Properties())
+// 		myv.Required = p.Required()
+// 		myv.Ref = rusty.OptionalToPtr(p.Ref())
+// 		return &myv, nil
+// 	} else if v.Type == "object" && v.Properties != nil {
+// 		// register schema
+// 		NewSchemaBuilder(b.__loader).JSON2PropertyObject(v.JSONSchema).Build()
+// 	}
+// 	return v, nil
+// }
 
-func coerceString(v interface{}) rusty.Optional[string] {
-	if v != nil {
-		switch v.(type) {
-		case string:
-			return rusty.Some[string](v.(string))
-		case bool:
-			val := v.(bool)
-			if val {
-				return rusty.Some[string]("true")
-			} else {
-				return rusty.Some[string]("false")
-			}
-		case int, int8, int16, int32, int64, float32, float64:
-			return rusty.Some[string](fmt.Sprintf("%v", v))
-		default:
-			panic(fmt.Errorf("unknown type %T", v))
-		}
-	}
-	return rusty.None[string]()
+// func addJSONProperty(v *JSONProperty, loader SchemaLoader) Property {
+// 	switch v.Type {
+// 	case "string":
+// 		p := PropertyStringParam{
+// 			PropertyParam: PropertyParam{
+// 				Type: v.Type,
+// 			},
+// 		}
+// 		p.Default = coerceString(v.Default)
+// 		if v.Format != nil {
+// 			p.Format = rusty.Some(*v.Format)
+// 		}
+// 		return NewPropertyString(p)
+// 	case "number":
+// 		if v.Format == nil {
+// 			panic("number format is required")
+// 		}
+// 		switch *v.Format {
+// 		case "float32":
+// 			p := PropertyNumberParam[float32]{
+// 				Format: rusty.Some("float32"),
+// 				Type:   v.Type,
+// 			}
+// 			p.Default = coerceFloat32(v.Default)
+// 			return NewPropertyNumber(p)
+// 		case "float64":
+// 			p := PropertyNumberParam[float64]{
+// 				Format: rusty.Some("float64"),
+// 				Type:   v.Type,
+// 			}
+// 			p.Default = coerceFloat64(v.Default)
+// 			return NewPropertyNumber(p)
+// 		default:
+// 			panic("unknown format")
+// 		}
+// 	case "integer":
+// 		switch *v.Format {
+// 		case "int":
+// 			p := PropertyIntegerParam[int]{
+// 				Format: rusty.Some("int"),
+// 				Type:   v.Type,
+// 			}
+// 			p.Default = coerceInt(v.Default)
+// 			return NewPropertyInteger(p)
+// 		case "int8":
+// 			p := PropertyIntegerParam[int8]{
+// 				Format: rusty.Some("int8"),
+// 				Type:   v.Type,
+// 			}
+// 			p.Default = coerceInt8(v.Default)
+// 			return NewPropertyInteger(p)
+// 		case "int16":
+// 			p := PropertyIntegerParam[int16]{
+// 				Format: rusty.Some("int16"),
+// 				Type:   v.Type,
+// 			}
+// 			p.Default = coerceInt16(v.Default)
+// 			return NewPropertyInteger(p)
+// 		case "int32":
+// 			p := PropertyIntegerParam[int32]{
+// 				Format: rusty.Some("int32"),
+// 				Type:   v.Type,
+// 			}
+// 			p.Default = coerceInt32(v.Default)
+// 			return NewPropertyInteger(p)
+// 		case "int64":
+// 			p := PropertyIntegerParam[int64]{
+// 				Format: rusty.Some("int64"),
+// 				Type:   v.Type,
+// 			}
+// 			p.Default = coerceInt64(v.Default)
+// 			return NewPropertyInteger(p)
+// 		default:
+// 			panic("unknown format")
+// 		}
+// 	case "boolean":
+// 		p := PropertyBooleanParam{
+// 			Type: v.Type,
+// 		}
+// 		p.Default = coerceBool(v.Default)
+// 		return NewPropertyBoolean(p)
+// 	case "object":
+// 		return NewPropertyObject(PropertyObjectParam{
+// 			FileName:    v.FileName,
+// 			Id:          v.Id,
+// 			Title:       v.Title,
+// 			Schema:      v.Schema,
+// 			Description: rusty.OptionalFromPtr(v.Description),
+// 			Properties:  NewPropertiesBuilder(loader).FromJson(v.Properties, v.Required).Build(),
+// 			Required:    v.Required,
+// 			Ref:         rusty.OptionalFromPtr(v.Ref),
+// 		})
+// 	default:
+// 		panic("unknown type")
+// 	}
+// }
 
-}
-func coerceBool(v interface{}) rusty.Optional[bool] {
-	if v != nil {
-		switch v.(type) {
-		case string:
-			val := strings.ToLower(v.(string))
-			if val == "true" || val == "on" || val == "yes" {
-				return rusty.Some[bool](true)
-			}
-			return rusty.Some[bool](false)
-		case bool:
-			val := v.(bool)
-			return rusty.Some[bool](val)
-		case int, int8, int16, int32, int64, float32, float64:
-			val := coerceInt(v)
-			if val.IsNone() {
-				return rusty.None[bool]()
-			}
-			return rusty.Some[bool](*val.Value() != 0)
-		default:
-			panic(fmt.Errorf("unknown type %T", v))
-		}
+// func (b *SchemaBuilder) JSON2PropertyObject(js JSONSchema) *SchemaBuilder {
+// 	x := b.Id(js.Id).
+// 		FileName(js.FileName).
+// 		Type(js.Type).
+// 		Title(js.Title).
+// 		Required(js.Required)
+// 	if js.Description != nil {
+// 		x.Description(*js.Description)
+// 	}
+// 	pb := NewPropertiesBuilder(b.__loader)
+// 	for k, vin := range js.Properties {
+// 		v, err := x.ResolveRef(&vin)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		pb.Add(NewPropertyItem(k, addJSONProperty(v, b.__loader)))
+// 	}
+// 	x.Properties(pb.Build())
+// 	return x
+// }
 
-	}
-	return rusty.None[bool]()
-}
+// func (b *SchemaBuilder) Id(id string) *SchemaBuilder {
+// 	b.id = id
+// 	return b
+// }
 
-func coerceNumber[T int | int8 | int16 | int32 | int64 | float32 | float64](v interface{}) rusty.Optional[T] {
-	if v != nil {
-		switch v.(type) {
-		case string:
-			f, err := strconv.ParseFloat(v.(string), 8)
-			if err != nil {
-				return rusty.None[T]()
-			}
-			return rusty.Some[T](T(f))
-		case int:
-			return rusty.Some[T](T(v.(int)))
-		case int8:
-			return rusty.Some[T](T(v.(int8)))
-		case int16:
-			return rusty.Some[T](T(v.(int16)))
-		case int32:
-			return rusty.Some[T](T(v.(int32)))
-		case int64:
-			return rusty.Some[T](T(v.(int64)))
-		case float32:
-			return rusty.Some[T](T(v.(float32)))
-		case float64:
-			return rusty.Some[T](T(v.(float64)))
-		default:
-			panic(fmt.Errorf("unknown type %T", v))
-		}
-	}
-	return rusty.None[T]()
-}
-func coerceInt(v interface{}) rusty.Optional[int] {
-	return coerceNumber[int](v)
-}
-func coerceInt8(v interface{}) rusty.Optional[int8] {
-	return coerceNumber[int8](v)
-}
-func coerceInt16(v interface{}) rusty.Optional[int16] {
-	return coerceNumber[int16](v)
-}
-func coerceInt32(v interface{}) rusty.Optional[int32] {
-	return coerceNumber[int32](v)
-}
-func coerceInt64(v interface{}) rusty.Optional[int64] {
-	return coerceNumber[int64](v)
-}
-func coerceFloat32(v interface{}) rusty.Optional[float32] {
-	return coerceNumber[float32](v)
-}
-func coerceFloat64(v interface{}) rusty.Optional[float64] {
-	return coerceNumber[float64](v)
-}
+// func (b *SchemaBuilder) FileName(fname string) *SchemaBuilder {
+// 	b.fileName = fname
+// 	return b
+// }
 
-func addJSONProperty(v *JSONProperty, loader SchemaLoader) Property {
-	switch v.Type {
-	case "string":
-		p := PropertyStringParam{
-			PropertyParam: PropertyParam{
-				Type: v.Type,
-			},
-		}
-		p.Default = coerceString(v.Default)
-		if v.Format != nil {
-			p.Format = rusty.Some(*v.Format)
-		}
-		return NewPropertyString(p)
-	case "number":
-		if v.Format == nil {
-			panic("number format is required")
-		}
-		switch *v.Format {
-		case "float32":
-			p := PropertyNumberParam[float32]{
-				Format: rusty.Some("float32"),
-				Type:   v.Type,
-			}
-			p.Default = coerceFloat32(v.Default)
-			return NewPropertyNumber(p)
-		case "float64":
-			p := PropertyNumberParam[float64]{
-				Format: rusty.Some("float64"),
-				Type:   v.Type,
-			}
-			p.Default = coerceFloat64(v.Default)
-			return NewPropertyNumber(p)
-		default:
-			panic("unknown format")
-		}
-	case "integer":
-		switch *v.Format {
-		case "int":
-			p := PropertyIntegerParam[int]{
-				Format: rusty.Some("int"),
-				Type:   v.Type,
-			}
-			p.Default = coerceInt(v.Default)
-			return NewPropertyInteger(p)
-		case "int8":
-			p := PropertyIntegerParam[int8]{
-				Format: rusty.Some("int8"),
-				Type:   v.Type,
-			}
-			p.Default = coerceInt8(v.Default)
-			return NewPropertyInteger(p)
-		case "int16":
-			p := PropertyIntegerParam[int16]{
-				Format: rusty.Some("int16"),
-				Type:   v.Type,
-			}
-			p.Default = coerceInt16(v.Default)
-			return NewPropertyInteger(p)
-		case "int32":
-			p := PropertyIntegerParam[int32]{
-				Format: rusty.Some("int32"),
-				Type:   v.Type,
-			}
-			p.Default = coerceInt32(v.Default)
-			return NewPropertyInteger(p)
-		case "int64":
-			p := PropertyIntegerParam[int64]{
-				Format: rusty.Some("int64"),
-				Type:   v.Type,
-			}
-			p.Default = coerceInt64(v.Default)
-			return NewPropertyInteger(p)
-		default:
-			panic("unknown format")
-		}
-	case "boolean":
-		p := PropertyBooleanParam{
-			Type: v.Type,
-		}
-		p.Default = coerceBool(v.Default)
-		return NewPropertyBoolean(p)
-	case "object":
-		return NewPropertyObject(PropertyObjectParam{
-			FileName:    v.FileName,
-			Id:          v.Id,
-			Title:       v.Title,
-			Schema:      v.Schema,
-			Description: rusty.OptionalFromPtr(v.Description),
-			Properties:  NewPropertiesBuilder(loader).FromJson(v.Properties, v.Required).Build(),
-			Required:    v.Required,
-			Ref:         rusty.OptionalFromPtr(v.Ref),
-		})
-	default:
-		panic("unknown type")
-	}
-}
+// func (b *SchemaBuilder) Type(_type Type) *SchemaBuilder {
+// 	b.typ = _type
+// 	return b
+// }
 
-func (b *SchemaBuilder) JSON2PropertyObject(js JSONSchema) *SchemaBuilder {
-	x := b.Id(js.Id).
-		FileName(js.FileName).
-		Type(js.Type).
-		Title(js.Title).
-		Required(js.Required)
-	if js.Description != nil {
-		x.Description(*js.Description)
-	}
-	pb := NewPropertiesBuilder(b.__loader)
-	for k, vin := range js.Properties {
-		v, err := x.ResolveRef(&vin)
-		if err != nil {
-			panic(err)
-		}
-		pb.Add(NewPropertyItem(k, addJSONProperty(v, b.__loader)))
-	}
-	x.Properties(pb.Build())
-	return x
-}
+// func (b *SchemaBuilder) Schema(_schema string) *SchemaBuilder {
+// 	b.schema = _schema
+// 	return b
+// }
 
-func (b *SchemaBuilder) Id(id string) *SchemaBuilder {
-	b.id = id
-	return b
-}
+// func (b *SchemaBuilder) Title(title string) *SchemaBuilder {
+// 	b.title = title
+// 	return b
+// }
 
-func (b *SchemaBuilder) FileName(fname string) *SchemaBuilder {
-	b.fileName = fname
-	return b
-}
+// func (b *SchemaBuilder) Description(description string) *SchemaBuilder {
+// 	b.description = &description
+// 	return b
+// }
 
-func (b *SchemaBuilder) Type(_type Type) *SchemaBuilder {
-	b.typ = _type
-	return b
-}
+// func (b *SchemaBuilder) Properties(properties PropertiesObject) *SchemaBuilder {
+// 	b.properties = properties
+// 	return b
+// }
 
-func (b *SchemaBuilder) Schema(_schema string) *SchemaBuilder {
-	b.schema = _schema
-	return b
-}
-
-func (b *SchemaBuilder) Title(title string) *SchemaBuilder {
-	b.title = title
-	return b
-}
-
-func (b *SchemaBuilder) Description(description string) *SchemaBuilder {
-	b.description = &description
-	return b
-}
-
-func (b *SchemaBuilder) Properties(properties PropertiesObject) *SchemaBuilder {
-	b.properties = properties
-	return b
-}
-
-func (b *SchemaBuilder) Required(required []string) *SchemaBuilder {
-	b.required = required
-	return b
-}
+// func (b *SchemaBuilder) Required(required []string) *SchemaBuilder {
+// 	b.required = required
+// 	return b
+// }
 
 type propertyObject struct {
-	id          string
-	_type       Type
-	fileName    string
-	schema      string
-	optional    bool
+	id       string
+	_type    Type
+	fileName string
+	schema   string
+	// optional    bool
 	title       string
 	format      rusty.Optional[string]
 	description rusty.Optional[string]
 	ref         rusty.Optional[string]
-	properties  PropertiesObject
+	properties  map[string]any
 	required    []string
 	// deref       map[string]PropertyItem
 }
@@ -403,7 +301,7 @@ func (s *propertyObject) Ref() rusty.Optional[string] {
 }
 
 // Properties implements Schema.
-func (s *propertyObject) Properties() PropertiesObject {
+func (s *propertyObject) Properties() any {
 	return s.properties
 }
 
@@ -422,54 +320,167 @@ func (s *propertyObject) Type() string {
 	return s._type
 }
 
-func (s *propertyObject) Optional() bool {
-	return s.optional
+func (s *propertyObject) Items() []PropertyItem {
+	items := make([]PropertyItem, 0, len(s.properties))
+	for k, v := range s.properties {
+		items = append(items, NewPropertyItem(k, v, isOptional(k, s.required)))
+	}
+	return items
 }
 
-func (s *propertyObject) SetOptional() {
-	s.optional = true
-}
-
-func (b *SchemaBuilder) Build() Property {
-	requiredMap := make(map[string]bool)
-	for _, v := range b.required {
-		requiredMap[v] = true
-	}
-	for _, v := range b.properties.Items() {
-		_, found := requiredMap[v.Name()]
-		if !found {
-			v.Property().SetOptional()
-		}
-	}
-	// desc := rusty.None[string]()
-	// if b.description != nil {
-	// 	desc = rusty.Some[string](*b.description)
-	// }
-	ret := &propertyObject{
-		id:          b.id,
-		fileName:    b.fileName,
-		format:      rusty.OptionalFromPtr(b.format),
-		_type:       b.typ,
-		title:       b.title,
-		description: rusty.OptionalFromPtr(b.description),
-		properties:  b.properties,
-		required:    b.required,
-		ref:         rusty.OptionalFromPtr(b.ref),
-		// deref:       b.deref,
-	}
-	b.__loader.SchemaRegistry().AddSchema(ret)
-	return ret
-}
+// func (b *SchemaBuilder) Build() Property {
+// 	requiredMap := make(map[string]bool)
+// 	for _, v := range b.required {
+// 		requiredMap[v] = true
+// 	}
+// 	for _, v := range b.properties.Items() {
+// 		_, found := requiredMap[v.Name()]
+// 		if !found {
+// 			panic("setOptional not found")
+// 			// v.Property().SetOptional()
+// 		}
+// 	}
+// 	// desc := rusty.None[string]()
+// 	// if b.description != nil {
+// 	// 	desc = rusty.Some[string](*b.description)
+// 	// }
+// 	ret := &propertyObject{
+// 		id:          b.id,
+// 		fileName:    b.fileName,
+// 		format:      rusty.OptionalFromPtr(b.format),
+// 		_type:       b.typ,
+// 		title:       b.title,
+// 		description: rusty.OptionalFromPtr(b.description),
+// 		properties:  b.properties,
+// 		required:    b.required,
+// 		ref:         rusty.OptionalFromPtr(b.ref),
+// 		// deref:       b.deref,
+// 	}
+// 	b.__loader.SchemaRegistry().AddSchema(ret)
+// 	return ret
+// }
 
 type PropertyObjectParam struct {
-	FileName    string
-	Id          string
-	Title       string
-	Schema      string
+	__loader    SchemaLoader
+	items       []PropertyItem
+	Type        Type
 	Description rusty.Optional[string]
-	Properties  PropertiesObject
-	Required    []string
-	Ref         rusty.Optional[string]
+
+	FileName   string
+	Id         string
+	Title      string
+	Schema     string
+	Properties map[string]any // PropertiesObject
+	Required   []string
+	Ref        rusty.Optional[string]
+}
+
+func (b *PropertyObjectParam) propertiesAdd(property PropertyItem) *PropertyObjectParam {
+	// property.SetOrder(len(b.items))
+	if b.Properties == nil {
+		b.Properties = map[string]any{}
+	}
+	b.Properties[property.Name()] = property.Property()
+	if b.Required == nil {
+		b.Required = []string{}
+	}
+	if !property.Optional() {
+		b.Required = append(b.Required, property.Name())
+	}
+	return b
+}
+
+func (b *PropertyObjectParam) fileName(fnam string) *PropertyObjectParam {
+	b.FileName = fnam
+	return b
+}
+
+func (p *PropertyObjectParam) Items() []PropertyItem {
+	sort.Slice(p.items, func(i, j int) bool {
+		return p.items[i].Name() < p.items[j].Name()
+	})
+	return p.items
+}
+
+func (p *PropertyObjectParam) description(id string) *PropertyObjectParam {
+	p.Description = rusty.Some(id)
+	return p
+}
+
+// func (p *PropertyObjectParam) properties(property map[string]any) *PropertyObjectParam {
+// 	p.Properties = property
+// 	return p
+// }
+
+func (p *PropertyObjectParam) id(id string) *PropertyObjectParam {
+	p.Id = id
+	return p
+}
+
+func (p *PropertyObjectParam) title(title string) *PropertyObjectParam {
+	p.Title = title
+	return p
+}
+
+func (p *PropertyObjectParam) schema(schema string) *PropertyObjectParam {
+	p.Schema = schema
+	return p
+}
+
+func (p *PropertyObjectParam) required(required []string) *PropertyObjectParam {
+	p.Required = required
+	return p
+}
+
+func (p *PropertyObjectParam) ref(ref string) *PropertyObjectParam {
+	p.Ref = rusty.Some(ref)
+	return p
+}
+
+func (b *PropertyObjectParam) FromJson(js JSONProperty) *PropertyObjectParam {
+	b.Type = OBJECT
+	b.FileName = getFromAttributeString(js, "fileName")
+	b.Id = getFromAttributeString(js, "$id")
+	b.Title = getFromAttributeString(js, "title")
+	b.Schema = getFromAttributeString(js, "$schema")
+	b.Description = getFromAttributeOptionalString(js, "description")
+	b.Properties = map[string]any{}
+	properties, found := js["properties"]
+	if found {
+		for k, v := range properties.(JSONProperty) {
+			b.Properties[k] = NewPropertiesBuilder(b.__loader).FromJson(v.(JSONProperty)).Build()
+		}
+	}
+	b.Required = js["required"].([]string)
+	b.Ref = getFromAttributeOptionalString(js, "$ref")
+	return b
+}
+
+func PropertyObjectToJson(b PropertyObject) JSONProperty {
+	jsp := JSONProperty{}
+	jsp.setString("type", b.Type())
+	if b.FileName() != "" {
+		jsp.setString("fileName", b.FileName())
+	}
+	jsp.setString("$id", b.Id())
+	jsp.setString("title", b.Title())
+	if b.Schema() != "" {
+		jsp.setString("$schema", b.Schema())
+	}
+	jsp.setOptionalString("description", b.Description())
+	props := JSONProperty{}
+	items := b.Items()
+	for _, v := range items {
+		props[v.Name()] = PropertyToJson(v.Property())
+	}
+	jsp["properties"] = props
+	jsp["required"] = b.Required()
+	jsp.setOptionalString("$ref", b.Ref())
+	return jsp
+}
+
+func (p *PropertyObjectParam) Build() PropertyObject {
+	return NewPropertyObject(*p)
 }
 
 func NewPropertyObject(p PropertyObjectParam) PropertyObject {

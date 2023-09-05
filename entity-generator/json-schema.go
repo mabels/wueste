@@ -5,142 +5,235 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/mabels/wueste/entity-generator/rusty"
 )
 
-type JSONProperty struct {
-	JSONSchema
-	Type    string      `json:"type,omitempty"`
-	Format  *string     `json:"format,omitempty"`
-	Default interface{} `json:"default,omitempty"`
-	Minimum interface{} `json:"minimum,omitempty"`
-	Maximum interface{} `json:"maximum,omitempty"`
-	Ref     *string     `json:"$ref,omitempty"`
-}
+// type JSONProperty struct {
+// 	JSONSchema
+// 	Type    string      `json:"type,omitempty"`
+// 	Format  *string     `json:"format,omitempty"`
+// 	Default interface{} `json:"default,omitempty"`
+// 	Minimum interface{} `json:"minimum,omitempty"`
+// 	Maximum interface{} `json:"maximum,omitempty"`
+// 	Ref     *string     `json:"$ref,omitempty"`
+// }
 
-type JSONProperties map[string]JSONProperty
+// type JSONPropertyString struct {
+// 	Type    string      `json:"type,omitempty"`
+// 	Format  *string     `json:"format,omitempty"`
+// 	Default interface{} `json:"default,omitempty"`
+// 	Ref     *string     `json:"$ref,omitempty"`
+// }
 
-type JSONSchema struct {
-	FileName    string         `json:"$fileName,omitempty"`
-	Id          string         `json:"$id,omitempty"`
-	Schema      string         `json:"$schema,omitempty"`
-	Title       string         `json:"title"`
-	Type        string         `json:"type"`
-	Description *string        `json:"description,omitempty"`
-	Properties  JSONProperties `json:"properties,omitempty"`
-	Required    []string       `json:"required,omitempty"`
-	// Deref       map[string]JSONSchema `json:"deref"`
-}
+// type JSONProperties map[string]JSONProperty
 
-func PropertiesToJson(props PropertiesObject) JSONProperties {
-	ret := JSONProperties{}
-	for _, p := range props.Items() {
+// type JSONSchema struct {
+// 	FileName    string         `json:"$fileName,omitempty"`
+// 	Id          string         `json:"$id,omitempty"`
+// 	Schema      string         `json:"$schema,omitempty"`
+// 	Title       string         `json:"title"`
+// 	Type        string         `json:"type"`
+// 	Description *string        `json:"description,omitempty"`
+// 	Properties  JSONProperties `json:"properties,omitempty"`
+// 	Required    []string       `json:"required,omitempty"`
+// 	Ref         *string        `json:"$ref,omitempty"`
+// 	// Deref       map[string]JSONSchema `json:"deref"`
+// }
 
-		jsp := JSONProperty{
-			Type: p.Property().Type(),
-		}
-		switch p.Property().Type() {
-		case "string":
-			p := p.Property().(PropertyString)
-			if p.Format().IsSome() {
-				jsp.Format = p.Format().Value()
-			}
-			if p.Default().IsSome() {
-				jsp.Default = p.Default().Value()
-			}
-		case "boolean":
-			p := p.Property().(PropertyBoolean)
-			if p.Default().IsSome() {
-				jsp.Default = p.Default().Value()
-			}
-		case "integer":
-			switch p.Property().(type) {
-			case PropertyInteger[int]:
-				p := p.Property().(PropertyInteger[int])
-				jsp.Format = toPtrString("int")
-				if p.Default().IsSome() {
-					jsp.Default = p.Default().Value()
-				}
-			case PropertyInteger[int8]:
-				p := p.Property().(PropertyInteger[int8])
-				jsp.Format = toPtrString("int8")
-				if p.Default().IsSome() {
-					jsp.Default = p.Default().Value()
-				}
-			case PropertyInteger[int16]:
-				p := p.Property().(PropertyInteger[int16])
-				jsp.Format = toPtrString("int16")
-				if p.Default().IsSome() {
-					jsp.Default = p.Default().Value()
-				}
-			case PropertyInteger[int32]:
-				p := p.Property().(PropertyInteger[int32])
-				jsp.Format = toPtrString("int32")
-				if p.Default().IsSome() {
-					jsp.Default = p.Default().Value()
-				}
-			case PropertyInteger[int64]:
-				p := p.Property().(PropertyInteger[int64])
-				jsp.Format = toPtrString("int64")
-				if p.Default().IsSome() {
-					jsp.Default = p.Default().Value()
-				}
-			default:
-				panic("integer unknown type: " + p.Property().Type())
-			}
-		case "number":
-			switch p.Property().(type) {
-			case PropertyNumber[float64]:
-				p := p.Property().(*propertyNumber[float64])
-				jsp.Format = toPtrString("float64")
-				if p.Default().IsSome() {
-					jsp.Default = p.Default().Value()
-				}
-			case PropertyNumber[float32]:
-				p := p.Property().(*propertyNumber[float32])
-				jsp.Format = toPtrString("float32")
-				if p.Default().IsSome() {
-					jsp.Default = p.Default().Value()
-				}
-			default:
-				panic("number unknown type: " + p.Property().Type())
-			}
-		case "object":
-			p := p.Property().(PropertyObject)
-			jsp.Id = p.Id()
-			jsp.Title = p.Title()
-			jsp.Schema = p.Schema()
-			jsp.FileName = p.FileName()
-			jsp.Description = rusty.OptionalToPtr(p.Description())
-			jsp.Properties = PropertiesToJson(p.Properties())
-			jsp.Required = p.Required()
-			jsp.Ref = rusty.OptionalToPtr(p.Ref())
-		default:
-			panic("unknown type: " + p.Property().Type())
-		}
-		ret[p.Name()] = jsp
-	}
-	return ret
-}
+// type JSONPropertyObject struct {
+// 	Type        string  `json:"type"`
+// 	Description *string `json:"description,omitempty"`
 
-func JSONFromProperty(prop PropertyObject) JSONSchema {
-	ret := JSONSchema{
-		Id:         prop.Id(),
-		Type:       prop.Type(),
-		Title:      prop.Title(),
-		Properties: JSONProperties{},
-	}
-	if prop.Description().IsSome() {
-		ret.Description = prop.Description().Value()
-	}
+// 	FileName   string         `json:"$fileName,omitempty"`
+// 	Id         string         `json:"$id,omitempty"`
+// 	Schema     string         `json:"$schema,omitempty"`
+// 	Title      string         `json:"title"`
+// 	Properties JSONProperties `json:"properties,omitempty"`
+// 	Required   []string       `json:"required,omitempty"`
+// 	// Deref       map[string]JSONSchema `json:"deref"`
+// }
 
-	ret.Properties = PropertiesToJson(prop.Properties())
+// func PropertiesToJson(props PropertiesObject) JSONProperties {
+// 	ret := JSONProperties{}
+// 	for _, p := range props.Items() {
 
-	ret.Required = prop.Required()
+// 		jsp := JSONProperty{
+// 			Type: p.Property().Type(),
+// 		}
+// 		switch p.Property().Type() {
+// 		case "string":
+// 			p := p.Property().(PropertyString)
+// 			if p.Format().IsSome() {
+// 				jsp.Format = p.Format().Value()
+// 			}
+// 			if p.Default().IsSome() {
+// 				jsp.Default = p.Default().Value()
+// 			}
+// 		case "boolean":
+// 			p := p.Property().(PropertyBoolean)
+// 			if p.Default().IsSome() {
+// 				jsp.Default = p.Default().Value()
+// 			}
+// 		case "integer":
+// 			switch p.Property().(type) {
+// 			case PropertyInteger[int]:
+// 				p := p.Property().(PropertyInteger[int])
+// 				jsp.Format = toPtrString("int")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			case PropertyInteger[int8]:
+// 				p := p.Property().(PropertyInteger[int8])
+// 				jsp.Format = toPtrString("int8")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			case PropertyInteger[int16]:
+// 				p := p.Property().(PropertyInteger[int16])
+// 				jsp.Format = toPtrString("int16")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			case PropertyInteger[int32]:
+// 				p := p.Property().(PropertyInteger[int32])
+// 				jsp.Format = toPtrString("int32")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			case PropertyInteger[int64]:
+// 				p := p.Property().(PropertyInteger[int64])
+// 				jsp.Format = toPtrString("int64")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			default:
+// 				panic("integer unknown type: " + p.Property().Type())
+// 			}
+// 		case "number":
+// 			switch p.Property().(type) {
+// 			case PropertyNumber[float64]:
+// 				p := p.Property().(*propertyNumber[float64])
+// 				jsp.Format = toPtrString("float64")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			case PropertyNumber[float32]:
+// 				p := p.Property().(*propertyNumber[float32])
+// 				jsp.Format = toPtrString("float32")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			default:
+// 				panic("number unknown type: " + p.Property().Type())
+// 			}
+// 		case "object":
+// 			p := p.Property().(PropertyObject)
+// 			jsp.Id = p.Id()
+// 			jsp.Title = p.Title()
+// 			jsp.Schema = p.Schema()
+// 			jsp.FileName = p.FileName()
+// 			jsp.Description = rusty.OptionalToPtr(p.Description())
+// 			jsp.Properties = PropertiesToJson(p.Properties())
+// 			jsp.Required = p.Required()
+// 			jsp.Ref = rusty.OptionalToPtr(p.Ref())
+// 		default:
+// 			panic("unknown type: " + p.Property().Type())
+// 		}
+// 		ret[p.Name()] = jsp
+// 	}
+// 	return ret
+// }
 
-	return ret
-}
+// func JSONFromProperty(iprop any) JSONProperty {
+// 	ret := JSONProperty{}
+// 	switch prop := iprop.(type) {
+// 	case PropertyString:
+// 	case PropertyArray:
+// 	case PropertyBoolean:
+// 	case PropertyInteger:
+// 	case PropertyNumber:
+// 	case PropertyObject:
+// 	default:
+// 		panic("unknown type: " + prop.(Property).Type())
+// 	}
+
+// / 		case "string":
+// 			p := p.Property().(PropertyString)
+// 			if p.Format().IsSome() {
+// 				jsp.Format = p.Format().Value()
+// 			}
+// 			if p.Default().IsSome() {
+// 				jsp.Default = p.Default().Value()
+// 			}
+// 		case "boolean":
+// 			p := p.Property().(PropertyBoolean)
+// 			if p.Default().IsSome() {
+// 				jsp.Default = p.Default().Value()
+// 			}
+// 		case "integer":
+// 			switch p.Property().(type) {
+// 			case PropertyInteger[int]:
+// 				p := p.Property().(PropertyInteger[int])
+// 				jsp.Format = toPtrString("int")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			case PropertyInteger[int8]:
+// 				p := p.Property().(PropertyInteger[int8])
+// 				jsp.Format = toPtrString("int8")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			case PropertyInteger[int16]:
+// 				p := p.Property().(PropertyInteger[int16])
+// 				jsp.Format = toPtrString("int16")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			case PropertyInteger[int32]:
+// 				p := p.Property().(PropertyInteger[int32])
+// 				jsp.Format = toPtrString("int32")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			case PropertyInteger[int64]:
+// 				p := p.Property().(PropertyInteger[int64])
+// 				jsp.Format = toPtrString("int64")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			default:
+// 				panic("integer unknown type: " + p.Property().Type())
+// 			}
+// 		case "number":
+// 			switch p.Property().(type) {
+// 			case PropertyNumber[float64]:
+// 				p := p.Property().(*propertyNumber[float64])
+// 				jsp.Format = toPtrString("float64")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			case PropertyNumber[float32]:
+// 				p := p.Property().(*propertyNumber[float32])
+// 				jsp.Format = toPtrString("float32")
+// 				if p.Default().IsSome() {
+// 					jsp.Default = p.Default().Value()
+// 				}
+// 			default:
+// 				panic("number unknown type: " + p.Property().Type())
+// 			}
+// 		case "object":
+// 			p := p.Property().(PropertyObject)
+// 			jsp.Id = p.Id()
+// 			jsp.Title = p.Title()
+// 			jsp.Schema = p.Schema()
+// 			jsp.FileName = p.FileName()
+// 			jsp.Description = rusty.OptionalToPtr(p.Description())
+// 			jsp.Properties = PropertiesToJson(p.Properties())
+// 			jsp.Required = p.Required()
+// 			jsp.Ref = rusty.OptionalToPtr(p.Ref())
+
+// return ret
+// }
 
 type SchemaLoader interface {
 	ReadFile(path string) ([]byte, error)
@@ -154,13 +247,12 @@ func LoadSchemaFromBytes(file string, bytes []byte, loader SchemaLoader) (Proper
 	if err != nil {
 		return nil, err
 	}
-	jsonSchema := JSONSchema{}
-	err = loader.Unmarshal(bytes, &jsonSchema)
+	jsonSchema := JSONProperty{}
+	err = loader.Unmarshal(bytes, jsonSchema)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing json schema: %s:%v:%w", absFile, string(bytes), err)
 	}
-	jsonSchema.FileName = absFile
-	prop := NewSchemaBuilder(loader).JSON2PropertyObject(jsonSchema).Build()
+	prop := NewPropertiesBuilder(loader).BuildObject().FromJson(jsonSchema).fileName(absFile).Build()
 	return prop, nil
 }
 
@@ -234,7 +326,7 @@ type schemaLoader struct {
 	registry *SchemaRegistry
 }
 
-// var DefaultSchemaLoader = &schemaLoader{}
+// // var DefaultSchemaLoader = &schemaLoader{}
 func NewSchemaLoader() SchemaLoader {
 	return &schemaLoader{
 		registry: NewSchemaRegistry(),

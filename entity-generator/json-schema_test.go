@@ -26,20 +26,284 @@ func toSorted(m map[string]JSONProperty) []JSONPropertyItems {
 	return out
 }
 
-func TestJsonSchema2Property(t *testing.T) {
-	obj := TestJsonFlatSchema()
-	sb := NewSchemaBuilder(NewTestSchemaLoader())
-	jsprop := sb.JSON2PropertyObject(obj).Build().(PropertyObject)
-	prop := TestFlatSchema(NewTestSchemaLoader()).(PropertyObject)
-	pjs := JSONFromProperty(prop)
-	pjsProps := toSorted(pjs.Properties)
-	pjs.Properties = nil
-	jsp := JSONFromProperty(jsprop)
-	jspProps := toSorted(jsp.Properties)
-	jsp.Properties = nil
-	assert.Equal(t, pjs, jsp)
-	assert.Equal(t, len(pjsProps), len(jspProps))
-	for i, _ := range pjsProps {
-		assert.Equal(t, pjsProps[i], jspProps[i], "Property %d:%s", i, pjsProps[i].Name)
-	}
+func TestFlatJsonAndProp(t *testing.T) {
+	jsobj := TestJsonFlatSchema()
+	prop := NewPropertiesBuilder(NewTestSchemaLoader()).FromJson(jsobj).Build().(PropertyObject)
+	pjs := PropertyToJson(prop)
+	// ref := TestFlatSchema(NewTestSchemaLoader()).(PropertyObject)
+	assert.Equal(t, jsobj, pjs)
+	// assert.Equal(t, prop, ref)
+	// pjsProps := toSorted(pjs.Properties)
+	// pjs.Properties = nil
+	// jsp := JSONFromProperty(jsprop)
+	// jspProps := toSorted(jsp.Properties)
+	// jsp.Properties = nil
+	// assert.Equal(t, pjs, jsp)
+	// assert.Equal(t, len(pjsProps), len(jspProps))
+	// for i, _ := range pjsProps {
+	// 	assert.Equal(t, pjsProps[i], jspProps[i], "Property %d:%s", i, pjsProps[i].Name)
+	// }
 }
+
+func TestNestedJsonAndProp(t *testing.T) {
+	ref := TestSchema(NewTestSchemaLoader())
+	refJs := PropertyToJson(ref)
+	ret := NewPropertiesBuilder(NewTestSchemaLoader()).FromJson(refJs).Build().(PropertyObject)
+	retJs := PropertyToJson(ret)
+	// ref := TestFlatSchema(NewTestSchemaLoader()).(PropertyObject)
+	assert.Equal(t, refJs, retJs)
+	// assert.Equal(t, prop, ref)
+	// pjsProps := toSorted(pjs.Properties)
+	// pjs.Properties = nil
+	// jsp := JSONFromProperty(jsprop)
+	// jspProps := toSorted(jsp.Properties)
+	// jsp.Properties = nil
+	// assert.Equal(t, pjs, jsp)
+	// assert.Equal(t, len(pjsProps), len(jspProps))
+	// for i, _ := range pjsProps {
+	// 	assert.Equal(t, pjsProps[i], jspProps[i], "Property %d:%s", i, pjsProps[i].Name)
+	// }
+}
+
+// type JsonProperty struct {
+// 	Type        string  `json:"type"`
+// 	Description *string `json:"description,omitempty"`
+// 	FullType    interface{}
+// }
+
+// func (jp *JsonProperty) UnmarshalJSON(data []byte) error {
+// 	var my struct {
+// 		Type string `json:"type"`
+// 	}
+// 	err := json.Unmarshal(data, &my)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	switch my.Type {
+// 	case "object":
+// 		jp.FullType = &JSONPropertyObject{}
+// 	case "string":
+// 		jp.FullType = &JSONPropertyString{}
+// 	default:
+// 		return fmt.Errorf("unknown type %s", my.Type)
+// 	}
+// 	err = json.Unmarshal(data, jp.FullType)
+// 	return err
+// }
+
+// type SchemaString interface {
+// 	Schema
+// 	Default() *string
+// }
+
+// type SchemaObject interface {
+// 	Schema
+// 	Properties() map[string]Schema
+// }
+
+// type _SchemaBase struct {
+// 	Type        string  `json:"type"`
+// 	Description *string `json:"description,omitempty"`
+// }
+
+// type _Schema struct {
+// 	_SchemaBase
+// 	_fullType interface{}
+// }
+// type _SchemaObject struct {
+// 	_SchemaBase
+// 	Properties map[string]_Schema `json:"properties"`
+// 	// _fullType  interface{}
+// }
+// type _SchemaString struct {
+// 	_SchemaBase
+// 	Default *string `json:"default,omitempty"`
+// 	// _fullType interface{}
+// }
+
+// func (st *SchameLoader[int]) UnmarshalJSON(data []byte) error {
+// var my struct {
+// 	Type string `json:"type"`
+// }
+// err := json.Unmarshal(data, &my)
+// if err != nil {
+// 	return err
+// }
+// switch my.Type {
+// case "object":
+// 	st._fullType = &_SchemaObject{}
+// case "string":
+// 	st._fullType = &_SchemaString{}
+// default:
+// 	return fmt.Errorf("unknown type %s", my.Type)
+// }
+// err = json.Unmarshal(data, st._fullType)
+// return err
+// }
+
+// type JsonSchemaBuilder struct {
+// 	typ           string
+// 	objectBuilder *JsonObjectBuilder
+// }
+
+// func NewJsonSchemaBuilder() *JsonSchemaBuilder {
+// 	return &JsonSchemaBuilder{}
+// }
+
+// func (b *JsonSchemaBuilder) ObjectType() *JsonObjectBuilder {
+// 	b.typ = "object"
+// 	b.objectBuilder = &JsonObjectBuilder{}
+// 	return b.objectBuilder
+// }
+
+// func (b *JsonSchemaBuilder) StringType() *JsonStringBuilder {
+// 	b.typ = "string"
+// 	return &JsonStringBuilder{}
+// }
+
+// func (b *JsonSchemaBuilder) BooleanType() *JsonBooleanBuilder {
+// 	b.typ = "boolean"
+// 	return &JsonBooleanBuilder{}
+// }
+
+// func (b *JsonSchemaBuilder) IntegerType() *JsonIntegerBuilder {
+// 	b.typ = "integer"
+// 	return &JsonIntegerBuilder{}
+// }
+
+// func (b *JsonSchemaBuilder) NumberType() *JsonNumberBuilder {
+// 	b.typ = "number"
+// 	return &JsonNumberBuilder{}
+// }
+
+// func (b *JsonSchemaBuilder) ArrayType() *JsonArrayBuilder {
+// 	b.typ = "array"
+// 	return &JsonArrayBuilder{}
+// }
+
+// type JsonObjectBuilder struct {
+// 	param PropertyObjectParam
+// }
+
+// func (b *JsonObjectBuilder) FromObject(obj map[string]any) *JsonObjectBuilder {
+
+// 	// FileName    string
+// 	// Id          string
+// 	// Title       string
+// 	// Schema      string
+// 	// Description rusty.Optional[string]
+// 	// Properties  PropertiesObject
+// 	// Required    []string
+// 	// Ref         rusty.Optional[string]
+// 	return b
+// }
+
+// type JsonStringBuilder struct {
+// 	param PropertyStringParam
+// }
+
+// type JsonBooleanBuilder struct {
+// 	param PropertyBooleanParam
+// }
+
+// type JsonNumberBuilder struct {
+// 	param PropertyNumberParam
+// }
+
+// type JsonIntegerBuilder struct {
+// 	param PropertyIntegerParam
+// }
+
+// type JsonArrayBuilder struct {
+// 	param PropertyArrayParam
+// }
+
+// func TestXxx(tx *testing.T) {
+
+// 	builder := NewJsonSchemaBuilder()
+// 	builder.ObjectType()
+
+// dec := []byte(`{
+// 	"doof": "doof",
+// 	"type": "object",
+// 	"properties": {
+// 		"xxxx": {
+// 			"type": "string"
+// 		}
+// 	}
+// }`)
+// var my interface{}
+// err := json.Unmarshal(dec, &my)
+// t := reflect.TypeOf(my)
+// switch t.Kind() {
+// case reflect.Map:
+// 	_map := my.(map[string]interface{})
+// 	typ, found := _map["type"].(string)
+// 	if found {
+// 		fmt.Printf(">>>map>>>:%v", typ)
+// 	} else {
+// 		fmt.Printf("no type")
+// 	}
+// 	switch typ {
+// 	case "object":
+// 		jsobj := JSONPropertyObject{}
+// 		rjsobj := reflect.TypeOf(jsobj)
+// 		for i := 0; i < rjsobj.NumField(); i++ {
+// 			field := rjsobj.Field(i)
+// 			jsonTag, found := field.Tag.Lookup("json")
+// 			var key string
+// 			if found {
+// 				key = strings.Split(jsonTag, ",")[0]
+// 			} else {
+// 				key = field.Name
+// 			}
+// 			val, found := _map[key]
+// 			if !found {
+// 				continue
+// 			}
+// 			switch val := val.(type) {
+// 			case string:
+// 				jsval := reflect.ValueOf(jsobj).Field(i)
+// 				jsval.SetString(val)
+// 			default:
+// 				panic("xxxxx")
+// 			}
+// 			fmt.Println(jsobj)
+// 		}
+// 	default:
+// 		panic("unknown type:" + typ)
+// 	}
+// 	// for fieldName, _ := range my {
+// 	// field, found := t.FieldByName(fieldName)
+// 	// if !found {
+// 	// continue
+// 	// }
+// 	// fmt.Printf("\nField: Me.%s\n", fieldName, field.Tag.Get("json"))
+
+// 	// }
+// 	// for _, fieldName := range []string{"Firstname", "Lastname"} {
+// 	// field, found := t.FieldByName(fieldName)
+// 	// if !found {
+// 	// 	continue
+// 	// }
+// 	// fmt.Printf("\nField: Me.%s\n", fieldName)
+// 	// fmt.Printf("\tWhole tag value : %q\n", field.Tag)
+// 	// fmt.Printf("\tValue of 'mytag': %q\n", field.Tag.Get("mytag"))
+// case reflect.Array:
+// 	panic("unknown type")
+// default:
+// 	panic("unknown type")
+// }
+
+// // for _, fieldName := range []string{"Firstname", "Lastname"} {
+// // 	field, found := t.FieldByName(fieldName)
+// // 	if !found {
+// // 		continue
+// // 	}
+// // 	fmt.Printf("\nField: Me.%s\n", fieldName)
+// // 	fmt.Printf("\tWhole tag value : %q\n", field.Tag)
+// // 	fmt.Printf("\tValue of 'mytag': %q\n", field.Tag.Get("mytag"))
+// // }
+// // switch my.()
+// assert.NoError(tx, err)
+// }
