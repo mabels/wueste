@@ -15,7 +15,7 @@
     "generator": "bin/generator --write-test-schema  --input-file ./src/generated/wasm/simple_type.schema.json --eg-from-wueste ../../wueste --eg-from-result ../../result --output-dir ./src/generated/wasm",
     "postgenerator": "pnpm run build:js",
     "presmoke": "pnpm run pubdir ; cd pubdir ; pnpm pack",
-    "smoke": "cd smoke; pnpm init -y -f ; pnpm install -f ../pubdir/wueste-*.tgz; npx ts-node smoke.ts; npx wueste wueste-generator --write-test-schema",
+    "smoke": "cd smoke; rm -f package.json; pnpm init ; pnpm install -f ../pubdir/wueste-*.tgz; npx ts-node smoke.ts; npx wueste wueste-generator --write-test-schema",
     "lint": "eslint . --ext .ts",
     "prettier": "prettier ."
   },
