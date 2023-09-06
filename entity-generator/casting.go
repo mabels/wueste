@@ -145,7 +145,7 @@ func coerceBool(v interface{}) rusty.Optional[bool] {
 			if val.IsNone() {
 				return rusty.None[bool]()
 			}
-			return rusty.Some[bool](*val.Value() != 0)
+			return rusty.Some[bool](val.Value() != 0)
 		default:
 			panic(fmt.Errorf("unknown type %T", v))
 		}
@@ -206,17 +206,24 @@ func coerceFloat64(v interface{}) rusty.Optional[float64] {
 }
 
 func getFromAttributeString(js JSONProperty, attr string) string {
-	defVal, found := js[attr]
+	defVal, found := js.Lookup(attr)
 	if found {
-		return *coerceString(defVal).Value()
+		return coerceString(defVal).Value()
 	}
 	return ""
 	// panic("no " + attr + " found")
 }
 
+func ensureAttributeId(js JSONProperty, fn func(id string)) {
+	id := getFromAttributeString(js, "$id")
+	if id != "" {
+		fn(id)
+	}
+}
+
 func getFromAttributeOptionalString(js JSONProperty, attr string) rusty.Optional[string] {
 	format := rusty.None[string]()
-	formatVal, found := js[attr].(string)
+	formatVal, found := js.Lookup(attr)
 	if found {
 		format = coerceString(formatVal)
 	}
@@ -225,7 +232,7 @@ func getFromAttributeOptionalString(js JSONProperty, attr string) rusty.Optional
 
 func getFromAttributeOptionalBoolean(js JSONProperty, attr string) rusty.Optional[bool] {
 	format := rusty.None[bool]()
-	formatVal, found := js[attr].(bool)
+	formatVal, found := js.Lookup(attr)
 	if found {
 		format = coerceBool(formatVal)
 	}
@@ -234,7 +241,7 @@ func getFromAttributeOptionalBoolean(js JSONProperty, attr string) rusty.Optiona
 
 func getFromAttributeOptionalInt(js JSONProperty, attr string) rusty.Optional[int] {
 	format := rusty.None[int]()
-	formatVal, found := js[attr].(int)
+	formatVal, found := js.Lookup(attr)
 	if found {
 		format = coerceInt(formatVal)
 	}
@@ -243,7 +250,7 @@ func getFromAttributeOptionalInt(js JSONProperty, attr string) rusty.Optional[in
 
 func getFromAttributeOptionalFloat32(js JSONProperty, attr string) rusty.Optional[float32] {
 	format := rusty.None[float32]()
-	formatVal, found := js[attr].(float32)
+	formatVal, found := js.Lookup(attr)
 	if found {
 		format = coerceFloat32(formatVal)
 	}
@@ -251,7 +258,7 @@ func getFromAttributeOptionalFloat32(js JSONProperty, attr string) rusty.Optiona
 }
 func getFromAttributeOptionalFloat64(js JSONProperty, attr string) rusty.Optional[float64] {
 	format := rusty.None[float64]()
-	formatVal, found := js[attr].(float64)
+	formatVal, found := js.Lookup(attr)
 	if found {
 		format = coerceFloat64(formatVal)
 	}
@@ -260,7 +267,7 @@ func getFromAttributeOptionalFloat64(js JSONProperty, attr string) rusty.Optiona
 
 func getFromAttributeOptionalInt8(js JSONProperty, attr string) rusty.Optional[int8] {
 	format := rusty.None[int8]()
-	formatVal, found := js[attr].(int8)
+	formatVal, found := js.Lookup(attr)
 	if found {
 		format = coerceInt8(formatVal)
 	}
@@ -268,7 +275,7 @@ func getFromAttributeOptionalInt8(js JSONProperty, attr string) rusty.Optional[i
 }
 func getFromAttributeOptionalInt16(js JSONProperty, attr string) rusty.Optional[int16] {
 	format := rusty.None[int16]()
-	formatVal, found := js[attr].(int16)
+	formatVal, found := js.Lookup(attr)
 	if found {
 		format = coerceInt16(formatVal)
 	}
@@ -276,7 +283,7 @@ func getFromAttributeOptionalInt16(js JSONProperty, attr string) rusty.Optional[
 }
 func getFromAttributeOptionalInt32(js JSONProperty, attr string) rusty.Optional[int32] {
 	format := rusty.None[int32]()
-	formatVal, found := js[attr].(int32)
+	formatVal, found := js.Lookup(attr)
 	if found {
 		format = coerceInt32(formatVal)
 	}
@@ -284,7 +291,7 @@ func getFromAttributeOptionalInt32(js JSONProperty, attr string) rusty.Optional[
 }
 func getFromAttributeOptionalInt64(js JSONProperty, attr string) rusty.Optional[int64] {
 	format := rusty.None[int64]()
-	formatVal, found := js[attr].(int64)
+	formatVal, found := js.Lookup(attr)
 	if found {
 		format = coerceInt64(formatVal)
 	}

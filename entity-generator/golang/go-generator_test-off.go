@@ -139,10 +139,10 @@ func TestPrivateName(t *testing.T) {
 }
 
 func TestSimpleTypeClazz(t *testing.T) {
-	sl := eg.NewTestSchemaLoader()
+	sl := eg.NewTestContext()
 	wt := bufLineWriter{}
 	g := &goGenerator{
-		schema: eg.TestSchema(sl).(eg.PropertyObject),
+		schema: eg.TestSchema(sl, eg.PropertyRuntime{}).(eg.PropertyObject),
 
 		includes: make(map[string]bool),
 
@@ -182,10 +182,10 @@ type SimpleTypeObject interface {
 }
 
 func TestSimpleTypeParam(t *testing.T) {
-	sl := eg.NewTestSchemaLoader()
+	sl := eg.NewTestContext()
 	wt := bufLineWriter{}
 	g := &goGenerator{
-		schema: eg.TestSchema(sl).(eg.PropertyObject),
+		schema: eg.TestSchema(sl, eg.PropertyRuntime{}).(eg.PropertyObject),
 
 		includes: make(map[string]bool),
 
@@ -224,7 +224,7 @@ type SimpleType struct {
 }
 
 func TestSimpleTypeImpl(t *testing.T) {
-	sl := eg.NewTestSchemaLoader()
+	sl := eg.NewTestContext()
 	wt := bufLineWriter{}
 	g := &goGenerator{
 		schema:   eg.TestSchema(sl).(eg.PropertyObject),
@@ -283,7 +283,7 @@ func TestSimpleTypeImpl(t *testing.T) {
 }
 
 func TestSimpleTypeImplClone(t *testing.T) {
-	sl := eg.NewTestSchemaLoader()
+	sl := eg.NewTestContext()
 	wt := bufLineWriter{}
 	g := &goGenerator{
 		schema:   eg.TestSchema(sl).(eg.PropertyObject),
@@ -311,7 +311,7 @@ func TestSimpleTypeImplClone(t *testing.T) {
 }
 
 func TestSimpleTypeImplLess(t *testing.T) {
-	sl := eg.NewTestSchemaLoader()
+	sl := eg.NewTestContext()
 	wt := bufLineWriter{}
 	g := &goGenerator{
 		schema:   eg.TestSchema(sl).(eg.PropertyObject),
@@ -379,7 +379,7 @@ func TestSimpleTypeImplLess(t *testing.T) {
 }
 
 func TestSimpleTypeImplHash(t *testing.T) {
-	sl := eg.NewTestSchemaLoader()
+	sl := eg.NewTestContext()
 	wt := bufLineWriter{}
 	g := &goGenerator{
 		schema:   eg.TestSchema(sl).(eg.PropertyObject),
@@ -422,7 +422,7 @@ func TestSimpleTypeImplHash(t *testing.T) {
 }
 
 func TestSimpleTypeImplAsMap(t *testing.T) {
-	sl := eg.NewTestSchemaLoader()
+	sl := eg.NewTestContext()
 	wt := bufLineWriter{}
 	g := &goGenerator{
 		schema: eg.TestSchema(sl).(eg.PropertyObject),
@@ -452,7 +452,7 @@ func TestSimpleTypeImplAsMap(t *testing.T) {
 }
 
 func TestSimpleTypeBuilder(t *testing.T) {
-	sl := eg.NewTestSchemaLoader()
+	sl := eg.NewTestContext()
 	wt := bufLineWriter{}
 	g := &goGenerator{
 		schema: eg.TestSchema(sl).(eg.PropertyObject),
@@ -482,7 +482,7 @@ func TestGoGenerator(t *testing.T) {
 		t.Fatal(err)
 	}
 	// defer os.RemoveAll(dir)
-	sl := eg.NewTestSchemaLoader()
+	sl := eg.NewTestContext()
 	schema := eg.TestSchema(sl).(eg.PropertyObject)
 	wr, err := os.OpenFile(filepath.Join(dir, FileName(schema.Title(), ".go")), os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {

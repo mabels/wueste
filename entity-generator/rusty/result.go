@@ -1,7 +1,10 @@
 package rusty
 
+import "fmt"
+
 type Result[T any] interface {
 	IsOk() bool
+	IsErr() bool
 	Err() error
 	Ok() T
 }
@@ -13,6 +16,10 @@ type ResultOK[T any] struct {
 func (r ResultOK[T]) IsOk() bool {
 	return true
 }
+func (r ResultOK[T]) IsErr() bool {
+	return !r.IsOk()
+}
+
 func (r ResultOK[T]) Err() error {
 	panic("Result is Ok")
 }
@@ -27,9 +34,12 @@ type ResultError[T any] struct {
 func (r ResultError[T]) IsOk() bool {
 	return false
 }
+func (r ResultError[T]) IsErr() bool {
+	return !r.IsOk()
+}
 
 func (r ResultError[T]) Ok() T {
-	panic("Result is Err")
+	panic(fmt.Errorf("Result is Err:%v", r.t.Error()))
 }
 
 func (r ResultError[T]) Err() error {

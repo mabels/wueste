@@ -29,7 +29,7 @@ export class ResultError<T extends Error> implements Result<never, T> {
     return true;
   }
   unwrap(): never {
-    throw new Error("Result is Err");
+    throw new Error(`Result is Err: ${this._error}`);
   }
   unwrap_err(): T {
     return this._error;

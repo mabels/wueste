@@ -1,57 +1,84 @@
 package entity_generator
 
-import "github.com/mabels/wueste/entity-generator/rusty"
+import (
+	"github.com/mabels/wueste/entity-generator/rusty"
+)
 
 type PropertiesBuilder struct {
 	// items   []PropertyItem
-	property any
-	_loader  SchemaLoader
+	property Property
+	_ctx     PropertyCtx
+	// _loader  SchemaLoader
 }
 
-func NewPropertiesBuilder(loader SchemaLoader) *PropertiesBuilder {
+func NewPropertiesBuilder(run PropertyCtx) *PropertiesBuilder {
 	return &PropertiesBuilder{
-		_loader: loader,
+		_ctx: run,
 	}
+}
+
+func (b *PropertiesBuilder) FileName(fname string) *PropertiesBuilder {
+	b.property.Runtime().SetFileName(fname)
+	return b
+}
+
+func (b *PropertiesBuilder) Resolve(rt PropertyRuntime, prop Property) rusty.Result[Property] {
+	if prop.Ref().IsNone() {
+		return rusty.Ok(prop)
+	}
+	refVal := prop.Ref().Value()
+
+	return b._ctx.Registry.EnsureSchema(refVal, rt, func(fname string, rt PropertyRuntime) rusty.Result[Property] {
+		return loadSchema(fname, b._ctx, func(abs string, prop JSONProperty) rusty.Result[Property] {
+			return rusty.Ok(NewPropertiesBuilder(b._ctx).FromJson(rt, prop).FileName(abs).Build())
+		})
+	})
 }
 
 func (b *PropertiesBuilder) BuildObject() *PropertyObjectParam {
 	return &PropertyObjectParam{
-		__loader: b._loader,
-		Type:     OBJECT,
+		// Runtime: b._runtime,
+		Ctx:  b._ctx,
+		Type: OBJECT,
 	}
 }
 func (b *PropertiesBuilder) BuildArray() *PropertyArrayParam {
 	return &PropertyArrayParam{
-		__loader: b._loader,
-		Type:     ARRAY,
+		// Runtime: b._runtime,
+		Ctx:  b._ctx,
+		Type: ARRAY,
 	}
 }
 
 func (b *PropertiesBuilder) BuildString() *PropertyStringParam {
 	return &PropertyStringParam{
-		__loader: b._loader,
-		Type:     STRING,
+		// Runtime: b._runtime,
+		Ctx:  b._ctx,
+		Type: STRING,
 	}
 }
 
 func (b *PropertiesBuilder) BuildBoolean() *PropertyBooleanParam {
 	return &PropertyBooleanParam{
-		__loader: b._loader,
-		Type:     BOOLEAN,
+		// Runtime: b._runtime,
+		Ctx:  b._ctx,
+		Type: BOOLEAN,
 	}
 }
 
 func (b *PropertiesBuilder) BuildInteger() *PropertyIntegerParam {
 	return &PropertyIntegerParam{
-		__loader: b._loader,
-		Type:     INTEGER,
+		// Runtime: b._runtime,
+		Ctx:  b._ctx,
+		Type: INTEGER,
 	}
 }
 
 func (b *PropertiesBuilder) BuildNumber() *PropertyNumberParam {
 	return &PropertyNumberParam{
-		__loader: b._loader,
-		Type:     NUMBER,
+		// Runtime: b._runtime,
+		Ctx:  b._ctx,
+		Type: NUMBER,
 	}
 }
 
@@ -64,64 +91,76 @@ func isOptional(name string, req []string) bool {
 	return true
 }
 
-type JSONProperty map[string]interface{}
-
-func (js JSONProperty) setString(key string, value string) {
-	js[key] = value
+func JSONsetString(js JSONProperty, key string, value string) {
+	js.Set(key, value)
 }
-func (js JSONProperty) setOptionalString(key string, value rusty.Optional[string]) {
-	if !value.IsNone() {
-		js[key] = *value.Value()
+
+func JSONsetId(jsp JSONProperty, p Property) {
+	if p.Id() != "" {
+		jsp.Set("$id", p.Id())
 	}
 }
 
-func (js JSONProperty) setOptionalBoolean(key string, value rusty.Optional[bool]) {
+func JSONsetOptionalString(js JSONProperty, key string, value rusty.Optional[string]) {
 	if !value.IsNone() {
-		js[key] = *value.Value()
+		js.Set(key, value.Value())
 	}
 }
 
-func (js JSONProperty) setOptionalFloat64(key string, value rusty.Optional[float64]) {
+func JSONsetOptionalBoolean(js JSONProperty, key string, value rusty.Optional[bool]) {
 	if !value.IsNone() {
-		js[key] = *value.Value()
+		js.Set(key, value.Value())
 	}
 }
 
-func (js JSONProperty) setOptionalInt(key string, value rusty.Optional[int]) {
+func JSONsetOptionalFloat64(js JSONProperty, key string, value rusty.Optional[float64]) {
 	if !value.IsNone() {
-		js[key] = *value.Value()
+		js.Set(key, value.Value())
 	}
 }
 
-func (b *PropertiesBuilder) FromJson(js JSONProperty) *PropertiesBuilder {
-	ref, found := js["$ref"].(string)
+func JSONsetOptionalInt(js JSONProperty, key string, value rusty.Optional[int]) {
+	if !value.IsNone() {
+		js.Set(key, value.Value())
+	}
+}
+
+func (b *PropertiesBuilder) FromJson(rt PropertyRuntime, js JSONProperty) *PropertiesBuilder {
+	ref, found := js.Lookup("$ref")
 	if found {
+		// b.property = b.Resolve(NewProperty(PropertyParam{Ref: rusty.Some(ref)}))
+		res := b.Resolve(rt, NewProperty(PropertyParam{Ref: coerceString(ref)}))
+		if res.IsErr() {
+			panic(res.Err())
+		}
+		b.property = res.Ok()
+		return b
 	}
-
-	typ, found := js["type"].(string)
+	_typ, found := js.Lookup("type")
 	if !found {
 		panic("no type found")
 	}
+	typ := coerceString(_typ).Value()
 	switch typ {
 	case OBJECT:
-		b.property = b.BuildObject().FromJson(js).Build()
+		b.property = b.BuildObject().FromJson(rt, js).Build()
 	case STRING:
-		b.property = b.BuildString().FromJson(js).Build()
+		b.property = b.BuildString().FromJson(rt, js).Build()
 	case NUMBER:
-		b.property = b.BuildNumber().FromJson(js).Build()
+		b.property = b.BuildNumber().FromJson(rt, js).Build()
 	case INTEGER:
-		b.property = b.BuildInteger().FromJson(js).Build()
+		b.property = b.BuildInteger().FromJson(rt, js).Build()
 	case BOOLEAN:
-		b.property = b.BuildBoolean().FromJson(js).Build()
+		b.property = b.BuildBoolean().FromJson(rt, js).Build()
 	case ARRAY:
-		b.property = b.BuildArray().FromJson(js).Build()
+		b.property = b.BuildArray().FromJson(rt, js).Build()
 	default:
 		panic("unknown type:" + typ)
 	}
 	return b
 }
 
-func PropertyToJson(iprop any) JSONProperty {
+func PropertyToJson(iprop Property) JSONProperty {
 	switch prop := iprop.(type) {
 	case PropertyString:
 		return PropertyStringToJson(prop)
@@ -141,7 +180,7 @@ func PropertyToJson(iprop any) JSONProperty {
 
 }
 
-func (b *PropertiesBuilder) Build() any {
+func (b *PropertiesBuilder) Build() Property {
 	return b.property
 }
 
@@ -291,44 +330,3 @@ func (b *PropertiesBuilder) Build() any {
 // func (b *PropertiesBuilder) Build() PropertiesObject {
 // 	return b
 // }
-
-type propertyItem struct {
-	name     string
-	optional bool
-	property any
-	// order    int
-}
-
-// Description implements PropertyItem.
-func (pi *propertyItem) Name() string {
-	return pi.name
-}
-
-// Optional implements PropertyItem.
-func (pi *propertyItem) Optional() bool {
-	return pi.optional
-}
-
-// func (pi *propertyItem) Order() int {
-// 	return pi.order
-// }
-
-// func (pi *propertyItem) SetOrder(order int) {
-// 	pi.order = order
-// }
-
-func (pi *propertyItem) Property() any {
-	return pi.property
-}
-
-func NewPropertyItem(name string, property any, optionals ...bool) PropertyItem {
-	optional := true
-	if len(optionals) > 0 {
-		optional = optionals[0]
-	}
-	return &propertyItem{
-		name:     name,
-		optional: optional,
-		property: property,
-	}
-}

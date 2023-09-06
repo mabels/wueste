@@ -1,9 +1,13 @@
 package entity_generator
 
-import "github.com/mabels/wueste/entity-generator/rusty"
+import (
+	"fmt"
+
+	"github.com/mabels/wueste/entity-generator/rusty"
+)
 
 type PropertyArray interface {
-	// Id() string
+	Id() string
 	Type() Type
 	Description() rusty.Optional[string]
 	// Format() rusty.Optional[string]
@@ -11,22 +15,29 @@ type PropertyArray interface {
 	// SetOptional()
 	MinItems() rusty.Optional[int]
 	MaxItems() rusty.Optional[int]
-	Items() any
+	Items() Property
 	// UniqueItems() bool
 	// Containts() Property
 	// AdditionalItems() rusty.Optional[Property]
+	Ref() rusty.Optional[string]
+	Runtime() *PropertyRuntime
+
+	ToPropertyObject() rusty.Result[PropertyObject]
 }
 
 type PropertyArrayParam struct {
-	__loader SchemaLoader
-	// Id          string
+	// __loader SchemaLoader
+	Id          string
 	Type        Type
+	Ref         rusty.Optional[string]
 	Description rusty.Optional[string]
 	// Format      rusty.Optional[string]
 	// Optional    bool
 	MinItems rusty.Optional[int]
 	MaxItems rusty.Optional[int]
-	Items    any
+	Items    Property
+	Runtime  PropertyRuntime
+	Ctx      PropertyCtx
 	// Default rusty.Optional[string]
 	// Enum      []string
 	// MinLength rusty.Optional[int]
@@ -34,31 +45,38 @@ type PropertyArrayParam struct {
 	// Format    rusty.Optional[StringFormat]
 }
 
-func (b *PropertyArrayParam) FromJson(js JSONProperty) *PropertyArrayParam {
+func (b *PropertyArrayParam) FromJson(rt PropertyRuntime, js JSONProperty) *PropertyArrayParam {
 	b.Type = ARRAY
+	b.Runtime.Assign(rt)
+	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.MaxItems = getFromAttributeOptionalInt(js, "maxItems")
 	b.MinItems = getFromAttributeOptionalInt(js, "minItems")
-	b.Items = NewPropertiesBuilder(b.__loader).FromJson(js["items"].(JSONProperty)).Build()
+	b.Items = NewPropertiesBuilder(b.Ctx).FromJson(rt, js.Get("items").(JSONProperty)).Build()
 	return b
 }
 
 func PropertyArrayToJson(b PropertyArray) JSONProperty {
-	jsp := JSONProperty{}
-	jsp.setString("type", b.Type())
-	jsp.setOptionalString("description", b.Description())
-	jsp.setOptionalInt("maxItems", b.MaxItems())
-	jsp.setOptionalInt("minItems", b.MinItems())
-	jsp["items"] = PropertyToJson(b.Items())
+	jsp := NewJSONProperty()
+	JSONsetId(jsp, b)
+	JSONsetString(jsp, "type", b.Type())
+	JSONsetOptionalString(jsp, "description", b.Description())
+	JSONsetOptionalInt(jsp, "maxItems", b.MaxItems())
+	JSONsetOptionalInt(jsp, "minItems", b.MinItems())
+	jsp.Set("items", PropertyToJson(b.Items()))
 	return jsp
 }
 
 func (b *PropertyArrayParam) Build() PropertyArray {
-	return NewPropertyArray(*b)
+	return ConnectRuntime(NewPropertyArray(*b))
 }
 
 type propertyArray struct {
 	param PropertyArrayParam
+}
+
+func (p *propertyArray) ToPropertyObject() rusty.Result[PropertyObject] {
+	return rusty.Err[PropertyObject](fmt.Errorf("not a PropertyObject"))
 }
 
 // Description implements PropertyArray.
@@ -87,7 +105,7 @@ func (p *propertyArray) Description() rusty.Optional[string] {
 // }
 
 // Items implements PropertyArray.
-func (p *propertyArray) Items() any {
+func (p *propertyArray) Items() Property {
 	return p.param.Items
 }
 
@@ -108,6 +126,18 @@ func (p *propertyArray) MinItems() rusty.Optional[int] {
 
 func (p *propertyArray) Type() Type {
 	return ARRAY
+}
+
+func (p *propertyArray) Id() string {
+	return p.param.Id
+}
+
+func (p *propertyArray) Ref() rusty.Optional[string] {
+	return p.param.Ref
+}
+
+func (p *propertyArray) Runtime() *PropertyRuntime {
+	return &p.param.Runtime
 }
 
 // func (p *propertyArray) Default() rusty.Optional[wueste.Literal[string]] {

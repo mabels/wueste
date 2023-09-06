@@ -45,26 +45,26 @@ func getConfig() *eg.GeneratorConfig {
 
 func TestTypescript(t *testing.T) {
 	cfg := getConfig()
-	sl := eg.NewTestSchemaLoader()
+	sl := eg.NewTestContext()
 
-	tfs := eg.TestFlatSchema(sl)
+	tfs := eg.TestFlatSchema(sl, eg.PropertyRuntime{})
 
 	tfsObj := tfs.(eg.PropertyObject)
-	for _, pi := range tfsObj.Properties().Items() {
+	for _, pi := range tfsObj.Items() {
 		if pi.Name() == "sub" {
-			po := pi.Property().(eg.PropertyObject).Properties()
-			assert.Equal(t, po.Items()[1].Name(), "opt-Test")
-			assert.Equal(t, po.Items()[1].Property().(eg.PropertyString).Optional(), true)
+			pis := pi.Property().(eg.PropertyObject).Items()
+			assert.Equal(t, pis[1].Name(), "opt-Test")
+			assert.Equal(t, pis[1].Optional(), true)
 		}
 	}
 
 	TsGenerator(cfg, tfs, sl)
-	TsGenerator(cfg, eg.TestSchema(sl), sl)
-	for _, p := range sl.SchemaRegistry().Items() {
+	TsGenerator(cfg, eg.TestSchema(sl, eg.PropertyRuntime{}), sl)
+	for _, p := range sl.Registry.Items() {
 		if !p.Written() {
 			continue
 		}
-		TsGenerator(cfg, p.PropertItem().Property(), sl)
+		TsGenerator(cfg, p.Property(), sl)
 	}
 	err := runCmd("npm run build:js")
 	if err != nil {
@@ -81,6 +81,7 @@ func TestMainAction(t *testing.T) {
 
 	MainAction([]string{
 		"--write-test-schema", "true",
+		"--input-file", "../../src/generated/go/nested_type.schema.json",
 		"--input-file", "../../src/generated/go/simple_type.schema.json",
 		"--eg-from-wueste", cfg.EntityCfg.FromWueste,
 		"--eg-from-result", cfg.EntityCfg.FromResult,

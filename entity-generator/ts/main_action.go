@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/pflag"
 
 	eg "github.com/mabels/wueste/entity-generator"
+	"github.com/mabels/wueste/entity-generator/rusty"
 )
 
 func MainAction(args []string) {
@@ -29,12 +30,17 @@ func MainAction(args []string) {
 	}
 	// defer os.RemoveAll(dir)
 
-	sl := eg.NewSchemaLoader()
+	sl := eg.PropertyCtx{
+		Registry: eg.NewSchemaRegistry(),
+	}
 	for _, file := range cfg.InputFiles {
-		schema, err := eg.LoadSchema(file, sl)
-		if err != nil {
-			log.Fatal(err)
+		schema := eg.NewPropertiesBuilder(sl).Resolve(eg.PropertyRuntime{},
+			eg.NewProperty(eg.PropertyParam{
+				Ref: rusty.Some("file://" + file),
+			}))
+		if schema.IsErr() {
+			log.Fatal(schema.Err())
 		}
-		TsGenerator(&cfg, schema, sl)
+		TsGenerator(&cfg, schema.Ok(), sl)
 	}
 }

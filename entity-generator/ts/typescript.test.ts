@@ -26,11 +26,11 @@ it("SimpleType-Error", () => {
   builder.float64("WTF" as unknown as number);
   expect(builder.Get().unwrap_err().message).toEqual(
     [
-      "Attribute[SimpleType.bool] is required",
+      "Attribute[SimpleType.string] is required",
       "Attribute[SimpleType.createdAt] is required",
       "Attribute[SimpleType.float64] is required",
       "Attribute[SimpleType.int64] is required",
-      "Attribute[SimpleType.string] is required",
+      "Attribute[SimpleType.bool] is required",
       "Attribute[SimpleType.sub] is required",
     ].join("\n"),
   );
@@ -84,9 +84,9 @@ it(`SimpleType-Builder Object-JSON-Object`, () => {
       .unwrap_err().message,
   ).toEqual(
     [
-      "Attribute[SimpleType] is Attribute[SimpleType.createdAt] not found:createdAt",
+      "Attribute[SimpleType] is Attribute[SimpleType.string] not found:string",
+      "Attribute[SimpleType.createdAt] not found:createdAt",
       "Attribute[SimpleType.int64] not found:int64",
-      "Attribute[SimpleType.string] not found:string",
       "Attribute[SimpleType.sub] not found:sub",
     ].join("\n"),
   );
@@ -247,6 +247,9 @@ it(`NestedType-Builder Object-JSON-Object`, () => {
         int64: 49,
         string: "xxx",
         sub: {
+          Test: "Test42",
+        },
+        sub_flat: {
           Test: "Test42",
         },
       })

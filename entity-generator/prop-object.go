@@ -1,13 +1,14 @@
 package entity_generator
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/mabels/wueste/entity-generator/rusty"
 )
 
 type PropertyItem interface {
-	Property() any
+	Property() Property
 	Optional() bool
 	// SetOrder(order int)
 	// Order() int
@@ -15,18 +16,20 @@ type PropertyItem interface {
 }
 
 type PropertyObject interface {
-	Property
 	Type() Type
 	Id() string
 	Title() string
 	Schema() string
-	Ref() rusty.Optional[string]
 	Description() rusty.Optional[string]
-	FileName() string
 
-	Properties() any
+	Properties() JSONProperty
 	Items() []PropertyItem
+	PropertyByName(name string) PropertyItem
 	Required() []string
+
+	Ref() rusty.Optional[string]
+	Runtime() *PropertyRuntime
+	// Ctx() PropertyCtx
 	// Deref() map[string]PropertyItem
 }
 
@@ -254,23 +257,29 @@ type PropertyObject interface {
 // }
 
 type propertyObject struct {
-	id       string
-	_type    Type
-	fileName string
-	schema   string
+	id    string
+	_type Type
+	// fileName string
+	schema string
 	// optional    bool
 	title       string
 	format      rusty.Optional[string]
 	description rusty.Optional[string]
 	ref         rusty.Optional[string]
-	properties  map[string]any
+	properties  JSONProperty
 	required    []string
+	_runtime    PropertyRuntime
+	_ctx        PropertyCtx
 	// deref       map[string]PropertyItem
 }
 
 // FileName implements PropertyObject.
-func (p *propertyObject) FileName() string {
-	return p.fileName
+// func (p *propertyObject) FileName() string {
+// 	return p.fileName
+// }
+
+func (s *propertyObject) Runtime() *PropertyRuntime {
+	return &s._runtime
 }
 
 // Deref implements PropertyObject.
@@ -301,7 +310,7 @@ func (s *propertyObject) Ref() rusty.Optional[string] {
 }
 
 // Properties implements Schema.
-func (s *propertyObject) Properties() any {
+func (s *propertyObject) Properties() JSONProperty {
 	return s.properties
 }
 
@@ -320,10 +329,15 @@ func (s *propertyObject) Type() string {
 	return s._type
 }
 
+func (s *propertyObject) PropertyByName(name string) PropertyItem {
+	v := s.properties.Get(name).(Property)
+	return NewPropertyItem(name, v, isOptional(name, s.required))
+}
+
 func (s *propertyObject) Items() []PropertyItem {
-	items := make([]PropertyItem, 0, len(s.properties))
-	for k, v := range s.properties {
-		items = append(items, NewPropertyItem(k, v, isOptional(k, s.required)))
+	items := make([]PropertyItem, 0, s.properties.Len())
+	for _, k := range s.properties.Keys() {
+		items = append(items, s.PropertyByName(k))
 	}
 	return items
 }
@@ -361,26 +375,33 @@ func (s *propertyObject) Items() []PropertyItem {
 // }
 
 type PropertyObjectParam struct {
-	__loader    SchemaLoader
 	items       []PropertyItem
 	Type        Type
 	Description rusty.Optional[string]
 
-	FileName   string
 	Id         string
 	Title      string
 	Schema     string
-	Properties map[string]any // PropertiesObject
+	Properties JSONProperty // PropertiesObject
 	Required   []string
 	Ref        rusty.Optional[string]
+
+	Runtime PropertyRuntime
+	Ctx     PropertyCtx
+}
+
+func (b *PropertyObjectParam) fileName(fnam string) *PropertyObjectParam {
+	b.Runtime.FileName = rusty.Some(fnam)
+	return b
 }
 
 func (b *PropertyObjectParam) propertiesAdd(property PropertyItem) *PropertyObjectParam {
 	// property.SetOrder(len(b.items))
+	property.Property().Runtime().Assign(b.Runtime)
 	if b.Properties == nil {
-		b.Properties = map[string]any{}
+		b.Properties = NewJSONProperty()
 	}
-	b.Properties[property.Name()] = property.Property()
+	b.Properties.Set(property.Name(), property.Property())
 	if b.Required == nil {
 		b.Required = []string{}
 	}
@@ -390,10 +411,10 @@ func (b *PropertyObjectParam) propertiesAdd(property PropertyItem) *PropertyObje
 	return b
 }
 
-func (b *PropertyObjectParam) fileName(fnam string) *PropertyObjectParam {
-	b.FileName = fnam
-	return b
-}
+// func (b *PropertyObjectParam) fileName(fnam string) *PropertyObjectParam {
+// 	b.FileName = fnam
+// 	return b
+// }
 
 func (p *PropertyObjectParam) Items() []PropertyItem {
 	sort.Slice(p.items, func(i, j int) bool {
@@ -437,55 +458,114 @@ func (p *PropertyObjectParam) ref(ref string) *PropertyObjectParam {
 	return p
 }
 
-func (b *PropertyObjectParam) FromJson(js JSONProperty) *PropertyObjectParam {
+// func toJSONProperty(js JSONProperty) map[string]JSONProperty {
+// 	ret := map[string]JSONProperty{}
+// 	for k, v := range js {
+// 		x, found := v.(JSONProperty)
+// 		if found {
+// 			ret[k] = x
+// 			continue
+// 		}
+// 	}
+// 	return ret
+// 	// 	x, found = v.(map[string]interface{})
+// 	// 	if found {
+// 	// 		ret[k] = x
+// 	// 		continue
+// 	// 	}
+// 	// 	panic("toJSONProperty:unknown type")
+// 	// }
+// 	// return ret
+// }
+
+// func toMapStringJSONProperty(js any) JSONProperty {
+// 	isJSONProperty, found := js.(JSONProperty)
+// 	if found {
+// 		return toJSONProperty(isJSONProperty)
+// 	}
+// 	// isMapStringInterface, found := js.(map[string]interface{})
+// 	// if found {
+// 	// 	// return toJSONProperty(isMapStringInterface)
+// 	// }
+// 	panic("unknown type")
+// }
+
+func (b *PropertyObjectParam) FromJson(rt PropertyRuntime, js JSONProperty) *PropertyObjectParam {
 	b.Type = OBJECT
-	b.FileName = getFromAttributeString(js, "fileName")
+	b.Runtime.Assign(rt)
 	b.Id = getFromAttributeString(js, "$id")
 	b.Title = getFromAttributeString(js, "title")
 	b.Schema = getFromAttributeString(js, "$schema")
 	b.Description = getFromAttributeOptionalString(js, "description")
-	b.Properties = map[string]any{}
-	properties, found := js["properties"]
+	b.Properties = NewJSONProperty()
+	_properties, found := js.Lookup("properties")
 	if found {
-		for k, v := range properties.(JSONProperty) {
-			b.Properties[k] = NewPropertiesBuilder(b.__loader).FromJson(v.(JSONProperty)).Build()
+		properties, found := _properties.(JSONProperty)
+		if !found {
+			panic(fmt.Errorf("properties[%s] is not JSONProperty", b.Id))
+		}
+		for _, k := range properties.Keys() {
+			_v := properties.Get(k)
+			v, found := _v.(JSONProperty)
+			if !found {
+				panic(fmt.Errorf("properties[%s->%s] is not JSONProperty", b.Id, k))
+			}
+			b.Properties.Set(k, NewPropertiesBuilder(b.Ctx).FromJson(rt, v).Build())
 		}
 	}
-	b.Required = js["required"].([]string)
+	required, found := js.Lookup("required")
+	if found {
+		stringArray, found := required.([]any)
+		if !found {
+			stringArray, found := required.([]string)
+			if found {
+				b.Required = stringArray
+			} else {
+				panic(fmt.Errorf("required[%s] is not []string", b.Id))
+			}
+		} else {
+			out := make([]string, 0, len(stringArray))
+			for _, v := range stringArray {
+				out = append(out, coerceString(v).Value())
+			}
+			b.Required = out
+		}
+	}
 	b.Ref = getFromAttributeOptionalString(js, "$ref")
 	return b
 }
 
 func PropertyObjectToJson(b PropertyObject) JSONProperty {
-	jsp := JSONProperty{}
-	jsp.setString("type", b.Type())
-	if b.FileName() != "" {
-		jsp.setString("fileName", b.FileName())
-	}
-	jsp.setString("$id", b.Id())
-	jsp.setString("title", b.Title())
+	jsp := NewJSONProperty()
+	JSONsetString(jsp, "type", b.Type())
+	// if b.Runtime().FileName.IsSome() {
+	// 	JSONsetString("fileName", *b.Runtime().FileName.Value())
+	// }
+	JSONsetString(jsp, "$id", b.Id())
+	JSONsetString(jsp, "title", b.Title())
 	if b.Schema() != "" {
-		jsp.setString("$schema", b.Schema())
+		JSONsetString(jsp, "$schema", b.Schema())
 	}
-	jsp.setOptionalString("description", b.Description())
-	props := JSONProperty{}
+	JSONsetOptionalString(jsp, "description", b.Description())
+	props := NewJSONProperty()
 	items := b.Items()
 	for _, v := range items {
-		props[v.Name()] = PropertyToJson(v.Property())
+		props.Set(v.Name(), PropertyToJson(v.Property()))
 	}
-	jsp["properties"] = props
-	jsp["required"] = b.Required()
-	jsp.setOptionalString("$ref", b.Ref())
+	jsp.Set("properties", props)
+	if len(b.Required()) > 0 {
+		jsp.Set("required", b.Required())
+	}
+	// JSONsetOptionalString("$ref", b.Ref())
 	return jsp
 }
 
 func (p *PropertyObjectParam) Build() PropertyObject {
-	return NewPropertyObject(*p)
+	return ConnectRuntime(NewPropertyObject(*p))
 }
 
 func NewPropertyObject(p PropertyObjectParam) PropertyObject {
-	return &propertyObject{
-		fileName:    p.FileName,
+	r := &propertyObject{
 		id:          p.Id,
 		_type:       OBJECT,
 		title:       p.Title,
@@ -494,6 +574,50 @@ func NewPropertyObject(p PropertyObjectParam) PropertyObject {
 		properties:  p.Properties,
 		required:    p.Required,
 		ref:         p.Ref,
+		_runtime:    p.Runtime,
+		_ctx:        p.Ctx,
 		// deref:       map[string]PropertyItem{},
+	}
+	return r
+}
+
+type propertyItem struct {
+	name     string
+	optional bool
+	property Property
+	// order    int
+}
+
+// Description implements PropertyItem.
+func (pi *propertyItem) Name() string {
+	return pi.name
+}
+
+// Optional implements PropertyItem.
+func (pi *propertyItem) Optional() bool {
+	return pi.optional
+}
+
+// func (pi *propertyItem) Order() int {
+// 	return pi.order
+// }
+
+// func (pi *propertyItem) SetOrder(order int) {
+// 	pi.order = order
+// }
+
+func (pi *propertyItem) Property() Property {
+	return pi.property
+}
+
+func NewPropertyItem(name string, property Property, optionals ...bool) PropertyItem {
+	optional := true
+	if len(optionals) > 0 {
+		optional = optionals[0]
+	}
+	return &propertyItem{
+		name:     name,
+		optional: optional,
+		property: property,
 	}
 }

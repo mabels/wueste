@@ -67,9 +67,9 @@ func (x *ForIfWhileLang) Optional(optional bool, typeStr string, opts ...string)
 }
 
 func (x *ForIfWhileLang) Ptr(p eg.Property, typeStr string) string {
-	if p.Optional() {
-		return fmt.Sprintf("*%s", typeStr)
-	}
+	// if p.Optional() {
+	// 	return fmt.Sprintf("*%s", typeStr)
+	// }
 	return typeStr
 }
 
@@ -117,8 +117,8 @@ func (x *ForIfWhileLang) AsTypePtr(p eg.Property) string {
 	}
 }
 
-func (x *ForIfWhileLang) AsTypeOptional(p eg.Property, opts ...string) string {
-	switch p.Type() {
+func (x *ForIfWhileLang) AsTypeOptional(p eg.PropertyItem, opts ...string) string {
+	switch p.Property().Type() {
 	case eg.STRING:
 		return x.Optional(p.Optional(), "string", opts...)
 	case eg.INTEGER:
@@ -127,9 +127,9 @@ func (x *ForIfWhileLang) AsTypeOptional(p eg.Property, opts ...string) string {
 		return x.Optional(p.Optional(), "float64", opts...)
 	case eg.BOOLEAN:
 		return x.Optional(p.Optional(), "bool", opts...)
-	case eg.ARRAY:
-		p := p.(eg.PropertyArray)
-		return x.Optional(p.Optional(), "[]"+x.AsTypeOptional(p.Items()))
+	// case eg.ARRAY:
+	// 	p := p.(eg.PropertyArray)
+	// 	return x.Optional(p.Optional(), "[]"+x.AsTypeOptional(p.Items()))
 	case eg.OBJECT:
 		// p := p.(Schema)
 		// required(p, publicClassName(p.Title()))

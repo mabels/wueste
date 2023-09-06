@@ -1,7 +1,7 @@
 package entity_generator
 
 import (
-	"sort"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,26 +12,33 @@ type JSONPropertyItems struct {
 	Prop JSONProperty
 }
 
-func toSorted(m map[string]JSONProperty) []JSONPropertyItems {
-	out := []JSONPropertyItems{}
-	for k, v := range m {
-		out = append(out, JSONPropertyItems{
-			Name: k,
-			Prop: v,
-		})
-	}
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].Name < out[j].Name
-	})
-	return out
-}
+// func toSorted(m map[string]JSONProperty) []JSONPropertyItems {
+// 	out := []JSONPropertyItems{}
+// 	for k, v := range m {
+// 		out = append(out, JSONPropertyItems{
+// 			Name: k,
+// 			Prop: v,
+// 		})
+// 	}
+// 	sort.Slice(out, func(i, j int) bool {
+// 		return out[i].Name < out[j].Name
+// 	})
+// 	return out
+// }
 
 func TestFlatJsonAndProp(t *testing.T) {
 	jsobj := TestJsonFlatSchema()
-	prop := NewPropertiesBuilder(NewTestSchemaLoader()).FromJson(jsobj).Build().(PropertyObject)
+	prop := NewPropertiesBuilder(NewTestContext()).
+		FromJson(PropertyRuntime{}, jsobj).Build().(PropertyObject)
 	pjs := PropertyToJson(prop)
-	// ref := TestFlatSchema(NewTestSchemaLoader()).(PropertyObject)
-	assert.Equal(t, jsobj, pjs)
+	// assert.Equal(t, jsobj, pjs)
+
+	jsonJsObj, err := json.MarshalIndent(jsobj, "", "  ")
+	assert.NoError(t, err)
+	jsonPjs, err := json.MarshalIndent(pjs, "", "  ")
+	assert.NoError(t, err)
+	assert.Equal(t, string(jsonJsObj), string(jsonPjs))
+
 	// assert.Equal(t, prop, ref)
 	// pjsProps := toSorted(pjs.Properties)
 	// pjs.Properties = nil
@@ -45,12 +52,42 @@ func TestFlatJsonAndProp(t *testing.T) {
 	// }
 }
 
+func TestFileNames(t *testing.T) {
+
+	ctx := NewTestContext()
+	sub := TestSubSchema(ctx, PropertyRuntime{})
+	assert.Equal(t, sub.Runtime().FileName.Value(), "/abs/sub.schema.json")
+	_, found := ctx.Registry.registry[sub.Runtime().FileName.Value()]
+	assert.True(t, found)
+
+	ctx = NewTestContext()
+	base := TestFlatSchema(ctx, PropertyRuntime{}).Runtime().ToPropertyObject().Ok()
+	assert.Equal(t, base.Runtime().FileName.Value(), "/abs/simple_type.schema.json")
+	_, found = ctx.Registry.registry[base.Runtime().FileName.Value()]
+	assert.True(t, found)
+	baseSub := base.Properties().Get("opt-sub").(PropertyObject)
+	assert.Equal(t, baseSub.Runtime().FileName.Value(), "/abs/sub.schema.json")
+
+	nested := TestSchema(ctx, PropertyRuntime{})
+	assert.Equal(t, nested.Runtime().FileName.Value(), "/abs/nested_type.schema.json")
+	_, found = ctx.Registry.registry[nested.Runtime().FileName.Value()]
+	assert.True(t, found)
+
+}
+
 func TestNestedJsonAndProp(t *testing.T) {
-	ref := TestSchema(NewTestSchemaLoader())
+	ref := TestSchema(NewTestContext(), PropertyRuntime{})
 	refJs := PropertyToJson(ref)
-	ret := NewPropertiesBuilder(NewTestSchemaLoader()).FromJson(refJs).Build().(PropertyObject)
+	ret := NewPropertiesBuilder(NewTestContext()).FromJson(PropertyRuntime{}, refJs).Build().(PropertyObject)
 	retJs := PropertyToJson(ret)
 	// ref := TestFlatSchema(NewTestSchemaLoader()).(PropertyObject)
+
+	jsonRefJs, err := json.MarshalIndent(refJs, "", "  ")
+	assert.NoError(t, err)
+	jsonRetJs, err := json.MarshalIndent(retJs, "", "  ")
+	assert.NoError(t, err)
+	assert.Equal(t, string(jsonRefJs), string(jsonRetJs))
+
 	assert.Equal(t, refJs, retJs)
 	// assert.Equal(t, prop, ref)
 	// pjsProps := toSorted(pjs.Properties)

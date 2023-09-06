@@ -13,11 +13,15 @@ const (
 )
 
 type PropertyString interface {
-	Property
+	// Property
+	Id() string
 	Type() string
+	Description() rusty.Optional[string]
 	Default() rusty.Optional[string] // match Type
 	Format() rusty.Optional[StringFormat]
+	Ref() rusty.Optional[string]
 
+	Runtime() *PropertyRuntime
 	// MinLength() rusty.Optional[int]
 	// MaxLength() rusty.Optional[int]
 	// Pattern() rusty.Optional[string]
@@ -26,19 +30,24 @@ type PropertyString interface {
 }
 
 type PropertyStringParam struct {
-	__loader SchemaLoader
 	// PropertyParam
+	Id          string
 	Type        Type
 	Description rusty.Optional[string]
 	Default     rusty.Optional[string]
+	Ref         rusty.Optional[string]
 	// Enum      []string
 	// MinLength rusty.Optional[int]
 	// MaxLength rusty.Optional[int]
-	Format rusty.Optional[StringFormat]
+	Format  rusty.Optional[StringFormat]
+	Runtime PropertyRuntime
+	Ctx     PropertyCtx
 }
 
-func (b *PropertyStringParam) FromJson(js JSONProperty) *PropertyStringParam {
+func (b *PropertyStringParam) FromJson(rt PropertyRuntime, js JSONProperty) *PropertyStringParam {
 	b.Type = STRING
+	b.Runtime.Assign(rt)
+	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.Format = getFromAttributeOptionalString(js, "format")
 	b.Default = getFromAttributeOptionalString(js, "default")
@@ -46,21 +55,26 @@ func (b *PropertyStringParam) FromJson(js JSONProperty) *PropertyStringParam {
 }
 
 func PropertyStringToJson(b PropertyString) JSONProperty {
-	jsp := JSONProperty{}
-	jsp.setString("type", b.Type())
-	jsp.setOptionalString("description", b.Description())
-	jsp.setOptionalString("format", b.Format())
-	jsp.setOptionalString("default", b.Default())
+	jsp := NewJSONProperty()
+	JSONsetId(jsp, b)
+	JSONsetString(jsp, "type", b.Type())
+	JSONsetOptionalString(jsp, "description", b.Description())
+	JSONsetOptionalString(jsp, "format", b.Format())
+	JSONsetOptionalString(jsp, "default", b.Default())
 	return jsp
 }
 
 func (b *PropertyStringParam) Build() PropertyString {
-	return NewPropertyString(*b)
+	return ConnectRuntime(NewPropertyString(*b))
 }
 
 type propertyString struct {
 	// propertyLiteral[string]
 	param PropertyStringParam
+}
+
+func (p *propertyString) Runtime() *PropertyRuntime {
+	return &p.param.Runtime
 }
 
 // Description implements PropertyString.
@@ -95,7 +109,7 @@ func (p *propertyString) Type() Type {
 func (p *propertyString) Default() rusty.Optional[string] {
 	if !p.param.Default.IsNone() {
 		// lit := wueste.StringLiteral(*p.param.Default.Value())
-		return rusty.Some[string](*p.param.Default.Value())
+		return rusty.Some[string](p.param.Default.Value())
 
 	}
 	return rusty.None[string]()
@@ -111,6 +125,14 @@ func (p *propertyString) Default() rusty.Optional[string] {
 
 func (p *propertyString) Format() rusty.Optional[StringFormat] {
 	return p.param.Format
+}
+
+func (p *propertyString) Ref() rusty.Optional[string] {
+	return p.Runtime().Ref
+}
+
+func (p *propertyString) Id() string {
+	return p.param.Id
 }
 
 func NewPropertyString(p PropertyStringParam) PropertyString {
