@@ -68,7 +68,7 @@ func PropertyIntegerToJson(b PropertyInteger) JSONProperty {
 	return jsp
 }
 
-func (b *PropertyIntegerParam) Build() PropertyInteger {
+func (b *PropertyIntegerParam) Build() rusty.Result[Property] {
 	return ConnectRuntime(NewPropertyInteger(*b))
 }
 
@@ -76,11 +76,11 @@ type propertyInteger struct {
 	param PropertyIntegerParam
 }
 
-func NewPropertyInteger(p PropertyIntegerParam) PropertyInteger {
+func NewPropertyInteger(p PropertyIntegerParam) rusty.Result[Property] {
 	p.Type = INTEGER
-	return &propertyInteger{
+	return rusty.Ok[Property](&propertyInteger{
 		param: p,
-	}
+	})
 }
 
 func (p *propertyInteger) Id() string {

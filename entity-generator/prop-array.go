@@ -35,9 +35,10 @@ type PropertyArrayParam struct {
 	// Optional    bool
 	MinItems rusty.Optional[int]
 	MaxItems rusty.Optional[int]
-	Items    Property
-	Runtime  PropertyRuntime
-	Ctx      PropertyCtx
+	Items    rusty.Result[Property]
+	// Errors   []error
+	Runtime PropertyRuntime
+	Ctx     PropertyCtx
 	// Default rusty.Optional[string]
 	// Enum      []string
 	// MinLength rusty.Optional[int]
@@ -67,8 +68,12 @@ func PropertyArrayToJson(b PropertyArray) JSONProperty {
 	return jsp
 }
 
-func (b *PropertyArrayParam) Build() PropertyArray {
-	return ConnectRuntime(NewPropertyArray(*b))
+func (b *PropertyArrayParam) Build() rusty.Result[Property] {
+	if b.Items != nil {
+		return ConnectRuntime(NewPropertyArray(*b))
+	} else {
+		return rusty.Err[Property](fmt.Errorf("Array needs items"))
+	}
 }
 
 type propertyArray struct {
@@ -106,7 +111,7 @@ func (p *propertyArray) Description() rusty.Optional[string] {
 
 // Items implements PropertyArray.
 func (p *propertyArray) Items() Property {
-	return p.param.Items
+	return p.param.Items.Ok()
 }
 
 // MaxItems implements PropertyArray.
@@ -161,9 +166,9 @@ func (p *propertyArray) Runtime() *PropertyRuntime {
 // 	return p.param.format
 // }
 
-func NewPropertyArray(p PropertyArrayParam) PropertyArray {
+func NewPropertyArray(p PropertyArrayParam) rusty.Result[Property] {
 	p.Type = ARRAY
-	return &propertyArray{
+	return rusty.Ok[Property](&propertyArray{
 		param: p,
-	}
+	})
 }

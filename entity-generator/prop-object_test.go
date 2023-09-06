@@ -79,28 +79,28 @@ func TestDeref(t *testing.T) {
 		written: false,
 		prop: // NewPropertyItem("http://example.com/base.schema.json",
 		NewPropertiesBuilder(ctx).BuildObject().FromJson(rt, BaseSchema).
-			fileName(abs(BaseSchema.Get("fileName").(string))).Build(),
+			fileName(abs(BaseSchema.Get("fileName").(string))).Build().Ok(),
 	}
 	testSub := &schemaRegistryItem{
 		written: false,
 		prop: // NewPropertyItem("http://example.com/sub.schema.json",
 		NewPropertiesBuilder(ctx).BuildObject().FromJson(
-			*base.prop.Runtime().ToPropertyObject().Ok().PropertyByName("sub").Property().Runtime(), TestJsonSubSchema()).
-			fileName(abs(TestJsonSubSchema().Get("fileName").(string))).Build(),
+			*base.prop.Runtime().ToPropertyObject().Ok().PropertyByName("sub").Ok().Property().Runtime(), TestJsonSubSchema()).
+			fileName(abs(TestJsonSubSchema().Get("fileName").(string))).Build().Ok(),
 	}
 	sub2 := &schemaRegistryItem{
 		written: false,
 		prop: // NewPropertyItem("http://example.com/sub2.schema.json",
 		NewPropertiesBuilder(ctx).BuildObject().
-			FromJson(*testSub.prop.Runtime().ToPropertyObject().Ok().PropertyByName("sub-down").Property().Runtime(), Sub2Schema).
-			fileName(abs(Sub2Schema.Get("fileName").(string))).Build(),
+			FromJson(*testSub.prop.Runtime().ToPropertyObject().Ok().PropertyByName("sub-down").Ok().Property().Runtime(), Sub2Schema).
+			fileName(abs(Sub2Schema.Get("fileName").(string))).Build().Ok(),
 	}
 	sub3 := &schemaRegistryItem{
 		written: false,
 		prop: // NewPropertyItem("http://example.com/sub2.schema.json",
 		NewPropertiesBuilder(ctx).BuildObject().
-			FromJson(*sub2.prop.Runtime().ToPropertyObject().Ok().PropertyByName("bar").Property().Runtime(), Sub3Schema).
-			fileName(abs(Sub3Schema.Get("fileName").(string))).Build(),
+			FromJson(*sub2.prop.Runtime().ToPropertyObject().Ok().PropertyByName("bar").Ok().Property().Runtime(), Sub3Schema).
+			fileName(abs(Sub3Schema.Get("fileName").(string))).Build().Ok(),
 	}
 	refItems := []SchemaRegistryItem{base, testSub, sub2, sub3}
 	assert.Equal(t, len(filtered), len(refItems))
@@ -136,4 +136,21 @@ func TestLoaderResolveRef(t *testing.T) {
 	po2 := po1.Items()[1].Property().(PropertyObject)
 	assert.Equal(t, po2.Runtime().FileName.Value(), "/abs/wurst/sub2.schema.json")
 
+}
+
+func TestErrorUnnamedNestedObject(t *testing.T) {
+	rt := PropertyRuntime{}
+	ctx := PropertyCtx{
+		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+	}
+	p := NewPropertiesBuilder(ctx).Resolve(rt, NewProperty(PropertyParam{
+		Ref: rusty.Some("file://./unnamed_nested_object.schema.json"),
+	}))
+	if p.IsOk() {
+		t.Fatal("expected error")
+	}
+	// assert.Equal(t, len(ctx.Registry.registry), 3)
+	// for key, _ := range ctx.Registry.registry {
+	// 	assert.NotEqual(t, key, "")
+	// }
 }

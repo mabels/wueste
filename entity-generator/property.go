@@ -34,12 +34,12 @@ type PropertyRuntime struct {
 // 	}
 // }
 
-func ConnectRuntime[T Property](p T) T {
-	p.Runtime().Of = p
-	// if p.Runtime().Registry == nil {
-	// 	panic("loader not set")
-	// }
-	return p
+func ConnectRuntime[T Property](p rusty.Result[T]) rusty.Result[Property] {
+	if p.IsErr() {
+		return rusty.Err[Property](p.Err())
+	}
+	p.Ok().Runtime().Of = p.Ok()
+	return rusty.Ok[Property](p.Ok())
 }
 
 func (p *PropertyRuntime) SetFileName(name string) {

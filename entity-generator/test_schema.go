@@ -54,6 +54,8 @@ func (l *TestSchemaLoader) Abs(path string) (string, error) {
 // ReadFile implements SchemaLoader.
 func (l *TestSchemaLoader) ReadFile(path string) ([]byte, error) {
 	switch path {
+	case "/abs/unnamed_nested_object.schema.json":
+		return JSONUnnamedNestedObject(), nil
 	case "/abs/base.schema.json":
 		return JSONBase(), nil
 	case "/abs/sub.schema.json":
@@ -79,6 +81,26 @@ func json2JSONProperty(inp string) JSONProperty {
 		panic(fmt.Errorf("json2JSONProperty: %w:%v", err, inp))
 	}
 	return jp
+}
+
+var UnnamedNestedObject = json2JSONProperty(`{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://github.com/betooinc/architectures/schema/opensea/event/item_listed.json",
+	"title": "OpenSeaEventItemListed",
+	"type": "object",
+	"properties": {
+		"collection": {
+			"type": "object",
+			"properties": {
+			"slug": { "type": "string" }
+			}
+		}
+	}
+}`)
+
+func JSONUnnamedNestedObject() []byte {
+	out, _ := json.MarshalIndent(UnnamedNestedObject, "", "  ")
+	return out
 }
 
 var BaseSchema = json2JSONProperty(`{
@@ -182,7 +204,7 @@ func SchemaSchema(sl PropertyCtx) Property {
 		propertiesAdd(NewPropertyItem("properties", NewPropertyObject(PropertyObjectParam{}))).
 		propertiesAdd(NewPropertyItem("required", NewPropertyArray(PropertyArrayParam{}))).
 		required([]string{"$id", "$schema", "title", "type", "properties"}).
-		Build()
+		Build().Ok()
 }
 
 // func toPtrString(s string) *string {
@@ -322,22 +344,22 @@ func TestJsonFlatSchema() JSONProperty {
 	return json
 }
 
-func TestSubSchema(sl PropertyCtx, rt PropertyRuntime) Property {
+func TestSubSchema(sl PropertyCtx, rt PropertyRuntime) rusty.Result[Property] {
 	return sl.Registry.EnsureSchema("file://./sub.schema.json", rt, func(fname string, rt PropertyRuntime) rusty.Result[Property] {
-		return rusty.Ok[Property](NewPropertiesBuilder(sl).BuildObject().
+		return NewPropertiesBuilder(sl).BuildObject().
 			id("https://Sub").
 			title("Sub").
 			description("Description").
 			propertiesAdd(NewPropertyItem("Test", NewPropertyString(PropertyStringParam{}))).
 			propertiesAdd(NewPropertyItem("opt-Test", NewPropertyString(PropertyStringParam{}))).
 			required([]string{"Test"}).
-			Build())
-	}).Ok()
+			Build()
+	})
 }
 
-func TestFlatSchema(sl PropertyCtx, rt PropertyRuntime) Property {
+func TestFlatSchema(sl PropertyCtx, rt PropertyRuntime) rusty.Result[Property] {
 	return sl.Registry.EnsureSchema("file://./simple_type.schema.json", rt, func(fname string, rt PropertyRuntime) rusty.Result[Property] {
-		return rusty.Ok[Property](NewPropertiesBuilder(sl).BuildObject().
+		return NewPropertiesBuilder(sl).BuildObject().
 			id("https://SimpleType").
 			title("SimpleType").
 			description("Jojo SimpleType").
@@ -387,8 +409,8 @@ func TestFlatSchema(sl PropertyCtx, rt PropertyRuntime) Property {
 				"default-bool",
 				"bool",
 				"sub"}).
-			Build())
-	}).Ok()
+			Build()
+	})
 }
 
 func TestSchema(sl PropertyCtx, rts ...PropertyRuntime) Property {
@@ -398,11 +420,11 @@ func TestSchema(sl PropertyCtx, rts ...PropertyRuntime) Property {
 	}
 	return sl.Registry.EnsureSchema("file://./nested_type.schema.json", rt, func(fname string, rt PropertyRuntime) rusty.Result[Property] {
 		ps := NewPropertiesBuilder(sl).BuildObject()
-		fls := TestFlatSchema(sl, rt).Runtime().ToPropertyObject().Ok()
+		fls := TestFlatSchema(sl, rt).Ok().Runtime().ToPropertyObject().Ok()
 		for _, item := range fls.Items() {
-			ps.propertiesAdd(item)
+			ps.propertiesAdd(rusty.Ok(item))
 		}
-		return rusty.Ok[Property](ps.
+		return ps.
 			id("https://NestedType").
 			title("NestedType").
 			description("Jojo NestedType").
@@ -452,12 +474,12 @@ func TestSchema(sl PropertyCtx, rts ...PropertyRuntime) Property {
 				"arraySubType",
 				"arrayarrayFlatSchema",
 			}, fls.Required()...)).
-			Build())
+			Build()
 	}).Ok()
 }
 
 func WriteTestSchema(cfg *GeneratorConfig) string {
-	jsonSchema := PropertyToJson(TestFlatSchema(NewTestContext(), PropertyRuntime{}))
+	jsonSchema := PropertyToJson(TestFlatSchema(NewTestContext(), PropertyRuntime{}).Ok())
 	bytes, _ := json.MarshalIndent(jsonSchema, "", "  ")
 	schemaFile := path.Join(cfg.OutputDir, "simple_type.schema.json")
 	os.WriteFile(schemaFile, bytes, 0644)

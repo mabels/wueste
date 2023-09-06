@@ -47,7 +47,7 @@ func TestTypescript(t *testing.T) {
 	cfg := getConfig()
 	sl := eg.NewTestContext()
 
-	tfs := eg.TestFlatSchema(sl, eg.PropertyRuntime{})
+	tfs := eg.TestFlatSchema(sl, eg.PropertyRuntime{}).Ok()
 
 	tfsObj := tfs.(eg.PropertyObject)
 	for _, pi := range tfsObj.Items() {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/iancoleman/orderedmap"
 	"github.com/mabels/wueste/entity-generator/rusty"
 )
 
@@ -15,6 +16,35 @@ type PropertyItem interface {
 	Name() string
 }
 
+type properties struct {
+	oprops orderedmap.OrderedMap
+}
+
+func newProperties() *properties {
+	return &properties{
+		oprops: *orderedmap.New(),
+	}
+}
+
+func (p *properties) Set(name string, property Property) {
+	p.oprops.Set(name, property)
+}
+
+func (p *properties) Lookup(key string) (Property, bool) {
+	v, found := p.oprops.Get(key)
+	if !found {
+		return nil, false
+	}
+	return v.(Property), true
+}
+func (p *properties) Len() int {
+	return len(p.oprops.Keys())
+}
+
+func (p *properties) Keys() []string {
+	return p.oprops.Keys()
+}
+
 type PropertyObject interface {
 	Type() Type
 	Id() string
@@ -22,9 +52,9 @@ type PropertyObject interface {
 	Schema() string
 	Description() rusty.Optional[string]
 
-	Properties() JSONProperty
+	Properties() *properties
 	Items() []PropertyItem
-	PropertyByName(name string) PropertyItem
+	PropertyByName(name string) rusty.Result[PropertyItem]
 	Required() []string
 
 	Ref() rusty.Optional[string]
@@ -266,7 +296,7 @@ type propertyObject struct {
 	format      rusty.Optional[string]
 	description rusty.Optional[string]
 	ref         rusty.Optional[string]
-	properties  JSONProperty
+	properties  *properties
 	required    []string
 	_runtime    PropertyRuntime
 	_ctx        PropertyCtx
@@ -310,7 +340,7 @@ func (s *propertyObject) Ref() rusty.Optional[string] {
 }
 
 // Properties implements Schema.
-func (s *propertyObject) Properties() JSONProperty {
+func (s *propertyObject) Properties() *properties {
 	return s.properties
 }
 
@@ -329,15 +359,22 @@ func (s *propertyObject) Type() string {
 	return s._type
 }
 
-func (s *propertyObject) PropertyByName(name string) PropertyItem {
-	v := s.properties.Get(name).(Property)
-	return NewPropertyItem(name, v, isOptional(name, s.required))
+func (s *propertyObject) PropertyByName(name string) rusty.Result[PropertyItem] {
+	v, found := s.properties.Lookup(name)
+	if !found {
+		return rusty.Err[PropertyItem](fmt.Errorf("property not found:%s", name))
+	}
+	return NewPropertyItem(name, rusty.Ok(v), isOptional(name, s.required))
 }
 
 func (s *propertyObject) Items() []PropertyItem {
 	items := make([]PropertyItem, 0, s.properties.Len())
 	for _, k := range s.properties.Keys() {
-		items = append(items, s.PropertyByName(k))
+		n := s.PropertyByName(k)
+		if n.IsErr() {
+			panic(n.Err())
+		}
+		items = append(items, n.Ok())
 	}
 	return items
 }
@@ -382,12 +419,13 @@ type PropertyObjectParam struct {
 	Id         string
 	Title      string
 	Schema     string
-	Properties JSONProperty // PropertiesObject
+	Properties *properties // PropertiesObject
 	Required   []string
 	Ref        rusty.Optional[string]
 
 	Runtime PropertyRuntime
 	Ctx     PropertyCtx
+	Errors  []error
 }
 
 func (b *PropertyObjectParam) fileName(fnam string) *PropertyObjectParam {
@@ -395,11 +433,16 @@ func (b *PropertyObjectParam) fileName(fnam string) *PropertyObjectParam {
 	return b
 }
 
-func (b *PropertyObjectParam) propertiesAdd(property PropertyItem) *PropertyObjectParam {
+func (b *PropertyObjectParam) propertiesAdd(pin rusty.Result[PropertyItem]) *PropertyObjectParam {
+	if pin.IsErr() {
+		b.Errors = append(b.Errors, pin.Err())
+		return b
+	}
+	property := pin.Ok()
 	// property.SetOrder(len(b.items))
 	property.Property().Runtime().Assign(b.Runtime)
 	if b.Properties == nil {
-		b.Properties = NewJSONProperty()
+		b.Properties = newProperties()
 	}
 	b.Properties.Set(property.Name(), property.Property())
 	if b.Required == nil {
@@ -443,20 +486,20 @@ func (p *PropertyObjectParam) title(title string) *PropertyObjectParam {
 	return p
 }
 
-func (p *PropertyObjectParam) schema(schema string) *PropertyObjectParam {
-	p.Schema = schema
-	return p
-}
+// func (p *PropertyObjectParam) schema(schema string) *PropertyObjectParam {
+// 	p.Schema = schema
+// 	return p
+// }
 
 func (p *PropertyObjectParam) required(required []string) *PropertyObjectParam {
 	p.Required = required
 	return p
 }
 
-func (p *PropertyObjectParam) ref(ref string) *PropertyObjectParam {
-	p.Ref = rusty.Some(ref)
-	return p
-}
+// func (p *PropertyObjectParam) ref(ref string) *PropertyObjectParam {
+// 	p.Ref = rusty.Some(ref)
+// 	return p
+// }
 
 // func toJSONProperty(js JSONProperty) map[string]JSONProperty {
 // 	ret := map[string]JSONProperty{}
@@ -497,7 +540,7 @@ func (b *PropertyObjectParam) FromJson(rt PropertyRuntime, js JSONProperty) *Pro
 	b.Title = getFromAttributeString(js, "title")
 	b.Schema = getFromAttributeString(js, "$schema")
 	b.Description = getFromAttributeOptionalString(js, "description")
-	b.Properties = NewJSONProperty()
+	b.Properties = newProperties()
 	_properties, found := js.Lookup("properties")
 	if found {
 		properties, found := _properties.(JSONProperty)
@@ -508,9 +551,15 @@ func (b *PropertyObjectParam) FromJson(rt PropertyRuntime, js JSONProperty) *Pro
 			_v := properties.Get(k)
 			v, found := _v.(JSONProperty)
 			if !found {
-				panic(fmt.Errorf("properties[%s->%s] is not JSONProperty", b.Id, k))
+				b.Errors = append(b.Errors, fmt.Errorf("properties[%s->%s] is not JSONProperty", b.Id, k))
+				continue
 			}
-			b.Properties.Set(k, NewPropertiesBuilder(b.Ctx).FromJson(rt, v).Build())
+			r := NewPropertiesBuilder(b.Ctx).FromJson(rt, v).Build()
+			if r.IsErr() {
+				b.Errors = append(b.Errors, r.Err())
+			} else {
+				b.Properties.Set(k, r.Ok())
+			}
 		}
 	}
 	required, found := js.Lookup("required")
@@ -560,11 +609,21 @@ func PropertyObjectToJson(b PropertyObject) JSONProperty {
 	return jsp
 }
 
-func (p *PropertyObjectParam) Build() PropertyObject {
+func (p *PropertyObjectParam) Build() rusty.Result[Property] {
+	if len(p.Errors) > 0 {
+		str := ""
+		for _, v := range p.Errors {
+			str += v.Error() + "\n"
+		}
+		return rusty.Err[Property](fmt.Errorf(str))
+	}
 	return ConnectRuntime(NewPropertyObject(*p))
 }
 
-func NewPropertyObject(p PropertyObjectParam) PropertyObject {
+func NewPropertyObject(p PropertyObjectParam) rusty.Result[Property] {
+	if p.Id == "" {
+		return rusty.Err[Property](fmt.Errorf("PropertyObject Id is required"))
+	}
 	r := &propertyObject{
 		id:          p.Id,
 		_type:       OBJECT,
@@ -578,7 +637,7 @@ func NewPropertyObject(p PropertyObjectParam) PropertyObject {
 		_ctx:        p.Ctx,
 		// deref:       map[string]PropertyItem{},
 	}
-	return r
+	return rusty.Ok[Property](r)
 }
 
 type propertyItem struct {
@@ -610,14 +669,17 @@ func (pi *propertyItem) Property() Property {
 	return pi.property
 }
 
-func NewPropertyItem(name string, property Property, optionals ...bool) PropertyItem {
+func NewPropertyItem(name string, property rusty.Result[Property], optionals ...bool) rusty.Result[PropertyItem] {
+	if property.IsErr() {
+		return rusty.Err[PropertyItem](property.Err())
+	}
 	optional := true
 	if len(optionals) > 0 {
 		optional = optionals[0]
 	}
-	return &propertyItem{
+	return rusty.Ok[PropertyItem](&propertyItem{
 		name:     name,
 		optional: optional,
-		property: property,
-	}
+		property: property.Ok(),
+	})
 }

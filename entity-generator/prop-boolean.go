@@ -46,7 +46,7 @@ func PropertyBooleanToJson(b PropertyBoolean) JSONProperty {
 	return jsp
 }
 
-func (b *PropertyBooleanParam) Build() PropertyBoolean {
+func (b *PropertyBooleanParam) Build() rusty.Result[Property] {
 	return ConnectRuntime(NewPropertyBoolean(*b))
 }
 
@@ -105,9 +105,9 @@ func (p *propertyBoolean) Ref() rusty.Optional[string] {
 	return p.param.Ref
 }
 
-func NewPropertyBoolean(p PropertyBooleanParam) PropertyBoolean {
+func NewPropertyBoolean(p PropertyBooleanParam) rusty.Result[Property] {
 	p.Type = BOOLEAN
-	return &propertyBoolean{
+	return rusty.Ok[Property](&propertyBoolean{
 		param: p,
-	}
+	})
 }

@@ -64,7 +64,7 @@ func PropertyStringToJson(b PropertyString) JSONProperty {
 	return jsp
 }
 
-func (b *PropertyStringParam) Build() PropertyString {
+func (b *PropertyStringParam) Build() rusty.Result[Property] {
 	return ConnectRuntime(NewPropertyString(*b))
 }
 
@@ -135,8 +135,9 @@ func (p *propertyString) Id() string {
 	return p.param.Id
 }
 
-func NewPropertyString(p PropertyStringParam) PropertyString {
-	return &propertyString{
+func NewPropertyString(p PropertyStringParam) rusty.Result[Property] {
+	p.Type = STRING
+	return rusty.Ok[Property](&propertyString{
 		param: p,
-	}
+	})
 }

@@ -29,7 +29,7 @@ type JSONPropertyItems struct {
 func TestFlatJsonAndProp(t *testing.T) {
 	jsobj := TestJsonFlatSchema()
 	prop := NewPropertiesBuilder(NewTestContext()).
-		FromJson(PropertyRuntime{}, jsobj).Build().(PropertyObject)
+		FromJson(PropertyRuntime{}, jsobj).Build().Ok().Runtime().ToPropertyObject().Ok()
 	pjs := PropertyToJson(prop)
 	// assert.Equal(t, jsobj, pjs)
 
@@ -55,17 +55,17 @@ func TestFlatJsonAndProp(t *testing.T) {
 func TestFileNames(t *testing.T) {
 
 	ctx := NewTestContext()
-	sub := TestSubSchema(ctx, PropertyRuntime{})
+	sub := TestSubSchema(ctx, PropertyRuntime{}).Ok()
 	assert.Equal(t, sub.Runtime().FileName.Value(), "/abs/sub.schema.json")
 	_, found := ctx.Registry.registry[sub.Runtime().FileName.Value()]
 	assert.True(t, found)
 
 	ctx = NewTestContext()
-	base := TestFlatSchema(ctx, PropertyRuntime{}).Runtime().ToPropertyObject().Ok()
+	base := TestFlatSchema(ctx, PropertyRuntime{}).Ok().Runtime().ToPropertyObject().Ok()
 	assert.Equal(t, base.Runtime().FileName.Value(), "/abs/simple_type.schema.json")
 	_, found = ctx.Registry.registry[base.Runtime().FileName.Value()]
 	assert.True(t, found)
-	baseSub := base.Properties().Get("opt-sub").(PropertyObject)
+	baseSub, _ := base.Properties().Lookup("opt-sub")
 	assert.Equal(t, baseSub.Runtime().FileName.Value(), "/abs/sub.schema.json")
 
 	nested := TestSchema(ctx, PropertyRuntime{})
@@ -78,7 +78,7 @@ func TestFileNames(t *testing.T) {
 func TestNestedJsonAndProp(t *testing.T) {
 	ref := TestSchema(NewTestContext(), PropertyRuntime{})
 	refJs := PropertyToJson(ref)
-	ret := NewPropertiesBuilder(NewTestContext()).FromJson(PropertyRuntime{}, refJs).Build().(PropertyObject)
+	ret := NewPropertiesBuilder(NewTestContext()).FromJson(PropertyRuntime{}, refJs).Build().Ok().Runtime().ToPropertyObject().Ok()
 	retJs := PropertyToJson(ret)
 	// ref := TestFlatSchema(NewTestSchemaLoader()).(PropertyObject)
 

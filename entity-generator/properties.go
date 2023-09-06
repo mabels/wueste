@@ -1,12 +1,15 @@
 package entity_generator
 
 import (
+	"fmt"
+
 	"github.com/mabels/wueste/entity-generator/rusty"
 )
 
 type PropertiesBuilder struct {
 	// items   []PropertyItem
-	property Property
+	property rusty.Optional[Property]
+	errors   []error
 	_ctx     PropertyCtx
 	// _loader  SchemaLoader
 }
@@ -18,7 +21,11 @@ func NewPropertiesBuilder(run PropertyCtx) *PropertiesBuilder {
 }
 
 func (b *PropertiesBuilder) FileName(fname string) *PropertiesBuilder {
-	b.property.Runtime().SetFileName(fname)
+	if b.property.IsNone() {
+		b.errors = append(b.errors, fmt.Errorf("FileName Set with no property set"))
+		return b
+	}
+	b.property.Value().Runtime().SetFileName(fname)
 	return b
 }
 
@@ -30,7 +37,7 @@ func (b *PropertiesBuilder) Resolve(rt PropertyRuntime, prop Property) rusty.Res
 
 	return b._ctx.Registry.EnsureSchema(refVal, rt, func(fname string, rt PropertyRuntime) rusty.Result[Property] {
 		return loadSchema(fname, b._ctx, func(abs string, prop JSONProperty) rusty.Result[Property] {
-			return rusty.Ok(NewPropertiesBuilder(b._ctx).FromJson(rt, prop).FileName(abs).Build())
+			return NewPropertiesBuilder(b._ctx).FromJson(rt, prop).FileName(abs).Build()
 		})
 	})
 }
@@ -131,9 +138,10 @@ func (b *PropertiesBuilder) FromJson(rt PropertyRuntime, js JSONProperty) *Prope
 		// b.property = b.Resolve(NewProperty(PropertyParam{Ref: rusty.Some(ref)}))
 		res := b.Resolve(rt, NewProperty(PropertyParam{Ref: coerceString(ref)}))
 		if res.IsErr() {
-			panic(res.Err())
+			b.errors = append(b.errors, res.Err())
+		} else {
+			b.property = rusty.Some(res.Ok())
 		}
-		b.property = res.Ok()
 		return b
 	}
 	_typ, found := js.Lookup("type")
@@ -143,21 +151,29 @@ func (b *PropertiesBuilder) FromJson(rt PropertyRuntime, js JSONProperty) *Prope
 	typ := coerceString(_typ).Value()
 	switch typ {
 	case OBJECT:
-		b.property = b.BuildObject().FromJson(rt, js).Build()
+		b.assignProperty(b.BuildObject().FromJson(rt, js).Build())
 	case STRING:
-		b.property = b.BuildString().FromJson(rt, js).Build()
+		b.assignProperty(b.BuildString().FromJson(rt, js).Build())
 	case NUMBER:
-		b.property = b.BuildNumber().FromJson(rt, js).Build()
+		b.assignProperty(b.BuildNumber().FromJson(rt, js).Build())
 	case INTEGER:
-		b.property = b.BuildInteger().FromJson(rt, js).Build()
+		b.assignProperty(b.BuildInteger().FromJson(rt, js).Build())
 	case BOOLEAN:
-		b.property = b.BuildBoolean().FromJson(rt, js).Build()
+		b.assignProperty(b.BuildBoolean().FromJson(rt, js).Build())
 	case ARRAY:
-		b.property = b.BuildArray().FromJson(rt, js).Build()
+		b.assignProperty(b.BuildArray().FromJson(rt, js).Build())
 	default:
 		panic("unknown type:" + typ)
 	}
 	return b
+}
+
+func (b *PropertiesBuilder) assignProperty(p rusty.Result[Property]) {
+	if p.IsErr() {
+		b.errors = append(b.errors, p.Err())
+	} else {
+		b.property = rusty.Some(p.Ok())
+	}
 }
 
 func PropertyToJson(iprop Property) JSONProperty {
@@ -180,8 +196,18 @@ func PropertyToJson(iprop Property) JSONProperty {
 
 }
 
-func (b *PropertiesBuilder) Build() Property {
-	return b.property
+func (b *PropertiesBuilder) Build() rusty.Result[Property] {
+	if b.property.IsNone() {
+		b.errors = append(b.errors, fmt.Errorf("no property set"))
+	}
+	if len(b.errors) > 0 {
+		str := ""
+		for _, v := range b.errors {
+			str += v.Error() + "\n"
+		}
+		return rusty.Err[Property](fmt.Errorf(str))
+	}
+	return rusty.Ok[Property](b.property.Value())
 }
 
 // func (b *PropertiesBuilder) X(js JSONProperty, req []string) *PropertiesBuilder {

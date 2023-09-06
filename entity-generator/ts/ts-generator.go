@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	eg "github.com/mabels/wueste/entity-generator"
+	"github.com/mabels/wueste/entity-generator/rusty"
 	"github.com/mabels/wueste/entity-generator/wueste"
 )
 
@@ -1229,7 +1230,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 						g.lang.Call("constructor",
 							g.lang.ReturnType("param", g.lang.Generics("WuestenAttributeParameter", g.lang.AsType(getItemType(pa)))),
 						), func(wr *eg.ForIfWhileLangWriter) {
-							pi := eg.NewPropertyItem("ARRAY", getItemType(pa), false)
+							pi := eg.NewPropertyItem("ARRAY", rusty.Ok(getItemType(pa)), false).Ok()
 							attr := g.genWuesteBuilderAttribute("ARRAY", pi, func() string { return "param" })
 							wr.WriteLine(g.lang.AssignDefault(g.lang.Const("itemAttr"), attr))
 

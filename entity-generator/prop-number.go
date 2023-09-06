@@ -59,7 +59,7 @@ func PropertyNumberToJson(b PropertyNumber) JSONProperty {
 	return jsp
 }
 
-func (b *PropertyNumberParam) Build() PropertyNumber {
+func (b *PropertyNumberParam) Build() rusty.Result[Property] {
 	return ConnectRuntime(NewPropertyNumber(*b))
 }
 
@@ -67,11 +67,11 @@ type propertyNumber struct {
 	param PropertyNumberParam
 }
 
-func NewPropertyNumber(p PropertyNumberParam) PropertyNumber {
+func NewPropertyNumber(p PropertyNumberParam) rusty.Result[Property] {
 	p.Type = NUMBER
-	return &propertyNumber{
+	return rusty.Ok[Property](&propertyNumber{
 		param: p,
-	}
+	})
 }
 
 func (p *propertyNumber) Id() string {
