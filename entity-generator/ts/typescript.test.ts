@@ -122,7 +122,7 @@ it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   // const fromPayload = SimpleTypeFactory.Builder();
   (payload as { Type: string }).Type = "Kaput";
   expect(SimpleTypeFactory.FromPayload(payload).unwrap_err().message).toEqual(
-    "Payload Type mismatch:[https://SimpleType,SimpleType] != Kaput",
+    "WuestePayload Type mismatch:[https://SimpleType,SimpleType] != Kaput",
   );
 });
 

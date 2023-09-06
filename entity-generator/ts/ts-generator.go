@@ -685,7 +685,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 			wr.WriteBlock("Builder():", g.lang.PublicName(prop.Title(), "Builder"), func(wr *eg.ForIfWhileLangWriter) {
 				wr.FormatLine("return new %s()", g.lang.PublicName(prop.Title(), "Builder"))
 			})
-			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result").activated = true
+			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result", "WuesteResult").activated = true
 			wr.WriteBlock("", g.lang.ReturnType(
 				g.lang.Call("ToObject", g.lang.ReturnType("obj", g.lang.PublicName(prop.Title()))),
 				g.lang.PublicName(prop.Title(), "Object")), func(wr *eg.ForIfWhileLangWriter) {
@@ -707,9 +707,9 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteJsonDecoder").activated = true
 			wr.WriteBlock("",
 				g.lang.ReturnType(
-					g.lang.Call("FromPayload", g.lang.ReturnType("val", "Payload"),
+					g.lang.Call("FromPayload", g.lang.ReturnType("val", "WuestePayload"),
 						g.lang.Generics("decoder = WuesteJsonDecoder", partialType)),
-					g.lang.Generics("Result", g.lang.PublicName(prop.Title()))),
+					g.lang.Generics("WuesteResult", g.lang.PublicName(prop.Title()))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					ids := []string{}
 					if prop.Id() != "" {
@@ -723,12 +723,12 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 						conditions = append(conditions, fmt.Sprintf("val.Type === %s", g.lang.Quote(id)))
 					}
 					wr.WriteBlock("if", fmt.Sprintf("(!(%s))", strings.Join(conditions, " || ")), func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return Result.Err(new Error(`Payload Type mismatch:[%s] != ${val.Type}`));", strings.Join(ids, ","))
+						wr.FormatLine("return WuesteResult.Err(new Error(`WuestePayload Type mismatch:[%s] != ${val.Type}`));", strings.Join(ids, ","))
 					})
 					// <Partial<SimpleTypeParam>>
 					wr.FormatLine("const data = %s", g.lang.Call("decoder", "val.Data"))
 					wr.WriteBlock("if", "(data.is_err())", func(wr *eg.ForIfWhileLangWriter) {
-						wr.WriteLine("return Result.Err(data.unwrap_err());")
+						wr.WriteLine("return WuesteResult.Err(data.unwrap_err());")
 					})
 
 					wr.WriteLine(
@@ -737,10 +737,10 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 					wr.WriteLine("return builder.Coerce(data.unwrap());")
 				})
 
-			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result").activated = true
+			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result", "WuesteResult").activated = true
 			wr.WriteBlock("", g.lang.ReturnType(
 				g.lang.Call("Clone", g.lang.ReturnType("oth", g.lang.PublicName(prop.Title()))),
-				g.lang.Generics("Result", g.lang.PublicName(prop.Title()))), func(wr *eg.ForIfWhileLangWriter) {
+				g.lang.Generics("WuesteResult", g.lang.PublicName(prop.Title()))), func(wr *eg.ForIfWhileLangWriter) {
 				wr.FormatLine("const builder = new %s();", g.lang.PublicName(prop.Title(), "Builder"))
 				for _, pi := range prop.Items() {
 					wr.WriteLine(
@@ -1170,7 +1170,7 @@ func (g *tsGenerator) generateArrayCoerce(level int, rootArray, returnType strin
 		g.lang.Const(fmt.Sprintf("a%d", level)),
 		g.lang.Call(g.lang.Generics("WuesteIterable", g.lang.AsType(prop.Items())), rootArray)))
 	wr.WriteIf(fmt.Sprintf("(!a%d)", level), func(wr *eg.ForIfWhileLangWriter) {
-		wr.FormatLine("return Result.Err(\"it's not iterable on level %d\")", level)
+		wr.FormatLine("return WuesteResult.Err(\"it's not iterable on level %d\")", level)
 	})
 	wr.WriteLine(
 		g.lang.AssignDefault(
@@ -1198,7 +1198,7 @@ func (g *tsGenerator) generateArrayCoerce(level int, rootArray, returnType strin
 					g.lang.Const("attrRes"), g.lang.Call("itemAttr.Coerce", root)))
 				wr.WriteIf(g.lang.RoundBrackets("attrRes.is_err()"), func(wr *eg.ForIfWhileLangWriter) {
 					wr.WriteLine(g.lang.Return(
-						g.lang.Generics("attrRes as unknown as Result", returnType)))
+						g.lang.Generics("attrRes as unknown as WuesteResult", returnType)))
 				})
 				wr.WriteLine(g.lang.Call(fmt.Sprintf("r%d.push", level), g.lang.Call("attrRes.unwrap")))
 			}
@@ -1236,7 +1236,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 
 							wr.WriteBlock("", "super({jsonname: param.jsonname, varname: param.varname, base: param.base}, (t0: unknown) => ", func(wr *eg.ForIfWhileLangWriter) {
 								g.generateArrayCoerce(0, "t0", g.lang.AsType(pa), pa, wr)
-								wr.WriteLine(g.lang.Return(g.lang.Call("Result.Ok", "r0")))
+								wr.WriteLine(g.lang.Return(g.lang.Call("WuesteResult.Ok", "r0")))
 							}, " {", "})")
 						})
 				})
@@ -1251,7 +1251,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 			wr.WriteLine(g.lang.Readonly(
 				g.lang.ReturnType(
 					g.lang.PrivateName(pi.Name()),
-					g.lang.Generics("Result", g.lang.AsTypeNullable(pi.Property(), WithOptional(pi.Optional()))))))
+					g.lang.Generics("WuesteResult", g.lang.AsTypeNullable(pi.Property(), WithOptional(pi.Optional()))))))
 		})
 
 	attrsClassName := g.lang.PublicName(prop.Title(), "Attributes")
@@ -1285,10 +1285,10 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 				g.lang.AssignDefault(g.lang.Readonly("Coerce"),
 					g.lang.ReturnType(
 						g.lang.Call("", g.lang.ReturnType("value", "unknown")),
-						g.lang.Generics("Result", g.lang.PublicName(prop.Title())))),
+						g.lang.Generics("WuesteResult", g.lang.PublicName(prop.Title())))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.WriteBlock("if", "(!(typeof value === 'object' && value !== null))", func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return Result.Err(Error('expected object'));")
+						wr.FormatLine("return WuesteResult.Err(Error('expected object'));")
 					})
 					wr.WriteBlock("return", "this._fromResults", func(wr *eg.ForIfWhileLangWriter) {
 						for _, pi := range prop.Items() {
@@ -1300,7 +1300,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 			wr.WriteBlock("",
 				g.lang.ReturnType(
 					g.lang.Call("Get", ""),
-					g.lang.Generics("Result", g.lang.PublicName(prop.Title()))),
+					g.lang.Generics("WuesteResult", g.lang.PublicName(prop.Title()))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.WriteBlock("return", "this._fromResults", func(wr *eg.ForIfWhileLangWriter) {
 						for _, pi := range prop.Items() {
@@ -1312,7 +1312,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 			wr.WriteBlock("",
 				g.lang.ReturnType(
 					g.lang.Call("_fromResults", g.lang.ReturnType("results", resultsClassName)),
-					g.lang.Generics("Result", g.lang.PublicName(prop.Title()))),
+					g.lang.Generics("WuesteResult", g.lang.PublicName(prop.Title()))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.WriteLine("const errors: string[] = [];")
 					for _, pi := range prop.Items() {
@@ -1323,10 +1323,10 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 					}
 					// wr.FormatLine("const errors = Object.values(results).filter(r => r.is_err()).map(r => r.unwrap_err().message)")
 					wr.WriteBlock("if", "(errors.length > 0)", func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return Result.Err(Error(errors.join('\\n')));")
+						wr.FormatLine("return WuesteResult.Err(Error(errors.join('\\n')));")
 					})
 					wr.WriteBlock("return",
-						g.lang.Generics("Result.Ok", g.lang.PublicName(prop.Title())),
+						g.lang.Generics("WuesteResult.Ok", g.lang.PublicName(prop.Title())),
 						func(wr *eg.ForIfWhileLangWriter) {
 							for _, pi := range prop.Items() {
 								wr.FormatLine("%s: results.%s.unwrap(),", g.lang.PublicName(pi.Name()), g.lang.PrivateName(pi.Name()))
@@ -1362,7 +1362,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 				})
 		}, func(wr *eg.ForIfWhileLangWriter) {
 
-			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result").activated = true
+			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result", "WuesteResult").activated = true
 
 			// Coerce(value: unknown): Result<NestedType, Error> {
 			// 	throw new Error("Method not implemented.");
@@ -1381,26 +1381,26 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 				wr.WriteLine(g.lang.AssignDefault("this._attr", "attr"))
 			})
 			wr.WriteBlock("", g.lang.ReturnType(
-				g.lang.Call("Get", ""), g.lang.Generics("Result", g.lang.PublicName(prop.Title()))), func(wr *eg.ForIfWhileLangWriter) {
+				g.lang.Call("Get", ""), g.lang.Generics("WuesteResult", g.lang.PublicName(prop.Title()))), func(wr *eg.ForIfWhileLangWriter) {
 				wr.WriteLine(g.lang.Return(g.lang.Call("this._attr.Get", "")))
 			})
-			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "Payload").activated = true
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "Payload", "WuestePayload").activated = true
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteJsonEncoder").activated = true
 			wr.WriteBlock("",
 				g.lang.ReturnType(
 					g.lang.Call("AsPayload",
 						g.lang.Generics("encoder = WuesteJsonEncoder", g.lang.PublicName(prop.Title(), "Object"))),
-					g.lang.Generics("Result", "Payload")),
+					g.lang.Generics("WuesteResult", "WuestePayload")),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.FormatLine("const val = this.Get();")
 					wr.WriteBlock("if", "(val.is_err())", func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return Result.Err(val.unwrap_err());")
+						wr.FormatLine("return WuesteResult.Err(val.unwrap_err());")
 					})
 					wr.FormatLine("const data = encoder(%s.ToObject(val.unwrap()))", g.lang.PublicName(prop.Title(), "Factory"))
 					wr.WriteBlock("if", "(data.is_err())", func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return Result.Err(data.unwrap_err());")
+						wr.FormatLine("return WuesteResult.Err(data.unwrap_err());")
 					})
-					wr.WriteBlock("return", "Result.Ok", func(wr *eg.ForIfWhileLangWriter) {
+					wr.WriteBlock("return", "WuesteResult.Ok", func(wr *eg.ForIfWhileLangWriter) {
 						id := prop.Id()
 						if id == "" {
 							id = prop.Title()
@@ -1533,14 +1533,23 @@ type externalType struct {
 	activated  bool
 	// prefix     string
 	fileName string
-	types    map[string]struct{}
+	types    map[string]*string
 	property eg.PropertyObject
+}
+
+type ImportType struct {
+	Alias *string
+	Type  string
 }
 
 func (et *externalType) Types() []string {
 	types := make([]string, 0, len(et.types))
-	for k, _ := range et.types {
-		types = append(types, k)
+	for k, alias := range et.types {
+		str := k
+		if alias != nil {
+			str = fmt.Sprintf("%s as %s", k, *alias)
+		}
+		types = append(types, str)
 	}
 	sort.Strings(types)
 	return types
@@ -1559,7 +1568,11 @@ func (g *externalTypes) AddProperty(fileName, typ string, prop eg.Property) {
 	}
 }
 
-func (g *externalTypes) AddType(fileName, typeName string) *externalType {
+func (g *externalTypes) AddType(fileName, typeName string, optAlias ...string) *externalType {
+	var alias *string = nil
+	if len(optAlias) > 0 {
+		alias = &optAlias[0]
+	}
 	if fileName == "" {
 		return nil
 	}
@@ -1568,11 +1581,11 @@ func (g *externalTypes) AddType(fileName, typeName string) *externalType {
 		et = &externalType{
 			toGenerate: false,
 			fileName:   fileName,
-			types:      make(map[string]struct{}),
+			types:      make(map[string]*string),
 		}
 		g.types[fileName] = et
 	}
-	et.types[typeName] = struct{}{}
+	et.types[typeName] = alias
 	return et
 }
 

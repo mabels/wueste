@@ -156,7 +156,7 @@ var Sub2Schema = json2JSONProperty(`{
 	"fileName":    "wurst/sub2.schema.json",
 	"$id":         "http://example.com/sub2.schema.json",
 	"$schema":     "http://json-schema.org/draft-07/schema#",
-	"title":       "Sub2",
+	"title":       "Result",
 	"type":        "object",
 	"description": "Sub2 description",
 	"properties": {
@@ -214,7 +214,7 @@ func SchemaSchema(sl PropertyCtx) Property {
 func TestJSONSubSchema() JSONProperty {
 	return json2JSONProperty(`{
 		"$id":         "https://Sub",
-		"title":       "Sub",
+		"title":       "Payload",
 		"description": "Description",
 		"properties": {
 			"Test": {
@@ -348,7 +348,7 @@ func TestSubSchema(sl PropertyCtx, rt PropertyRuntime) rusty.Result[Property] {
 	return sl.Registry.EnsureSchema("file://./sub.schema.json", rt, func(fname string, rt PropertyRuntime) rusty.Result[Property] {
 		return NewPropertiesBuilder(sl).BuildObject().
 			id("https://Sub").
-			title("Sub").
+			title("Payload").
 			description("Description").
 			propertiesAdd(NewPropertyItem("Test", NewPropertyString(PropertyStringParam{}))).
 			propertiesAdd(NewPropertyItem("opt-Test", NewPropertyString(PropertyStringParam{}))).
