@@ -42,7 +42,7 @@ jobs:
       - name: Build JS wueste
         run: |
           pnpm install
-          pnpm run prettier -- --check
+          pnpm run prettier --check
           pnpm run lint
           pnpm run build
           pnpm run test
