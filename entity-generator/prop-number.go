@@ -34,16 +34,14 @@ type PropertyNumberParam struct {
 	Ctx     PropertyCtx
 }
 
-func (b *PropertyNumberParam) FromJson(rt PropertyRuntime, js JSONProperty) *PropertyNumberParam {
+func (b *PropertyNumberParam) FromJson(js JSONProperty) *PropertyNumberParam {
 	b.Type = "number"
-	b.Runtime.Assign(rt)
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.Format = getFromAttributeOptionalString(js, "format")
 	b.Default = getFromAttributeOptionalFloat64(js, "default")
 	b.Maximum = getFromAttributeOptionalFloat64(js, "maximum")
 	b.Minimum = getFromAttributeOptionalFloat64(js, "minimum")
-	b.Runtime.Assign(rt)
 	return b
 }
 

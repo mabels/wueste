@@ -78,28 +78,31 @@ func TestDeref(t *testing.T) {
 	base := &schemaRegistryItem{
 		written: false,
 		prop: // NewPropertyItem("http://example.com/base.schema.json",
-		NewPropertiesBuilder(ctx).BuildObject().FromJson(rt, BaseSchema).
+		NewPropertiesBuilder(ctx).BuildObject(rt).FromJson(BaseSchema).
 			fileName(abs(BaseSchema.Get("fileName").(string))).Build().Ok(),
 	}
 	testSub := &schemaRegistryItem{
 		written: false,
 		prop: // NewPropertyItem("http://example.com/sub.schema.json",
-		NewPropertiesBuilder(ctx).BuildObject().FromJson(
-			*base.prop.Runtime().ToPropertyObject().Ok().PropertyByName("sub").Ok().Property().Runtime(), TestJsonSubSchema()).
+		NewPropertiesBuilder(ctx).
+			BuildObject(*base.prop.Runtime().ToPropertyObject().Ok().PropertyByName("sub").Ok().Property().Runtime()).
+			FromJson(TestJsonSubSchema()).
 			fileName(abs(TestJsonSubSchema().Get("fileName").(string))).Build().Ok(),
 	}
 	sub2 := &schemaRegistryItem{
 		written: false,
 		prop: // NewPropertyItem("http://example.com/sub2.schema.json",
-		NewPropertiesBuilder(ctx).BuildObject().
-			FromJson(*testSub.prop.Runtime().ToPropertyObject().Ok().PropertyByName("sub-down").Ok().Property().Runtime(), Sub2Schema).
+		NewPropertiesBuilder(ctx).
+			BuildObject(*testSub.prop.Runtime().ToPropertyObject().Ok().PropertyByName("sub-down").Ok().Property().Runtime()).
+			FromJson(Sub2Schema).
 			fileName(abs(Sub2Schema.Get("fileName").(string))).Build().Ok(),
 	}
 	sub3 := &schemaRegistryItem{
 		written: false,
 		prop: // NewPropertyItem("http://example.com/sub2.schema.json",
-		NewPropertiesBuilder(ctx).BuildObject().
-			FromJson(*sub2.prop.Runtime().ToPropertyObject().Ok().PropertyByName("bar").Ok().Property().Runtime(), Sub3Schema).
+		NewPropertiesBuilder(ctx).
+			BuildObject(*sub2.prop.Runtime().ToPropertyObject().Ok().PropertyByName("bar").Ok().Property().Runtime()).
+			FromJson(Sub3Schema).
 			fileName(abs(Sub3Schema.Get("fileName").(string))).Build().Ok(),
 	}
 	refItems := []SchemaRegistryItem{base, testSub, sub2, sub3}

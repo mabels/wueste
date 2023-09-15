@@ -192,26 +192,26 @@ func JSONSub3() []byte {
 	return out
 }
 
-func SchemaSchema(sl PropertyCtx) Property {
-	return NewPropertiesBuilder(sl).BuildObject().
-		id("JsonSchema").
-		title("JsonSchema").
-		description("JSON Schema").
-		propertiesAdd(NewPropertyItem("$id", NewPropertyString(PropertyStringParam{}))).
-		propertiesAdd(NewPropertyItem("$schema", NewPropertyString(PropertyStringParam{}))).
-		propertiesAdd(NewPropertyItem("title", NewPropertyString(PropertyStringParam{}))).
-		propertiesAdd(NewPropertyItem("type", NewPropertyString(PropertyStringParam{}))).
-		propertiesAdd(NewPropertyItem("properties", NewPropertyObject(PropertyObjectParam{}))).
-		propertiesAdd(NewPropertyItem("required", NewPropertyArray(PropertyArrayParam{}))).
-		required([]string{"$id", "$schema", "title", "type", "properties"}).
-		Build().Ok()
-}
+// func SchemaSchema(sl PropertyCtx) Property {
+// 	return NewPropertiesBuilder(sl).BuildObject().
+// 		id("JsonSchema").
+// 		title("JsonSchema").
+// 		description("JSON Schema").
+// 		propertiesAdd(NewPropertyItem("$id", NewPropertyString(PropertyStringParam{}))).
+// 		propertiesAdd(NewPropertyItem("$schema", NewPropertyString(PropertyStringParam{}))).
+// 		propertiesAdd(NewPropertyItem("title", NewPropertyString(PropertyStringParam{}))).
+// 		propertiesAdd(NewPropertyItem("type", NewPropertyString(PropertyStringParam{}))).
+// 		propertiesAdd(NewPropertyItem("properties", NewPropertyObject(PropertyObjectParam{}))).
+// 		propertiesAdd(NewPropertyItem("required", NewPropertyArray(PropertyArrayParam{}))).
+// 		required([]string{"$id", "$schema", "title", "type", "properties"}).
+// 		Build().Ok()
+// }
 
 // func toPtrString(s string) *string {
 // 	return &s
 // }
 
-func TestJSONSubSchema() JSONProperty {
+func TestJSONPayloadSchema() JSONProperty {
 	return json2JSONProperty(`{
 		"$id":         "https://Sub",
 		"title":       "Payload",
@@ -222,6 +222,9 @@ func TestJSONSubSchema() JSONProperty {
 			},
 			"opt-Test": {
 				"type": "string"
+			},
+			"Open": {
+				"type": "object"
 			}
 		},
 		"required": ["Test"],
@@ -339,27 +342,28 @@ func TestJsonFlatSchema() JSONProperty {
 	if !ok {
 		panic("not ok")
 	}
-	prop.Set("sub", TestJSONSubSchema())
-	prop.Set("opt-sub", TestJSONSubSchema())
+	prop.Set("sub", TestJSONPayloadSchema())
+	prop.Set("opt-sub", TestJSONPayloadSchema())
 	return json
 }
 
-func TestSubSchema(sl PropertyCtx, rt PropertyRuntime) rusty.Result[Property] {
+func TestPayloadSchema(sl PropertyCtx, rt PropertyRuntime) rusty.Result[Property] {
 	return sl.Registry.EnsureSchema("file://./sub.schema.json", rt, func(fname string, rt PropertyRuntime) rusty.Result[Property] {
-		return NewPropertiesBuilder(sl).BuildObject().
+		return NewPropertiesBuilder(sl).BuildObject(rt).
 			id("https://Sub").
 			title("Payload").
 			description("Description").
 			propertiesAdd(NewPropertyItem("Test", NewPropertyString(PropertyStringParam{}))).
 			propertiesAdd(NewPropertyItem("opt-Test", NewPropertyString(PropertyStringParam{}))).
-			required([]string{"Test"}).
+			propertiesAdd(NewPropertyItem("Open", NewPropertyObject(PropertyObjectParam{}))).
+			required([]string{"Test", "Open"}).
 			Build()
 	})
 }
 
 func TestFlatSchema(sl PropertyCtx, rt PropertyRuntime) rusty.Result[Property] {
 	return sl.Registry.EnsureSchema("file://./simple_type.schema.json", rt, func(fname string, rt PropertyRuntime) rusty.Result[Property] {
-		return NewPropertiesBuilder(sl).BuildObject().
+		return NewPropertiesBuilder(sl).BuildObject(rt).
 			id("https://SimpleType").
 			title("SimpleType").
 			description("Jojo SimpleType").
@@ -393,8 +397,8 @@ func TestFlatSchema(sl PropertyCtx, rt PropertyRuntime) rusty.Result[Property] {
 			propertiesAdd(NewPropertyItem("default-bool", NewPropertyBoolean(PropertyBooleanParam{Default: rusty.Some(true)}))).
 			propertiesAdd(NewPropertyItem("optional-bool", NewPropertyBoolean(PropertyBooleanParam{}))).
 			propertiesAdd(NewPropertyItem("optional-default-bool", NewPropertyBoolean(PropertyBooleanParam{Default: rusty.Some(true)}))).
-			propertiesAdd(NewPropertyItem("sub", TestSubSchema(sl, rt))).
-			propertiesAdd(NewPropertyItem("opt-sub", TestSubSchema(sl, rt))).
+			propertiesAdd(NewPropertyItem("sub", TestPayloadSchema(sl, rt))).
+			propertiesAdd(NewPropertyItem("opt-sub", TestPayloadSchema(sl, rt))).
 			required([]string{
 				"string",
 				"createdAt",
@@ -419,7 +423,7 @@ func TestSchema(sl PropertyCtx, rts ...PropertyRuntime) Property {
 		rt = rts[0]
 	}
 	return sl.Registry.EnsureSchema("file://./nested_type.schema.json", rt, func(fname string, rt PropertyRuntime) rusty.Result[Property] {
-		ps := NewPropertiesBuilder(sl).BuildObject()
+		ps := NewPropertiesBuilder(sl).BuildObject(rt)
 		fls := TestFlatSchema(sl, rt).Ok().Runtime().ToPropertyObject().Ok()
 		for _, item := range fls.Items() {
 			ps.propertiesAdd(rusty.Ok(item))
@@ -452,18 +456,18 @@ func TestSchema(sl PropertyCtx, rts ...PropertyRuntime) Property {
 				Items: NewPropertyArray(PropertyArrayParam{
 					Items: NewPropertyArray(PropertyArrayParam{
 						Items: NewPropertyArray(PropertyArrayParam{
-							Items: TestSubSchema(sl, rt)}),
+							Items: TestPayloadSchema(sl, rt)}),
 					})})}))).
 			propertiesAdd(NewPropertyItem("opt-arrayarrayFlatSchema", NewPropertyArray(PropertyArrayParam{
 				Items: NewPropertyArray(PropertyArrayParam{
 					Items: NewPropertyArray(PropertyArrayParam{
 						Items: NewPropertyArray(PropertyArrayParam{
-							Items: TestSubSchema(sl, rt)}),
+							Items: TestPayloadSchema(sl, rt)}),
 					})})}))).
-			propertiesAdd(NewPropertyItem("sub-flat", TestSubSchema(sl, rt))).
-			propertiesAdd(NewPropertyItem("opt-sub-flat", TestSubSchema(sl, rt))).
-			propertiesAdd(NewPropertyItem("arraySubType", NewPropertyArray(PropertyArrayParam{Items: TestSubSchema(sl, rt)}))).
-			propertiesAdd(NewPropertyItem("opt-arraySubType", NewPropertyArray(PropertyArrayParam{Items: TestSubSchema(sl, rt)}))).
+			propertiesAdd(NewPropertyItem("sub-flat", TestPayloadSchema(sl, rt))).
+			propertiesAdd(NewPropertyItem("opt-sub-flat", TestPayloadSchema(sl, rt))).
+			propertiesAdd(NewPropertyItem("arraySubType", NewPropertyArray(PropertyArrayParam{Items: TestPayloadSchema(sl, rt)}))).
+			propertiesAdd(NewPropertyItem("opt-arraySubType", NewPropertyArray(PropertyArrayParam{Items: TestPayloadSchema(sl, rt)}))).
 			required(append([]string{
 				"arrayarrayBool",
 				"sub-flat",

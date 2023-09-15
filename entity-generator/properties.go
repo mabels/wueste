@@ -42,50 +42,50 @@ func (b *PropertiesBuilder) Resolve(rt PropertyRuntime, prop Property) rusty.Res
 	})
 }
 
-func (b *PropertiesBuilder) BuildObject() *PropertyObjectParam {
+func (b *PropertiesBuilder) BuildObject(rt PropertyRuntime) *PropertyObjectParam {
 	return &PropertyObjectParam{
-		// Runtime: b._runtime,
-		Ctx:  b._ctx,
-		Type: OBJECT,
+		Runtime: rt,
+		Ctx:     b._ctx,
+		Type:    OBJECT,
 	}
 }
-func (b *PropertiesBuilder) BuildArray() *PropertyArrayParam {
+func (b *PropertiesBuilder) BuildArray(rt PropertyRuntime) *PropertyArrayParam {
 	return &PropertyArrayParam{
-		// Runtime: b._runtime,
-		Ctx:  b._ctx,
-		Type: ARRAY,
+		Runtime: rt,
+		Ctx:     b._ctx,
+		Type:    ARRAY,
 	}
 }
 
-func (b *PropertiesBuilder) BuildString() *PropertyStringParam {
+func (b *PropertiesBuilder) BuildString(rt PropertyRuntime) *PropertyStringParam {
 	return &PropertyStringParam{
-		// Runtime: b._runtime,
-		Ctx:  b._ctx,
-		Type: STRING,
+		Runtime: rt,
+		Ctx:     b._ctx,
+		Type:    STRING,
 	}
 }
 
-func (b *PropertiesBuilder) BuildBoolean() *PropertyBooleanParam {
+func (b *PropertiesBuilder) BuildBoolean(rt PropertyRuntime) *PropertyBooleanParam {
 	return &PropertyBooleanParam{
-		// Runtime: b._runtime,
-		Ctx:  b._ctx,
-		Type: BOOLEAN,
+		Runtime: rt,
+		Ctx:     b._ctx,
+		Type:    BOOLEAN,
 	}
 }
 
-func (b *PropertiesBuilder) BuildInteger() *PropertyIntegerParam {
+func (b *PropertiesBuilder) BuildInteger(rt PropertyRuntime) *PropertyIntegerParam {
 	return &PropertyIntegerParam{
-		// Runtime: b._runtime,
-		Ctx:  b._ctx,
-		Type: INTEGER,
+		Runtime: rt,
+		Ctx:     b._ctx,
+		Type:    INTEGER,
 	}
 }
 
-func (b *PropertiesBuilder) BuildNumber() *PropertyNumberParam {
+func (b *PropertiesBuilder) BuildNumber(rt PropertyRuntime) *PropertyNumberParam {
 	return &PropertyNumberParam{
-		// Runtime: b._runtime,
-		Ctx:  b._ctx,
-		Type: NUMBER,
+		Runtime: rt,
+		Ctx:     b._ctx,
+		Type:    NUMBER,
 	}
 }
 
@@ -151,17 +151,17 @@ func (b *PropertiesBuilder) FromJson(rt PropertyRuntime, js JSONProperty) *Prope
 	typ := coerceString(_typ).Value()
 	switch typ {
 	case OBJECT:
-		b.assignProperty(b.BuildObject().FromJson(rt, js).Build())
+		b.assignProperty(b.BuildObject(rt).FromJson(js).Build())
 	case STRING:
-		b.assignProperty(b.BuildString().FromJson(rt, js).Build())
+		b.assignProperty(b.BuildString(rt).FromJson(js).Build())
 	case NUMBER:
-		b.assignProperty(b.BuildNumber().FromJson(rt, js).Build())
+		b.assignProperty(b.BuildNumber(rt).FromJson(js).Build())
 	case INTEGER:
-		b.assignProperty(b.BuildInteger().FromJson(rt, js).Build())
+		b.assignProperty(b.BuildInteger(rt).FromJson(js).Build())
 	case BOOLEAN:
-		b.assignProperty(b.BuildBoolean().FromJson(rt, js).Build())
+		b.assignProperty(b.BuildBoolean(rt).FromJson(js).Build())
 	case ARRAY:
-		b.assignProperty(b.BuildArray().FromJson(rt, js).Build())
+		b.assignProperty(b.BuildArray(rt).FromJson(js).Build())
 	default:
 		panic("unknown type:" + typ)
 	}
@@ -191,7 +191,7 @@ func PropertyToJson(iprop Property) JSONProperty {
 	case PropertyObject:
 		return PropertyObjectToJson(prop)
 	default:
-		panic("unknown type: " + prop.(Property).Type())
+		panic("unknown type: " + prop.Type())
 	}
 
 }

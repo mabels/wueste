@@ -27,10 +27,9 @@ type PropertyBooleanParam struct {
 	// Optional    bool
 }
 
-func (b *PropertyBooleanParam) FromJson(rt PropertyRuntime, js JSONProperty) *PropertyBooleanParam {
+func (b *PropertyBooleanParam) FromJson(js JSONProperty) *PropertyBooleanParam {
 	// b.Id = getFromAttributeString(js, "$id")
 	b.Type = "boolean"
-	b.Runtime.Assign(rt)
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.Default = getFromAttributeOptionalBoolean(js, "default")

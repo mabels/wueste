@@ -44,9 +44,8 @@ type PropertyStringParam struct {
 	Ctx     PropertyCtx
 }
 
-func (b *PropertyStringParam) FromJson(rt PropertyRuntime, js JSONProperty) *PropertyStringParam {
+func (b *PropertyStringParam) FromJson(js JSONProperty) *PropertyStringParam {
 	b.Type = STRING
-	b.Runtime.Assign(rt)
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.Format = getFromAttributeOptionalString(js, "format")

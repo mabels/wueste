@@ -1,3 +1,5 @@
+import { Payload, PayloadFactory } from "../../src/generated/go/payload";
+
 import { NestedTypeFactory } from "../../src/generated/go/nested_type";
 import { SimpleTypeFactory, SimpleTypeParam } from "../../src/generated/go/simple_type";
 
@@ -9,9 +11,23 @@ const simpleTypeParam: SimpleTypeParam = {
   string: "String42",
   sub: {
     Test: "Test42",
+    Open: {
+      X: {
+        Y: {
+          Z: 42,
+        },
+      },
+    },
   },
   opt_sub: {
     Test: "Test32",
+    Open: {
+      X: {
+        Y: {
+          Z: 42,
+        },
+      },
+    },
   },
   optional_bool: true,
   optional_createdAt: new Date(),
@@ -22,7 +38,16 @@ const simpleTypeParam: SimpleTypeParam = {
 
 it("SimpleType-Error", () => {
   const builder = SimpleTypeFactory.Builder();
-  builder.sub({ Test: { toString: 5 } as unknown as string });
+  builder.sub({
+    Test: { toString: 5 } as unknown as string,
+    Open: {
+      X: {
+        Y: {
+          Z: 42,
+        },
+      },
+    },
+  });
   builder.float64("WTF" as unknown as number);
   expect(builder.Get().unwrap_err().message).toEqual(
     [
@@ -44,7 +69,16 @@ it("SimpleType-BuilderSet", () => {
   builder.float64(42.42);
   builder.int64(42);
   builder.string("String42");
-  builder.sub({ Test: "Test42" });
+  builder.sub({
+    Test: "Test42",
+    Open: {
+      X: {
+        Y: {
+          Z: 42,
+        },
+      },
+    },
+  });
   expect(builder.Get().unwrap()).toEqual({
     bool: true,
     createdAt: now,
@@ -69,6 +103,13 @@ it("SimpleType-BuilderSet", () => {
     string: "String42",
     sub: {
       Test: "Test42",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
     },
   });
 });
@@ -137,9 +178,23 @@ it(`SimpleType-Builder Object-Clone`, () => {
     string: "String42",
     sub: {
       Test: "Test42",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
     },
     opt_sub: {
       Test: "Test32",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
     },
     optional_bool: true,
     optional_createdAt: now,
@@ -148,6 +203,57 @@ it(`SimpleType-Builder Object-Clone`, () => {
     optional_string: "String32",
   });
   expect(SimpleTypeFactory.Clone(builder.Get().unwrap()).unwrap()).toEqual(builder.Get().unwrap());
+});
+
+it(`SimpleType-Builder ToObject`, () => {
+  const builder = SimpleTypeFactory.Builder();
+  const now = new Date();
+  const dict = {
+    bool: true,
+    createdAt: now,
+    float64: 42.42,
+    int64: 42,
+    "default-bool": true,
+    "default-createdAt": now,
+    "default-float64": 5000,
+    "default-int64": 64,
+    "default-string": "hallo",
+    string: "String42",
+    sub: {
+      Test: "Test42",
+      "opt-Test": "Test32",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
+    },
+    "opt-sub": {
+      Test: "Test32",
+      "opt-Test": "Test32",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
+    },
+    "optional-default-bool": true,
+    "optional-default-createdAt": now,
+    "optional-default-float32": 50,
+    "optional-default-int32": 32,
+    "optional-default-string": "hallo",
+    "optional-bool": true,
+    "optional-createdAt": now,
+    "optional-float32": 32.32,
+    "optional-int32": 32,
+    "optional-string": "String32",
+  };
+  const ref = SimpleTypeFactory.ToObject(builder.Coerce(dict).unwrap());
+  expect(ref).toEqual(dict);
 });
 
 it("SimpleType-BuilderCoerce", () => {
@@ -161,9 +267,23 @@ it("SimpleType-BuilderCoerce", () => {
     string: "String42",
     sub: {
       Test: "Test42",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
     },
     opt_sub: {
       Test: "Test32",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
     },
     optional_bool: true,
     optional_createdAt: now,
@@ -183,6 +303,13 @@ it("SimpleType-BuilderCoerce", () => {
     int64: 42,
     opt_sub: {
       Test: "Test32",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
     },
     optional_bool: true,
     optional_createdAt: now,
@@ -197,6 +324,13 @@ it("SimpleType-BuilderCoerce", () => {
     string: "String42",
     sub: {
       Test: "Test42",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
     },
   });
 });
@@ -212,10 +346,24 @@ it("SimpleType-BuilderCoerce-Default", () => {
     string: "String42",
     sub: {
       Test: "Test42",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
     },
     default_int64: 56,
     opt_sub: {
       Test: "Test32",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
     },
     optional_bool: true,
     optional_createdAt: now,
@@ -238,9 +386,59 @@ it(`NestedType-Builder Object-JSON-Object`, () => {
         arrayInteger: [42.44, "43.44"],
         arrayNumber: [42.42, "43.43"],
         arrayString: ["42", 43],
-        arraySubType: [{ Test: "Test42" }, { Test: 43 }],
+        arraySubType: [
+          {
+            Test: "Test42",
+            Open: {
+              X: {
+                Y: {
+                  Z: 42,
+                },
+              },
+            },
+          },
+          {
+            Test: 43,
+            Open: {
+              X: {
+                Y: {
+                  Z: 42,
+                },
+              },
+            },
+          },
+        ],
         arrayarrayBool: [[[[true]]], [[["false"]]]],
-        arrayarrayFlatSchema: [[[[{ Test: "Test42" }], [{ Test: 43 }]]]],
+        arrayarrayFlatSchema: [
+          [
+            [
+              [
+                {
+                  Test: "Test42",
+                  Open: {
+                    X: {
+                      Y: {
+                        Z: 42,
+                      },
+                    },
+                  },
+                },
+              ],
+              [
+                {
+                  Test: 43,
+                  Open: {
+                    X: {
+                      Y: {
+                        Z: 42,
+                      },
+                    },
+                  },
+                },
+              ],
+            ],
+          ],
+        ],
         bool: true,
         float64: 48.9,
         createdAt: now,
@@ -248,9 +446,23 @@ it(`NestedType-Builder Object-JSON-Object`, () => {
         string: "xxx",
         sub: {
           Test: "Test42",
+          Open: {
+            X: {
+              Y: {
+                Z: 42,
+              },
+            },
+          },
         },
         sub_flat: {
           Test: "Test42",
+          Open: {
+            X: {
+              Y: {
+                Z: 42,
+              },
+            },
+          },
         },
       })
       .unwrap(),
@@ -263,9 +475,74 @@ it(`NestedType-Builder Object-JSON-Object`, () => {
   expect(fromJson.Get().unwrap().arrayInteger).toEqual([42, 43]);
   expect(fromJson.Get().unwrap().arrayNumber).toEqual([42.42, 43.43]);
   expect(fromJson.Get().unwrap().arrayString).toEqual(["42", "43"]);
-  expect(fromJson.Get().unwrap().arraySubType).toEqual([{ Test: "Test42" }, { Test: "43" }]);
+  expect(fromJson.Get().unwrap().arraySubType).toEqual([
+    {
+      Test: "Test42",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
+    },
+    {
+      Test: "43",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
+    },
+  ]);
   expect(fromJson.Get().unwrap().arrayarrayBool).toEqual([[[[true]]], [[[false]]]]);
   expect(fromJson.Get().unwrap().arrayarrayFlatSchema).toEqual([
-    [[[{ Test: "Test42", opt_Test: undefined }], [{ Test: "43", opt_Test: undefined }]]],
+    [
+      [
+        [
+          {
+            Test: "Test42",
+            Open: {
+              X: {
+                Y: {
+                  Z: 42,
+                },
+              },
+            },
+            opt_Test: undefined,
+          },
+        ],
+        [
+          {
+            Test: "43",
+            Open: {
+              X: {
+                Y: {
+                  Z: 42,
+                },
+              },
+            },
+            opt_Test: undefined,
+          },
+        ],
+      ],
+    ],
   ]);
+});
+
+it(`Payload OpenObject`, () => {
+  const json: Payload = {
+    Test: "x",
+    Open: {
+      X: {
+        Z: 42,
+      },
+    },
+  };
+  const obj = PayloadFactory.Builder().Coerce(json).unwrap();
+  const ref = PayloadFactory.ToObject(obj);
+
+  expect(ref).toEqual(json);
 });

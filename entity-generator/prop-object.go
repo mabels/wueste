@@ -368,6 +368,9 @@ func (s *propertyObject) PropertyByName(name string) rusty.Result[PropertyItem] 
 }
 
 func (s *propertyObject) Items() []PropertyItem {
+	if s.properties == nil {
+		return []PropertyItem{}
+	}
 	items := make([]PropertyItem, 0, s.properties.Len())
 	for _, k := range s.properties.Keys() {
 		n := s.PropertyByName(k)
@@ -438,6 +441,7 @@ func (b *PropertyObjectParam) propertiesAdd(pin rusty.Result[PropertyItem]) *Pro
 		b.Errors = append(b.Errors, pin.Err())
 		return b
 	}
+	ConnectRuntime(rusty.Ok(pin.Ok().Property()))
 	property := pin.Ok()
 	// property.SetOrder(len(b.items))
 	property.Property().Runtime().Assign(b.Runtime)
@@ -533,9 +537,8 @@ func (p *PropertyObjectParam) required(required []string) *PropertyObjectParam {
 // 	panic("unknown type")
 // }
 
-func (b *PropertyObjectParam) FromJson(rt PropertyRuntime, js JSONProperty) *PropertyObjectParam {
+func (b *PropertyObjectParam) FromJson(js JSONProperty) *PropertyObjectParam {
 	b.Type = OBJECT
-	b.Runtime.Assign(rt)
 	b.Id = getFromAttributeString(js, "$id")
 	b.Title = getFromAttributeString(js, "title")
 	b.Schema = getFromAttributeString(js, "$schema")
@@ -554,7 +557,7 @@ func (b *PropertyObjectParam) FromJson(rt PropertyRuntime, js JSONProperty) *Pro
 				b.Errors = append(b.Errors, fmt.Errorf("properties[%s->%s] is not JSONProperty", b.Id, k))
 				continue
 			}
-			r := NewPropertiesBuilder(b.Ctx).FromJson(rt, v).Build()
+			r := NewPropertiesBuilder(b.Ctx).FromJson(b.Runtime, v).Build()
 			if r.IsErr() {
 				b.Errors = append(b.Errors, r.Err())
 			} else {
@@ -621,7 +624,7 @@ func (p *PropertyObjectParam) Build() rusty.Result[Property] {
 }
 
 func NewPropertyObject(p PropertyObjectParam) rusty.Result[Property] {
-	if p.Id == "" {
+	if !(p.Properties == nil || p.Properties.Len() == 0) && p.Id == "" {
 		return rusty.Err[Property](fmt.Errorf("PropertyObject Id is required"))
 	}
 	r := &propertyObject{

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/mabels/wueste/entity-generator/rusty"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,10 +53,35 @@ func TestFlatJsonAndProp(t *testing.T) {
 	// }
 }
 
+func TestPayloadOpen(t *testing.T) {
+	ctx := NewTestContext()
+	rt := PropertyRuntime{
+		FileName: rusty.Some("file://./payload.schema.json"),
+	}
+	v := TestPayloadSchema(ctx, rt)
+	assert.True(t, v.IsOk())
+	assert.Equal(t, v.Ok().Runtime().Of, v.Ok())
+	assert.Equal(t, v.Ok().Runtime().FileName.Value(), "/abs/file:/sub.schema.json")
+
+	vo := v.Ok().Runtime().ToPropertyObject().Ok()
+	test, found := vo.Properties().Lookup("Test")
+	assert.True(t, found)
+	// assert.Equal(t, open.Id(), "")
+	assert.Equal(t, test.Runtime().FileName.Value(), "/abs/file:/sub.schema.json")
+	assert.Equal(t, test.Runtime().Of, test)
+
+	vo = v.Ok().Runtime().ToPropertyObject().Ok()
+	open, found := vo.Properties().Lookup("Open")
+	assert.True(t, found)
+	// assert.Equal(t, open.Id(), "")
+	assert.Equal(t, open.Runtime().FileName.Value(), "/abs/file:/sub.schema.json")
+	assert.Equal(t, open.Runtime().Of, open)
+}
+
 func TestFileNames(t *testing.T) {
 
 	ctx := NewTestContext()
-	sub := TestSubSchema(ctx, PropertyRuntime{}).Ok()
+	sub := TestPayloadSchema(ctx, PropertyRuntime{}).Ok()
 	assert.Equal(t, sub.Runtime().FileName.Value(), "/abs/sub.schema.json")
 	_, found := ctx.Registry.registry[sub.Runtime().FileName.Value()]
 	assert.True(t, found)

@@ -46,14 +46,13 @@ type PropertyArrayParam struct {
 	// Format    rusty.Optional[StringFormat]
 }
 
-func (b *PropertyArrayParam) FromJson(rt PropertyRuntime, js JSONProperty) *PropertyArrayParam {
+func (b *PropertyArrayParam) FromJson(js JSONProperty) *PropertyArrayParam {
 	b.Type = ARRAY
-	b.Runtime.Assign(rt)
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.MaxItems = getFromAttributeOptionalInt(js, "maxItems")
 	b.MinItems = getFromAttributeOptionalInt(js, "minItems")
-	b.Items = NewPropertiesBuilder(b.Ctx).FromJson(rt, js.Get("items").(JSONProperty)).Build()
+	b.Items = NewPropertiesBuilder(b.Ctx).FromJson(b.Runtime, js.Get("items").(JSONProperty)).Build()
 	return b
 }
 

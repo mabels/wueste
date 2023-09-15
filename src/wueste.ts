@@ -40,7 +40,7 @@ export interface WuestenAttribute<G, I = G> {
 }
 
 function coerceAttribute<T, I>(val: unknown, param: WuestenAttributeParameter<T>, coerce: (t: I) => Result<T>): Result<T> {
-  const rec = val as Record<string, unknown>;
+  const rec = val as WuestenObject;
   for (const key of [param.jsonname, param.varname]) {
     if (rec[key] === undefined || rec[key] === null) {
       continue;
@@ -173,10 +173,99 @@ export interface WuestenBuilder<T, I, O> extends WuestenAttribute<T, I> {
 export interface WuestenFactory<T, I, O> {
   Builder(param?: WuestenAttributeParameter<I>): WuestenBuilder<T, I, O>;
   FromPayload(val: Payload, decoder?: WuestenDecoder<I>): Result<T>;
-  ToObject(typ: T): O; // Record<string, unknown>; keys are json notation
+  ToObject(typ: T): O; // WuestenObject; keys are json notation
   Clone(typ: T): Result<T>;
   Schema(): WuestenSchema;
 }
+
+export type WuestenObject = Record<string, unknown>;
+
+export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, WuestenObject, WuestenObject> {
+  readonly param: WuestenAttributeParameter<WuestenObject>;
+  constructor(param?: WuestenAttributeParameter<WuestenObject>) {
+    this.param = param || {
+      base: "WuestenObjectBuilder",
+      varname: "WuestenObjectBuilder",
+      jsonname: "WuestenObjectBuilder",
+    };
+  }
+
+  Get(): Result<WuestenObject, Error> {
+    throw new Error("WuestenObjectBuilder:Get Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  AsPayload(encoder?: WuestenEncoder<WuestenObject>): Result<Payload, Error> {
+    throw new Error("WuestenObjectBuilder:AsPayload Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  SetNameSuffix(...idxs: number[]): void {
+    throw new Error("WuestenObjectBuilder:SetNameSuffix Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  CoerceAttribute(val: unknown): Result<WuestenObject, Error> {
+    throw new Error("WuestenObjectBuilder:CoerceAttribute Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Coerce(value: WuestenObject): Result<WuestenObject, Error> {
+    return Result.Ok(value);
+    throw new Error("WuestenObjectBuilder:Coerce Method not implemented.");
+  }
+}
+
+export class WuestenObjectFactoryImpl implements WuestenFactory<WuestenObject, WuestenObject, WuestenObject> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Builder(
+    param?: WuestenAttributeParameter<WuestenObject> | undefined,
+  ): WuestenBuilder<WuestenObject, WuestenObject, WuestenObject> {
+    return new WuestenObjectBuilder(param);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  FromPayload(val: Payload, decoder?: WuestenDecoder<WuestenObject> | undefined): Result<WuestenObject, Error> {
+    throw new Error("WuestenObjectFactoryImpl:FromPayload Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ToObject(typ: WuestenObject): WuestenObject {
+    throw new Error("WuestenObjectFactoryImpl:ToObject Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Clone(typ: WuestenObject): Result<WuestenObject, Error> {
+    throw new Error("WuestenObjectFactoryImpl:Clone Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Schema(): WuestenSchema {
+    throw new Error("WuestenObjectFactoryImpl:Schema Method not implemented.");
+  }
+  // FromPayload(val: Payload, decoder?: WuestenDecoder<WuestenObject> =  WuesteJsonDecoder<Partial<WuestenObject>|Partial<WuestenObject>|Partial<WuestenObject>>)): Result<WuestenObject, Error> {
+  //     if (!(val.Type === "https://NestedType" || val.Type === "NestedType")) {
+  //       return Result.Err(new Error(`WuestePayload Type mismatch:[https://NestedType,NestedType] != ${val.Type}`));
+  //     }
+  //     const data = decoder(val.Data)
+  //     if (data.is_err()) {
+  //       return Result.Err(data.unwrap_err());
+  //     }
+  //     const builder = new NestedTypeBuilder()
+  //     return builder.Coerce(data.unwrap());
+  //   }
+  // }
+  // Clone(typ: WuestenObject): Result<WuestenObject, Error> {
+  //   const ret: WuestenObject = {};
+  //   for (const key in typ) {
+  //       const element = typ[key];
+  //       if (typeof element === "object" && element !== null) {
+  //         const res = this.Clone(element as WuestenObject);
+  //         if (res.is_ok()) {
+  //           ret[key] = res.unwrap();
+  //         } else {
+  //           return res;
+  //         }
+  //       } else {
+  //         ret[key] = element;
+  //       }
+  //   }
+  //   return Result.Ok(ret)
+  // }
+}
+export const WuestenObjectFactory = new WuestenObjectFactoryImpl();
 
 function stringCoerce(value: unknown): Result<string> {
   if (typeof value === "string") {

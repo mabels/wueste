@@ -44,9 +44,8 @@ type PropertyIntegerParam struct {
 	// MultipleOf() rusty.Optional[int]
 }
 
-func (b *PropertyIntegerParam) FromJson(rt PropertyRuntime, js JSONProperty) *PropertyIntegerParam {
+func (b *PropertyIntegerParam) FromJson(js JSONProperty) *PropertyIntegerParam {
 	b.Type = "integer"
-	b.Runtime.Assign(rt)
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.Format = getFromAttributeOptionalString(js, "format")
