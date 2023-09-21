@@ -9,6 +9,7 @@ import {
   Payload,
   WuestenDecoder,
   WuestenEncoder,
+  WuestenReflection,
 } from "./wueste";
 
 it("WuesteIterate", () => {
@@ -326,6 +327,9 @@ interface Entity {
 }
 
 class Builder implements WuestenBuilder<Entity, Entity, Entity> {
+  Reflection(): WuestenReflection {
+    throw new Error("Method not implemented.");
+  }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   CoerceAttribute(val: unknown): Result<Entity, Error> {
     throw new Error("Method not implemented.");

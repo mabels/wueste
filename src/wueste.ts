@@ -31,12 +31,30 @@ export interface WuestenAttributeParameter<T> {
   // setError?: (err : string | Error) => void;
   // format?: string // date-time
 }
+
+export interface WuestenReflection {
+  readonly type: string;
+  coerceFromString(val: string): void;
+  // getAsString(): string;
+  readonly properties?: WuestenReflectionObjectItem[];
+}
+
+export interface WuestenReflectionObjectItem {
+  readonly name: string;
+  readonly property: WuestenReflection;
+}
 export interface WuestenAttribute<G, I = G> {
   readonly param: WuestenAttributeParameter<G>;
   SetNameSuffix(...idxs: number[]): void;
+  Reflection(): WuestenReflection;
   CoerceAttribute(val: unknown): Result<G>;
   Coerce(value: I): Result<G>;
   Get(): Result<G>;
+}
+
+export interface WuestenGeneratorFunctions<I, G> {
+  readonly coerce: (t: I) => Result<G>;
+  readonly reflection?: () => WuestenReflection;
 }
 
 function coerceAttribute<T, I>(val: unknown, param: WuestenAttributeParameter<T>, coerce: (t: I) => Result<T>): Result<T> {
@@ -67,11 +85,11 @@ export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
   _value?: G;
   _idxs: number[] = [];
   readonly param: WuestenAttributeParameter<G>;
-  readonly _coerce: (t: I) => Result<G>;
-  constructor(param: WuestenAttributeParameter<I>, coerce: (t: I) => Result<G>) {
+  readonly _fnParams: WuestenGeneratorFunctions<I, G>;
+  constructor(param: WuestenAttributeParameter<I>, fnParams: WuestenGeneratorFunctions<I, G>) {
     let def: G | undefined = undefined;
-    this._coerce = coerce;
-    const result = coerce(param.default as I);
+    this._fnParams = fnParams;
+    const result = fnParams.coerce(param.default as I);
     if (result.is_ok()) {
       def = result.unwrap() as G;
     }
@@ -79,6 +97,12 @@ export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
       ...param,
       default: def,
     };
+  }
+  Reflection(): WuestenReflection {
+    if (!this._fnParams.reflection) {
+      throw new Error("no reflection");
+    }
+    return this._fnParams.reflection();
   }
   SetNameSuffix(...idxs: number[]): void {
     this._idxs = idxs;
@@ -94,7 +118,7 @@ export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
     return res;
   }
   Coerce(value: I): Result<G> {
-    const result = this._coerce(value);
+    const result = this._fnParams.coerce(value);
     if (result.is_ok()) {
       this._value = result.unwrap();
       return result;
@@ -126,6 +150,9 @@ export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undef
       default: attr.param.default as T,
     };
     this._value = attr.param.default as T;
+  }
+  Reflection(): WuestenReflection {
+    return this._attr.Reflection();
   }
   SetNameSuffix(...idxs: number[]): void {
     this._idxs = idxs;
@@ -175,7 +202,6 @@ export interface WuestenFactory<T, I, O> {
   FromPayload(val: Payload, decoder?: WuestenDecoder<I>): Result<T>;
   ToObject(typ: T): O; // WuestenObject; keys are json notation
   Clone(typ: T): Result<T>;
-  Schema(): WuestenSchema;
 }
 
 export type WuestenObject = Record<string, unknown>;
@@ -189,7 +215,9 @@ export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, Wuest
       jsonname: "WuestenObjectBuilder",
     };
   }
-
+  Reflection(): WuestenReflection {
+    throw new Error("WuestenObjectBuilder:Reflection Method not implemented.");
+  }
   Get(): Result<WuestenObject, Error> {
     throw new Error("WuestenObjectBuilder:Get Method not implemented.");
   }
@@ -230,10 +258,6 @@ export class WuestenObjectFactoryImpl implements WuestenFactory<WuestenObject, W
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Clone(typ: WuestenObject): Result<WuestenObject, Error> {
     throw new Error("WuestenObjectFactoryImpl:Clone Method not implemented.");
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Schema(): WuestenSchema {
-    throw new Error("WuestenObjectFactoryImpl:Schema Method not implemented.");
   }
   // FromPayload(val: Payload, decoder?: WuestenDecoder<WuestenObject> =  WuesteJsonDecoder<Partial<WuestenObject>|Partial<WuestenObject>|Partial<WuestenObject>>)): Result<WuestenObject, Error> {
   //     if (!(val.Type === "https://NestedType" || val.Type === "NestedType")) {
@@ -326,7 +350,7 @@ export class WuestenAttributeObject<T, I, O> extends WuestenAttr<T, I> {
   private readonly _builder: WuestenAttribute<T, I>;
   constructor(param: WuestenAttributeParameter<I>, factory: WuestenFactory<T, I, O>) {
     const builder = factory.Builder(param);
-    super(param, builder.Coerce.bind(builder));
+    super(param, { coerce: builder.Coerce.bind(builder) });
     this._builder = builder;
   }
 
@@ -433,64 +457,48 @@ export type WuesteCoerceTypestring = string | boolean | number | { toString: () 
 
 export const wuesten = {
   AttributeString: (def: WuestenAttributeParameter<string>): WuestenAttribute<string, WuesteCoerceTypestring> => {
-    return new WuestenAttr(def, stringCoerce);
+    return new WuestenAttr(def, { coerce: stringCoerce });
   },
   AttributeStringOptional: (
     def: WuestenAttributeParameter<string>,
   ): WuestenAttribute<string | undefined, WuesteCoerceTypestring | undefined> => {
-    return new WuestenAttrOptional(new WuestenAttr(def, stringCoerce));
+    return new WuestenAttrOptional(new WuestenAttr(def, { coerce: stringCoerce }));
   },
 
   AttributeDateTime: (def: WuestenAttributeParameter<Date | string>): WuestenAttribute<Date, WuesteCoerceTypeDate> => {
-    return new WuestenAttr(def, dateTimeCoerce);
+    return new WuestenAttr(def, { coerce: dateTimeCoerce });
   },
   AttributeDateTimeOptional: (
     def: WuestenAttributeParameter<Date | string>,
   ): WuestenAttribute<Date | undefined, WuesteCoerceTypeDate | undefined> => {
-    return new WuestenAttrOptional(new WuestenAttr(def, dateTimeCoerce));
+    return new WuestenAttrOptional(new WuestenAttr(def, { coerce: dateTimeCoerce }));
   },
 
   AttributeInteger: (def: WuestenAttributeParameter<number>): WuestenAttribute<number, WuesteCoerceTypenumber> => {
-    return new WuestenAttr(
-      def,
-      numberCoerce((a) => parseInt(a as string, 10)),
-    );
+    return new WuestenAttr(def, { coerce: numberCoerce((a) => parseInt(a as string, 10)) });
   },
   AttributeIntegerOptional: (
     def: WuestenAttributeParameter<number>,
   ): WuestenAttribute<number | undefined, WuesteCoerceTypenumber | undefined> => {
-    return new WuestenAttrOptional(
-      new WuestenAttr(
-        def,
-        numberCoerce((a) => parseInt(a as string, 10)),
-      ),
-    );
+    return new WuestenAttrOptional(new WuestenAttr(def, { coerce: numberCoerce((a) => parseInt(a as string, 10)) }));
   },
 
   AttributeNumber: (def: WuestenAttributeParameter<number>): WuestenAttribute<number, WuesteCoerceTypenumber> => {
-    return new WuestenAttr(
-      def,
-      numberCoerce((a) => parseFloat(a as string)),
-    );
+    return new WuestenAttr(def, { coerce: numberCoerce((a) => parseFloat(a as string)) });
   },
   AttributeNumberOptional: (
     def: WuestenAttributeParameter<number>,
   ): WuestenAttribute<number | undefined, WuesteCoerceTypenumber | undefined> => {
-    return new WuestenAttrOptional(
-      new WuestenAttr(
-        def,
-        numberCoerce((a) => parseFloat(a as string)),
-      ),
-    );
+    return new WuestenAttrOptional(new WuestenAttr(def, { coerce: numberCoerce((a) => parseFloat(a as string)) }));
   },
 
   AttributeBoolean: (def: WuestenAttributeParameter<boolean>): WuestenAttribute<boolean, WuesteCoerceTypeboolean> => {
-    return new WuestenAttr(def, booleanCoerce);
+    return new WuestenAttr(def, { coerce: booleanCoerce });
   },
   AttributeBooleanOptional: (
     def: WuestenAttributeParameter<boolean>,
   ): WuestenAttribute<boolean | undefined, WuesteCoerceTypeboolean | undefined> => {
-    return new WuestenAttrOptional(new WuestenAttr(def, booleanCoerce));
+    return new WuestenAttrOptional(new WuestenAttr(def, { coerce: booleanCoerce }));
   },
 
   AttributeObject: <E, I, O>(def: WuestenAttributeParameter<I>, factory: WuestenFactory<E, I, O>): WuestenAttribute<E, I> => {

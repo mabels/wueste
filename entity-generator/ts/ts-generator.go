@@ -1296,10 +1296,10 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 							attr := g.genWuesteBuilderAttribute("ARRAY", pi, func() string { return "param" })
 							wr.WriteLine(g.lang.AssignDefault(g.lang.Const("itemAttr"), attr))
 
-							wr.WriteBlock("", "super({jsonname: param.jsonname, varname: param.varname, base: param.base}, (t0: unknown) => ", func(wr *eg.ForIfWhileLangWriter) {
+                            wr.WriteBlock("", "super({jsonname: param.jsonname, varname: param.varname, base: param.base}, {coerce: (t0: unknown) => ", func(wr *eg.ForIfWhileLangWriter) {
 								g.generateArrayCoerce(0, "t0", g.lang.AsType(pa), pa, wr)
 								wr.WriteLine(g.lang.Return(g.lang.Call("WuesteResult.Ok", "r0")))
-							}, " {", "})")
+							}, " {", "}})")
 						})
 				})
 			g.bodyWriter.WriteLine()
@@ -1439,7 +1439,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 					fmt.Sprintf("{jsonname: %s, varname: %s, base: \"\"}",
 						g.lang.Quote(prop.Title()), g.lang.Quote(g.lang.PublicName(prop.Title()))))), func(wr *eg.ForIfWhileLangWriter) {
 				wr.WriteLine(g.lang.Const(g.lang.AssignDefault("attr", g.lang.New(attrsClassName, "param"))))
-				wr.WriteLine("super(param, attr.Coerce);")
+                    wr.WriteLine("super(param, {coerce: attr.Coerce});")
 				wr.WriteLine(g.lang.AssignDefault("this._attr", "attr"))
 			})
 			wr.WriteBlock("", g.lang.ReturnType(
