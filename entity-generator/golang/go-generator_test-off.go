@@ -142,7 +142,7 @@ func TestSimpleTypeClazz(t *testing.T) {
 	sl := eg.NewTestContext()
 	wt := bufLineWriter{}
 	g := &goGenerator{
-		schema: eg.TestSchema(sl, eg.PropertyRuntime{}).(eg.PropertyObject),
+		schema: eg.TestSchema(sl).(eg.PropertyObject),
 
 		includes: make(map[string]bool),
 
@@ -185,7 +185,7 @@ func TestSimpleTypeParam(t *testing.T) {
 	sl := eg.NewTestContext()
 	wt := bufLineWriter{}
 	g := &goGenerator{
-		schema: eg.TestSchema(sl, eg.PropertyRuntime{}).(eg.PropertyObject),
+		schema: eg.TestSchema(sl).(eg.PropertyObject),
 
 		includes: make(map[string]bool),
 

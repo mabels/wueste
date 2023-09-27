@@ -57,7 +57,7 @@ it("SimpleType-Error", () => {
       "Attribute[SimpleType.float64] is required",
       "Attribute[SimpleType.int64] is required",
       "Attribute[SimpleType.bool] is required",
-      "Attribute[SimpleType.sub] is required",
+      "Attribute[SimpleType.sub.Test] is required",
     ].join("\n"),
   );
 });
@@ -164,7 +164,7 @@ it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   // const fromPayload = SimpleTypeFactory.Builder();
   (payload as { Type: string }).Type = "Kaput";
   expect(SimpleTypeFactory.FromPayload(payload).unwrap_err().message).toEqual(
-    "WuestePayload Type mismatch:[https://SimpleType,SimpleType] != Kaput",
+    "WuestePayload Type mismatch:[SimpleType,https://SimpleType,SimpleType] != Kaput",
   );
 });
 

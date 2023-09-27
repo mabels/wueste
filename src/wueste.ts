@@ -55,6 +55,7 @@ export interface WuestenReflectionObject extends WuestenReflectionBase {
   readonly id?: string;
   readonly title?: string;
   readonly properties: WuestenReflectionObjectItem[];
+  readonly required?: string[];
 }
 export interface WuestenReflectionArray extends WuestenReflectionBase {
   readonly id: string;
@@ -64,15 +65,16 @@ export interface WuestenReflectionArray extends WuestenReflectionBase {
 
 export interface WuestenAttribute<G, I = G> {
   readonly param: WuestenAttributeParameter<G>;
-  SetNameSuffix(...idxs: number[]): void;
+  // SetNameSuffix(...idxs: number[]): void;
+  Reflection(): WuestenReflection;
   CoerceAttribute(val: unknown): Result<G>;
   Coerce(value: I): Result<G>;
   Get(): Result<G>;
 }
 
-export interface WuestenGeneratorFunctions<I, G> {
+export interface WuestenGeneratorFunctions<G, I> {
   readonly coerce: (t: I) => Result<G>;
-  readonly reflection?: WuestenReflection;
+  // readonly reflection?: WuestenReflection;
 }
 
 function coerceAttribute<T, I>(val: unknown, param: WuestenAttributeParameter<T>, coerce: (t: I) => Result<T>): Result<T> {
@@ -101,7 +103,7 @@ export function WuestenAttributeName<T>(param: WuestenAttributeParameter<T>): st
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function WuestenCoerceAttribute<T>(val: unknown): Result<T> {
-  throw new Error("Method not implemented.");
+  throw new Error("WuestenCoerceAttribute:Method not implemented.");
   // if (!(typeof val === "object" && val !== null)) {
   //   return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
   // }
@@ -114,10 +116,10 @@ export function WuestenCoerceAttribute<T>(val: unknown): Result<T> {
 
 export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
   _value?: G;
-  _idxs: number[] = [];
+  // _idxs: number[] = [];
   readonly param: WuestenAttributeParameter<G>;
-  readonly _fnParams: WuestenGeneratorFunctions<I, G>;
-  constructor(param: WuestenAttributeParameter<I>, fnParams: WuestenGeneratorFunctions<I, G>) {
+  readonly _fnParams: WuestenGeneratorFunctions<G, I>;
+  constructor(param: WuestenAttributeParameter<I>, fnParams: WuestenGeneratorFunctions<G, I>) {
     let def: G | undefined = undefined;
     this._fnParams = fnParams;
     const result = fnParams.coerce(param.default as I);
@@ -129,9 +131,12 @@ export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
       default: def,
     };
   }
-  SetNameSuffix(...idxs: number[]): void {
-    this._idxs = idxs;
+  Reflection(): WuestenReflection {
+    throw new Error("Reflection:Method not implemented.");
   }
+  // SetNameSuffix(...idxs: number[]): void {
+  //   this._idxs = idxs;
+  // }
   CoerceAttribute(val: unknown): Result<G> {
     if (!(typeof val === "object" && val !== null)) {
       return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
@@ -162,6 +167,48 @@ export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
   }
 }
 
+export class WuestenObjectOptional<B extends WuestenAttribute<T, C>, T, C> implements WuestenAttribute<T, C> {
+  readonly typ: B;
+  readonly param: WuestenAttributeParameter<T>;
+  _value: T;
+  constructor(typ: B) {
+    this.typ = typ;
+    this.param = typ.param;
+    this._value = typ.param.default as T;
+  }
+  Reflection(): WuestenReflection {
+    throw new Error("Reflection:Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  CoerceAttribute(val: unknown): Result<T, Error> {
+    if (!(typeof val === "object" && val !== null)) {
+      return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
+    }
+    const res = coerceAttribute(val, this.param, this.Coerce.bind(this));
+    if (res.is_ok()) {
+      this._value = res.unwrap() as T;
+      return res;
+    }
+    return Result.Ok(this.param.default as T);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Coerce(value: C): Result<T, Error> {
+    if (value === undefined || value === null) {
+      this._value = undefined as T;
+      return Result.Ok(this._value);
+    }
+    const res = this.typ.Coerce(value);
+    if (res.is_ok()) {
+      this._value = res.unwrap() as unknown as T;
+      return Result.Ok(this._value);
+    }
+    return Result.Err(res.unwrap_err());
+  }
+  Get(): Result<T, Error> {
+    return Result.Ok(this._value);
+  }
+}
+
 export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undefined, I | undefined> {
   readonly _attr: WuestenAttribute<T | undefined, I | undefined>;
   readonly param: WuestenAttributeParameter<T | undefined>;
@@ -176,10 +223,12 @@ export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undef
     };
     this._value = attr.param.default as T;
   }
-
-  SetNameSuffix(...idxs: number[]): void {
-    this._idxs = idxs;
+  Reflection(): WuestenReflection {
+    throw new Error("Reflection:Method not implemented.");
   }
+  // SetNameSuffix(...idxs: number[]): void {
+  //   this._idxs = idxs;
+  // }
   CoerceAttribute(val: unknown): Result<T | undefined> {
     if (!(typeof val === "object" && val !== null)) {
       return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
@@ -229,6 +278,7 @@ export interface WuestenFactory<T, I, O> {
 
 export type WuestenObject = Record<string, unknown>;
 
+export type WuestenFNGetBuilder<T> = (b: T) => void;
 export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, WuestenObject, WuestenObject> {
   readonly param: WuestenAttributeParameter<WuestenObject>;
   constructor(param?: WuestenAttributeParameter<WuestenObject>) {
@@ -238,6 +288,9 @@ export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, Wuest
       jsonname: "WuestenObjectBuilder",
     };
   }
+  Reflection(): WuestenReflection {
+    throw new Error("Reflection:Method not implemented.");
+  }
 
   Get(): Result<WuestenObject, Error> {
     throw new Error("WuestenObjectBuilder:Get Method not implemented.");
@@ -245,10 +298,6 @@ export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, Wuest
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   AsPayload(encoder?: WuestenEncoder<WuestenObject>): Result<Payload, Error> {
     throw new Error("WuestenObjectBuilder:AsPayload Method not implemented.");
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  SetNameSuffix(...idxs: number[]): void {
-    throw new Error("WuestenObjectBuilder:SetNameSuffix Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   CoerceAttribute(val: unknown): Result<WuestenObject, Error> {
@@ -477,16 +526,16 @@ export type WuesteCoerceTypenumber = number | string;
 export type WuesteCoerceTypestring = string | boolean | number | { toString: () => string };
 
 export const wuesten = {
-  AttributeString: (def: WuestenAttributeParameter<string>): WuestenAttribute<string, WuesteCoerceTypestring> => {
+  AttributeString: (def: WuestenAttributeParameter<WuesteCoerceTypestring>): WuestenAttribute<string, WuesteCoerceTypestring> => {
     return new WuestenAttr(def, { coerce: stringCoerce });
   },
   AttributeStringOptional: (
-    def: WuestenAttributeParameter<string>,
+    def: WuestenAttributeParameter<WuesteCoerceTypestring>,
   ): WuestenAttribute<string | undefined, WuesteCoerceTypestring | undefined> => {
     return new WuestenAttrOptional(new WuestenAttr(def, { coerce: stringCoerce }));
   },
 
-  AttributeDateTime: (def: WuestenAttributeParameter<Date | string>): WuestenAttribute<Date, WuesteCoerceTypeDate> => {
+  AttributeDateTime: (def: WuestenAttributeParameter<WuesteCoerceTypeDate>): WuestenAttribute<Date, WuesteCoerceTypeDate> => {
     return new WuestenAttr(def, { coerce: dateTimeCoerce });
   },
   AttributeDateTimeOptional: (
@@ -495,29 +544,31 @@ export const wuesten = {
     return new WuestenAttrOptional(new WuestenAttr(def, { coerce: dateTimeCoerce }));
   },
 
-  AttributeInteger: (def: WuestenAttributeParameter<number>): WuestenAttribute<number, WuesteCoerceTypenumber> => {
+  AttributeInteger: (def: WuestenAttributeParameter<WuesteCoerceTypenumber>): WuestenAttribute<number, WuesteCoerceTypenumber> => {
     return new WuestenAttr(def, { coerce: numberCoerce((a) => parseInt(a as string, 10)) });
   },
   AttributeIntegerOptional: (
-    def: WuestenAttributeParameter<number>,
+    def: WuestenAttributeParameter<WuesteCoerceTypenumber>,
   ): WuestenAttribute<number | undefined, WuesteCoerceTypenumber | undefined> => {
     return new WuestenAttrOptional(new WuestenAttr(def, { coerce: numberCoerce((a) => parseInt(a as string, 10)) }));
   },
 
-  AttributeNumber: (def: WuestenAttributeParameter<number>): WuestenAttribute<number, WuesteCoerceTypenumber> => {
+  AttributeNumber: (def: WuestenAttributeParameter<WuesteCoerceTypenumber>): WuestenAttribute<number, WuesteCoerceTypenumber> => {
     return new WuestenAttr(def, { coerce: numberCoerce((a) => parseFloat(a as string)) });
   },
   AttributeNumberOptional: (
-    def: WuestenAttributeParameter<number>,
+    def: WuestenAttributeParameter<WuesteCoerceTypenumber>,
   ): WuestenAttribute<number | undefined, WuesteCoerceTypenumber | undefined> => {
     return new WuestenAttrOptional(new WuestenAttr(def, { coerce: numberCoerce((a) => parseFloat(a as string)) }));
   },
 
-  AttributeBoolean: (def: WuestenAttributeParameter<boolean>): WuestenAttribute<boolean, WuesteCoerceTypeboolean> => {
+  AttributeBoolean: (
+    def: WuestenAttributeParameter<WuesteCoerceTypeboolean>,
+  ): WuestenAttribute<boolean, WuesteCoerceTypeboolean> => {
     return new WuestenAttr(def, { coerce: booleanCoerce });
   },
   AttributeBooleanOptional: (
-    def: WuestenAttributeParameter<boolean>,
+    def: WuestenAttributeParameter<WuesteCoerceTypeboolean>,
   ): WuestenAttribute<boolean | undefined, WuesteCoerceTypeboolean | undefined> => {
     return new WuestenAttrOptional(new WuestenAttr(def, { coerce: booleanCoerce }));
   },

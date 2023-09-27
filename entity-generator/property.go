@@ -31,7 +31,9 @@ type propertyMeta struct {
 // SetMeta implements PropertyMeta.
 func (p *propertyMeta) SetMeta(m Property) {
 	if p.FileName().IsNone() {
-		p.SetFileName(m.Meta().FileName().Value())
+		if m.Meta().FileName().IsSome() {
+			p.SetFileName(m.Meta().FileName().Value())
+		}
 	}
 	p.SetParent(m)
 }

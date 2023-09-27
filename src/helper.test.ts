@@ -1,5 +1,5 @@
 import { fromEnv } from "./helper";
-import { helperTestFactory } from "./generated/wasm/helper_test";
+import { helperTestFactory } from "./generated/wasm/helpertest";
 
 describe("helper", () => {
   it("from Environment", () => {
@@ -10,14 +10,12 @@ describe("helper", () => {
       HELPERTEST_SUB_NUM: "1.1",
       HELPERTEST_SUB_INT: "42",
       HELPERTEST_SUB_STR: "HI",
-      HELPERTEST_OPT_SUB_BOOL: "false",
-      HELPERTEST_OPT_SUB_NUM: "3.3",
-      HELPERTEST_OPT_SUB_INT: "12",
-      HELPERTEST_OPT_SUB_STR: "BYE",
+      HELPERTEST_SUB_OPT_BOOL: "false",
+      HELPERTEST_SUB_OPT_NUM: "3.3",
+      HELPERTEST_SUB_OPT_INT: "12",
+      HELPERTEST_SUB_OPT_STR: "BYE",
     };
-    fromEnv(builder, env);
-    const result = builder.Get();
-    expect(result.unwrap_err()).toBeUndefined();
+    const result = fromEnv(builder, env).Get();
     expect(result.is_ok()).toBeTruthy();
     expect(helperTestFactory.ToObject(result.unwrap())).toEqual({
       test: "HELLO",
@@ -26,10 +24,10 @@ describe("helper", () => {
         num: 1.1,
         int: 42,
         str: "HI",
-        optBool: false,
-        optNum: 3.3,
-        optInt: 12,
-        optStr: "BYE",
+        "opt-bool": false,
+        "opt-num": 3.3,
+        "opt-int": 12,
+        "opt-str": "BYE",
       },
     });
   });

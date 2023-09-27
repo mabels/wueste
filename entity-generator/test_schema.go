@@ -72,10 +72,9 @@ func (l *TestSchemaLoader) ReadFile(path string) ([]byte, error) {
 		jf := TestJsonFlatSchema()
 		bytes, _ := json.MarshalIndent(jf.JSONProperty, "", "  ")
 		return bytes, nil
-	case "/abs/nested_types.schema.json":
-		pb := TestSchema(NewTestContext()).(PropertyObject)
-		jsp := PropertyObjectToJson(pb)
-		bytes, _ := json.MarshalIndent(jsp, "", "  ")
+	case "/abs/nested_type.schema.json":
+		jf := TestJSONSchema()
+		bytes, _ := json.MarshalIndent(jf.JSONProperty, "", "  ")
 		return bytes, nil
 	default:
 		return nil, fmt.Errorf("Test file not found: %s", path)
@@ -392,124 +391,206 @@ func TestJsonFlatSchema() JSonFile {
 }
 
 func TestPayloadSchema(sl PropertyCtx) rusty.Result[Property] {
-	return NewPropertiesBuilder(sl).SetFileName("/abs/payload.schema.json").assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
-		return NewPropertyObjectBuilder(b).
-			id("https://Sub").
-			title("Payload").
-			description("Description").
-			propertiesAdd(NewPropertyItem("Test", NewPropertyString(PropertyStringBuilder{}))).
-			propertiesAdd(NewPropertyItem("opt-Test", NewPropertyString(PropertyStringBuilder{}))).
-			propertiesAdd(NewPropertyItem("Open", NewPropertyObject(PropertyObjectBuilder{}))).
-			propertiesAdd(NewPropertyItem("opt-Open", NewPropertyObject(PropertyObjectBuilder{}))).
-			required([]string{"Test", "Open"}).
-			Build()
-	}).Build()
+	prop := NewJSONProperty()
+	prop.Set("$ref", "file://payload.schema.json")
+	return NewPropertiesBuilder(sl).FromJson(prop).Build()
+
+	// return NewPropertiesBuilder(sl).SetFileName("/abs/payload.schema.json").assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+	// 	return NewPropertyObjectBuilder(b).
+	// 		id("https://Sub").
+	// 		title("Payload").
+	// 		description("Description").
+	// 		propertiesAdd(NewPropertyItem("Test", NewPropertyString(PropertyStringBuilder{}))).
+	// 		propertiesAdd(NewPropertyItem("opt-Test", NewPropertyString(PropertyStringBuilder{}))).
+	// 		propertiesAdd(NewPropertyItem("Open", NewPropertyObject(PropertyObjectBuilder{}))).
+	// 		propertiesAdd(NewPropertyItem("opt-Open", NewPropertyObject(PropertyObjectBuilder{}))).
+	// 		required([]string{"Test", "Open"}).
+	// 		Build()
+	// }).Build()
 }
 
 func TestFlatSchema(sl PropertyCtx) rusty.Result[Property] {
-	return NewPropertiesBuilder(sl).SetFileName("/abs/simple_type.schema.json").assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
-		return NewPropertyObjectBuilder(b).
-			id("https://SimpleType").
-			title("SimpleType").
-			description("Jojo SimpleType").
-			propertiesAdd(NewPropertyItem("string", NewPropertyString(PropertyStringBuilder{}))).
-			propertiesAdd(NewPropertyItem("default-string", NewPropertyString(PropertyStringBuilder{Default: rusty.Some("hallo")}))).
-			propertiesAdd(NewPropertyItem("optional-string", NewPropertyString(PropertyStringBuilder{}))).
-			propertiesAdd(NewPropertyItem("optional-default-string", NewPropertyString(PropertyStringBuilder{Default: rusty.Some("hallo")}))).
-			propertiesAdd(NewPropertyItem("createdAt", NewPropertyString(PropertyStringBuilder{
-				Format: rusty.Some("date-time"),
-			}))).
-			propertiesAdd(NewPropertyItem("default-createdAt", NewPropertyString(PropertyStringBuilder{
-				Default: rusty.Some("2023-12-31T23:59:59Z"),
-				Format:  rusty.Some("date-time"),
-			}))).
-			propertiesAdd(NewPropertyItem("optional-createdAt", NewPropertyString(PropertyStringBuilder{
-				Format: rusty.Some("date-time"),
-			}))).
-			propertiesAdd(NewPropertyItem("optional-default-createdAt", NewPropertyString(PropertyStringBuilder{
-				Default: rusty.Some("2023-12-31T23:59:59Z"),
-				Format:  rusty.Some("date-time"),
-			}))).
-			propertiesAdd(NewPropertyItem("float64", NewPropertyNumber(PropertyNumberBuilder{}))).
-			propertiesAdd(NewPropertyItem("default-float64", NewPropertyNumber(PropertyNumberBuilder{Default: rusty.Some(4711.4), Format: rusty.Some("float32")}))).
-			propertiesAdd(NewPropertyItem("optional-float32", NewPropertyNumber(PropertyNumberBuilder{Format: rusty.Some("float32")}))).
-			propertiesAdd(NewPropertyItem("optional-default-float32", NewPropertyNumber(PropertyNumberBuilder{Default: rusty.Some(49.2)}))).
-			propertiesAdd(NewPropertyItem("int64", NewPropertyInteger(PropertyIntegerBuilder{}))).
-			propertiesAdd(NewPropertyItem("default-int64", NewPropertyInteger(PropertyIntegerBuilder{Default: rusty.Some(64)}))).
-			propertiesAdd(NewPropertyItem("optional-int32", NewPropertyInteger(PropertyIntegerBuilder{Format: rusty.Some("int32")}))).
-			propertiesAdd(NewPropertyItem("optional-default-int32", NewPropertyInteger(PropertyIntegerBuilder{Default: rusty.Some(32)}))).
-			propertiesAdd(NewPropertyItem("bool", NewPropertyBoolean(PropertyBooleanBuilder{}))).
-			propertiesAdd(NewPropertyItem("default-bool", NewPropertyBoolean(PropertyBooleanBuilder{Default: rusty.Some(true)}))).
-			propertiesAdd(NewPropertyItem("optional-bool", NewPropertyBoolean(PropertyBooleanBuilder{}))).
-			propertiesAdd(NewPropertyItem("optional-default-bool", NewPropertyBoolean(PropertyBooleanBuilder{Default: rusty.Some(true)}))).
-			propertiesAdd(NewPropertyItem("sub", TestPayloadSchema(sl))).
-			propertiesAdd(NewPropertyItem("opt-sub", TestPayloadSchema(sl))).
-			required([]string{
-				"string",
-				"createdAt",
-				"default-string",
-				"default-createdAt",
-				"float64",
-				"default-float64",
-				"int64",
-				"default-int64",
-				"uint64",
-				"default-uint64",
-				"default-bool",
-				"bool",
-				"sub"}).
-			Build()
-	}).Build()
+	prop := NewJSONProperty()
+	prop.Set("$ref", "file://simple_type.schema.json")
+	return NewPropertiesBuilder(sl).FromJson(prop).Build()
+
+	// return NewPropertiesBuilder(sl).SetFileName("/abs/simple_type.schema.json").assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+	// 	return NewPropertyObjectBuilder(b).
+	// 		id("https://SimpleType").
+	// 		title("SimpleType").
+	// 		description("Jojo SimpleType").
+	// 		propertiesAdd(NewPropertyItem("string", NewPropertyString(PropertyStringBuilder{}))).
+	// 		propertiesAdd(NewPropertyItem("default-string", NewPropertyString(PropertyStringBuilder{Default: rusty.Some("hallo")}))).
+	// 		propertiesAdd(NewPropertyItem("optional-string", NewPropertyString(PropertyStringBuilder{}))).
+	// 		propertiesAdd(NewPropertyItem("optional-default-string", NewPropertyString(PropertyStringBuilder{Default: rusty.Some("hallo")}))).
+	// 		propertiesAdd(NewPropertyItem("createdAt", NewPropertyString(PropertyStringBuilder{
+	// 			Format: rusty.Some("date-time"),
+	// 		}))).
+	// 		propertiesAdd(NewPropertyItem("default-createdAt", NewPropertyString(PropertyStringBuilder{
+	// 			Default: rusty.Some("2023-12-31T23:59:59Z"),
+	// 			Format:  rusty.Some("date-time"),
+	// 		}))).
+	// 		propertiesAdd(NewPropertyItem("optional-createdAt", NewPropertyString(PropertyStringBuilder{
+	// 			Format: rusty.Some("date-time"),
+	// 		}))).
+	// 		propertiesAdd(NewPropertyItem("optional-default-createdAt", NewPropertyString(PropertyStringBuilder{
+	// 			Default: rusty.Some("2023-12-31T23:59:59Z"),
+	// 			Format:  rusty.Some("date-time"),
+	// 		}))).
+	// 		propertiesAdd(NewPropertyItem("float64", NewPropertyNumber(PropertyNumberBuilder{}))).
+	// 		propertiesAdd(NewPropertyItem("default-float64", NewPropertyNumber(PropertyNumberBuilder{Default: rusty.Some(4711.4), Format: rusty.Some("float32")}))).
+	// 		propertiesAdd(NewPropertyItem("optional-float32", NewPropertyNumber(PropertyNumberBuilder{Format: rusty.Some("float32")}))).
+	// 		propertiesAdd(NewPropertyItem("optional-default-float32", NewPropertyNumber(PropertyNumberBuilder{Default: rusty.Some(49.2)}))).
+	// 		propertiesAdd(NewPropertyItem("int64", NewPropertyInteger(PropertyIntegerBuilder{}))).
+	// 		propertiesAdd(NewPropertyItem("default-int64", NewPropertyInteger(PropertyIntegerBuilder{Default: rusty.Some(64)}))).
+	// 		propertiesAdd(NewPropertyItem("optional-int32", NewPropertyInteger(PropertyIntegerBuilder{Format: rusty.Some("int32")}))).
+	// 		propertiesAdd(NewPropertyItem("optional-default-int32", NewPropertyInteger(PropertyIntegerBuilder{Default: rusty.Some(32)}))).
+	// 		propertiesAdd(NewPropertyItem("bool", NewPropertyBoolean(PropertyBooleanBuilder{}))).
+	// 		propertiesAdd(NewPropertyItem("default-bool", NewPropertyBoolean(PropertyBooleanBuilder{Default: rusty.Some(true)}))).
+	// 		propertiesAdd(NewPropertyItem("optional-bool", NewPropertyBoolean(PropertyBooleanBuilder{}))).
+	// 		propertiesAdd(NewPropertyItem("optional-default-bool", NewPropertyBoolean(PropertyBooleanBuilder{Default: rusty.Some(true)}))).
+	// 		propertiesAdd(NewPropertyItem("sub", TestPayloadSchema(sl))).
+	// 		propertiesAdd(NewPropertyItem("opt-sub", TestPayloadSchema(sl))).
+	// 		required([]string{
+	// 			"string",
+	// 			"createdAt",
+	// 			"default-string",
+	// 			"default-createdAt",
+	// 			"float64",
+	// 			"default-float64",
+	// 			"int64",
+	// 			"default-int64",
+	// 			"uint64",
+	// 			"default-uint64",
+	// 			"default-bool",
+	// 			"bool",
+	// 			"sub"}).
+	// 		Build()
+	// }).Build()
 }
 
-func TestSchema(sl PropertyCtx) Property {
-	pb := NewPropertiesBuilder(sl).SetFileName("/abs/nested_type.schema.json")
-	ps := NewPropertyObjectBuilder(pb)
-	fls := TestFlatSchema(sl).Ok().(PropertyObject)
-	for _, item := range fls.Items() {
-		ps.propertiesAdd(rusty.Ok(item))
-	}
-	return ps.
-		id("https://NestedType").
-		title("NestedType").
-		description("Jojo NestedType").
-		propertiesAdd(NewPropertyItem("arrayarrayBool", NewPropertyArray(PropertyArrayBuilder{
-			Items: NewPropertyArray(PropertyArrayBuilder{
-				Items: NewPropertyArray(PropertyArrayBuilder{
-					Items: NewPropertyArray(PropertyArrayBuilder{
-						Items: NewPropertyBoolean(PropertyBooleanBuilder{})}),
-				})})}))).
-		propertiesAdd(NewPropertyItem("opt-arrayarrayBool", NewPropertyArray(PropertyArrayBuilder{
-			Items: NewPropertyArray(PropertyArrayBuilder{
-				Items: NewPropertyArray(PropertyArrayBuilder{
-					Items: NewPropertyArray(PropertyArrayBuilder{
-						Items: NewPropertyBoolean(PropertyBooleanBuilder{})}),
-				})})}))).
-		propertiesAdd(NewPropertyItem("arrayString", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyString(PropertyStringBuilder{})}))).
-		propertiesAdd(NewPropertyItem("opt-arrayString", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyString(PropertyStringBuilder{})}))).
-		propertiesAdd(NewPropertyItem("arrayNumber", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyNumber(PropertyNumberBuilder{})}))).
-		propertiesAdd(NewPropertyItem("opt-arrayNumber", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyNumber(PropertyNumberBuilder{})}))).
-		propertiesAdd(NewPropertyItem("arrayInteger", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyInteger(PropertyIntegerBuilder{})}))).
-		propertiesAdd(NewPropertyItem("opt-arrayInteger", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyInteger(PropertyIntegerBuilder{})}))).
-		propertiesAdd(NewPropertyItem("arrayBool", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyBoolean(PropertyBooleanBuilder{})}))).
-		propertiesAdd(NewPropertyItem("opt-arrayBool", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyBoolean(PropertyBooleanBuilder{})}))).
-		propertiesAdd(NewPropertyItem("arrayarrayFlatSchema", NewPropertyArray(PropertyArrayBuilder{
-			Items: NewPropertyArray(PropertyArrayBuilder{
-				Items: NewPropertyArray(PropertyArrayBuilder{
-					Items: NewPropertyArray(PropertyArrayBuilder{
-						Items: TestPayloadSchema(sl)}),
-				})})}))).
-		propertiesAdd(NewPropertyItem("opt-arrayarrayFlatSchema", NewPropertyArray(PropertyArrayBuilder{
-			Items: NewPropertyArray(PropertyArrayBuilder{
-				Items: NewPropertyArray(PropertyArrayBuilder{
-					Items: NewPropertyArray(PropertyArrayBuilder{
-						Items: TestPayloadSchema(sl)}),
-				})})}))).
-		propertiesAdd(NewPropertyItem("sub-flat", TestPayloadSchema(sl))).
-		propertiesAdd(NewPropertyItem("opt-sub-flat", TestPayloadSchema(sl))).
-		propertiesAdd(NewPropertyItem("arraySubType", NewPropertyArray(PropertyArrayBuilder{Items: TestPayloadSchema(sl)}))).
-		propertiesAdd(NewPropertyItem("opt-arraySubType", NewPropertyArray(PropertyArrayBuilder{Items: TestPayloadSchema(sl)}))).
-		required(append([]string{
+func TestJSONSchema() JSonFile {
+	dict := NewJSONProperty()
+	jsonStr := `{
+		"$id": "https://NestedType",
+		"title": "NestedType",
+		"description": "Jojo NestedType",
+		"type": "object",
+		"properties": {
+			"arrayarrayBool": {
+				"type": "array",
+				"items": {
+					"type": "array",
+					"items": {
+						"type": "array",
+						"items": {
+							"type": "array",
+							"items": {
+								"type": "boolean"
+							}
+						}
+					}
+				}
+			},
+			"opt-arrayarrayBool": {
+				"type": "array",
+				"items": {
+					"type": "array",
+					"items": {
+						"type": "array",
+						"items": {
+							"type": "array",
+							"items": {
+								"type": "boolean"
+							}
+						}
+					}
+				}
+			},
+			"arrayString": {
+				"type": "array",
+				"items": {
+					"type": "string"
+				}
+			},
+			"opt-arrayString": {
+				"type": "array",
+				"items": {
+					"type": "string"
+				}
+			},
+			"arrayNumber": {
+				"type": "array",
+				"items": {
+					"type": "number"
+				}
+			},
+			"opt-arrayNumber": {
+				"type": "array",
+				"items": {
+					"type": "number"
+				}
+			},
+			"arrayInteger": {
+				"type": "array",
+				"items": {
+					"type": "integer"
+				}
+			},
+			"opt-arrayInteger": {
+				"type": "array",
+				"items": {
+					"type": "integer"
+				}
+			},
+			"arrayBool": {
+				"type": "array",
+				"items": {
+					"type": "boolean"
+				}
+			},
+			"opt-arrayBool": {
+				"type": "array",
+				"items": {
+					"type": "boolean"
+				}
+			},
+			"arrayarrayFlatSchema": {
+				"type": "array",
+				"items": {
+					"type": "array",
+					"items": {
+						"type": "array",
+						"items": {
+							"type": "array",
+							"items": {}
+						}
+					}
+				}
+			},
+			"opt-arrayarrayFlatSchema": {
+				"type": "array",
+				"items": {
+					"type": "array",
+					"items": {
+						"type": "array",
+						"items": {
+							"type": "array",
+							"items": {}
+						}
+					}
+				}
+			},
+			"arraySubType": {
+				"type": "array",
+				"items": {}
+			},
+			"opt-arraySubType": {
+				"type": "array",
+				"items": {}
+			}
+		},
+		"required": [
 			"arrayarrayBool",
 			"sub-flat",
 			"arrayString",
@@ -517,9 +598,114 @@ func TestSchema(sl PropertyCtx) Property {
 			"arrayInteger",
 			"arrayBool",
 			"arraySubType",
-			"arrayarrayFlatSchema",
-		}, fls.Required()...)).
-		Build().Ok()
+			"arrayarrayFlatSchema"
+		]
+	}`
+	err := json.Unmarshal([]byte(jsonStr), dict)
+	if err != nil {
+		panic(err)
+	}
+	payloadFile := TestJSONPayloadSchema()
+
+	props := dict.Get("properties").(JSONProperty)
+
+	props.Get("arraySubType").(JSONProperty).Set("items", payloadFile.JSONProperty)
+	props.Get("opt-arraySubType").(JSONProperty).Set("items", payloadFile.JSONProperty)
+
+	props.Set("sub-flat", payloadFile.JSONProperty)
+	props.Set("opt-sub-flat", payloadFile.JSONProperty)
+
+	props.Get("arrayarrayFlatSchema").(JSONProperty).
+		Get("items").(JSONProperty).
+		Get("items").(JSONProperty).
+		Get("items").(JSONProperty).
+		Set("items", payloadFile.JSONProperty)
+
+	props.Get("opt-arrayarrayFlatSchema").(JSONProperty).
+		Get("items").(JSONProperty).
+		Get("items").(JSONProperty).
+		Get("items").(JSONProperty).
+		Set("items", payloadFile.JSONProperty)
+
+	flat := TestJsonFlatSchema()
+	flatProp := flat.JSONProperty.Get("properties").(JSONProperty)
+
+	for _, item := range flatProp.Keys() {
+		val := flatProp.Get(item)
+		props.Set(item, val)
+	}
+	dict.Set("required", append(
+		dict.Get("required").([]interface{}),
+		flat.JSONProperty.Get("required").([]interface{})...))
+
+	return JSonFile{
+		FileName:     "nested_type.schema.json",
+		JSONProperty: dict,
+	}
+}
+
+func TestSchema(sl PropertyCtx) Property {
+	prop := NewJSONProperty()
+	prop.Set("$ref", "file://./nested_type.schema.json")
+	return NewPropertiesBuilder(sl).FromJson(prop).Build().Ok()
+
+	// pb := NewPropertiesBuilder(sl).SetFileName("/abs/nested_type.schema.json")
+	// ps := NewPropertyObjectBuilder(pb)
+	// fls := TestFlatSchema(sl).Ok().(PropertyObject)
+	// for _, item := range fls.Items() {
+	// 	ps.propertiesAdd(rusty.Ok(item))
+	// }
+	// return ps.
+	// 	id("https://NestedType").
+	// 	title("NestedType").
+	// 	description("Jojo NestedType").
+	// 	propertiesAdd(NewPropertyItem("arrayarrayBool", NewPropertyArray(PropertyArrayBuilder{
+	// 		Items: NewPropertyArray(PropertyArrayBuilder{
+	// 			Items: NewPropertyArray(PropertyArrayBuilder{
+	// 				Items: NewPropertyArray(PropertyArrayBuilder{
+	// 					Items: NewPropertyBoolean(PropertyBooleanBuilder{})}),
+	// 			})})}))).
+	// 	propertiesAdd(NewPropertyItem("opt-arrayarrayBool", NewPropertyArray(PropertyArrayBuilder{
+	// 		Items: NewPropertyArray(PropertyArrayBuilder{
+	// 			Items: NewPropertyArray(PropertyArrayBuilder{
+	// 				Items: NewPropertyArray(PropertyArrayBuilder{
+	// 					Items: NewPropertyBoolean(PropertyBooleanBuilder{})}),
+	// 			})})}))).
+	// 	propertiesAdd(NewPropertyItem("arrayString", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyString(PropertyStringBuilder{})}))).
+	// 	propertiesAdd(NewPropertyItem("opt-arrayString", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyString(PropertyStringBuilder{})}))).
+	// 	propertiesAdd(NewPropertyItem("arrayNumber", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyNumber(PropertyNumberBuilder{})}))).
+	// 	propertiesAdd(NewPropertyItem("opt-arrayNumber", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyNumber(PropertyNumberBuilder{})}))).
+	// 	propertiesAdd(NewPropertyItem("arrayInteger", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyInteger(PropertyIntegerBuilder{})}))).
+	// 	propertiesAdd(NewPropertyItem("opt-arrayInteger", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyInteger(PropertyIntegerBuilder{})}))).
+	// 	propertiesAdd(NewPropertyItem("arrayBool", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyBoolean(PropertyBooleanBuilder{})}))).
+	// 	propertiesAdd(NewPropertyItem("opt-arrayBool", NewPropertyArray(PropertyArrayBuilder{Items: NewPropertyBoolean(PropertyBooleanBuilder{})}))).
+	// 	propertiesAdd(NewPropertyItem("arrayarrayFlatSchema", NewPropertyArray(PropertyArrayBuilder{
+	// 		Items: NewPropertyArray(PropertyArrayBuilder{
+	// 			Items: NewPropertyArray(PropertyArrayBuilder{
+	// 				Items: NewPropertyArray(PropertyArrayBuilder{
+	// 					Items: TestPayloadSchema(sl)}),
+	// 			})})}))).
+	// 	propertiesAdd(NewPropertyItem("opt-arrayarrayFlatSchema", NewPropertyArray(PropertyArrayBuilder{
+	// 		Items: NewPropertyArray(PropertyArrayBuilder{
+	// 			Items: NewPropertyArray(PropertyArrayBuilder{
+	// 				Items: NewPropertyArray(PropertyArrayBuilder{
+	// 					Items: TestPayloadSchema(sl)}),
+	// 			})})}))).
+	// 	propertiesAdd(NewPropertyItem("sub-flat", TestPayloadSchema(sl))).
+	// 	propertiesAdd(NewPropertyItem("opt-sub-flat", TestPayloadSchema(sl))).
+	// 	propertiesAdd(NewPropertyItem("arraySubType", NewPropertyArray(PropertyArrayBuilder{Items: TestPayloadSchema(sl)}))).
+	// 	propertiesAdd(NewPropertyItem("opt-arraySubType", NewPropertyArray(PropertyArrayBuilder{Items: TestPayloadSchema(sl)}))).
+	// 	required(append([]string{
+	// 		"arrayarrayBool",
+	// 		"sub-flat",
+	// 		"arrayString",
+	// 		"arrayNumber",
+	// 		"arrayInteger",
+	// 		"arrayBool",
+	// 		"arraySubType",
+	// 		"arrayarrayFlatSchema",
+	// 	}, fls.Required()...)).
+	// 	Build().Ok()
 }
 
 func WriteTestSchema(cfg *GeneratorConfig) string {

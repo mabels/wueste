@@ -61,7 +61,7 @@ func TestParentSimpleArray(t *testing.T) {
 		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
 	}
 	prop := NewJSONProperty()
-	prop.Set("$ref", "file://./nested_types.schema.json")
+	prop.Set("$ref", "file://./nested_type.schema.json")
 	so := NewPropertiesBuilder(ctx).FromJson(prop).Build().Ok().(PropertyObject)
 	str := so.PropertyByName("string").Ok().Property()
 	assert.Equal(t, str.Meta().Parent().Value().Id(), so.Id())

@@ -16,10 +16,10 @@
         "num": { "type": "number" },
         "int": { "type": "integer" },
         "str": { "type": "string" },
-        "opt_bool": { "type": "boolean" },
-        "opt_num": { "type": "number" },
-        "opt_int": { "type": "integer" },
-        "opt_str": { "type": "string" }
+        "opt-bool": { "type": "boolean" },
+        "opt-num": { "type": "number" },
+        "opt-int": { "type": "integer" },
+        "opt-str": { "type": "string" }
       },
       "required": ["bool", "num", "int", "str"]
     }
