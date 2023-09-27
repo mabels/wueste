@@ -1,6 +1,6 @@
 import { Result } from "wueste/result";
 
-import { SimpleTypeFactory } from "../src/generated/go/simple_type";
+import { SimpleTypeFactory } from "../src/generated/go/simpletype";
 
 const test = Result.Ok(42);
 if (test.is_err()) {
