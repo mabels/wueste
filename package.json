@@ -4,6 +4,7 @@
   "description": "A Serialization and Generator Framework",
   "scripts": {
     "clean": "npx rimraf dist src/generated node_modules",
+    "prebuild": "pnpm run generator",
     "build": "pnpm run build:wasm; pnpm run build:js",
     "build:js": "tsc",
     "build:wasm": "mkdir -p dist; cp \"$(go env GOROOT)/misc/wasm/wasm_exec.js\"  \"$(go env GOROOT)/misc/wasm/wasm_exec_node.js\"  dist/; GOOS=js GOARCH=wasm go build -o dist/generator.wasm entity-generator/cmd/generator.go",
