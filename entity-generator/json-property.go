@@ -1,6 +1,10 @@
 package entity_generator
 
-import "github.com/iancoleman/orderedmap"
+import (
+	"fmt"
+
+	"github.com/iancoleman/orderedmap"
+)
 
 // type JSONProperty map[string]interface{}
 type JSONProperty interface {
@@ -15,7 +19,7 @@ type JSONProperty interface {
 }
 
 type jsonProperty struct {
-	omap *orderedmap.OrderedMap
+	omap orderedmap.OrderedMap
 }
 
 // Len implements JSONProperty.
@@ -27,7 +31,7 @@ func (j *jsonProperty) Len() int {
 func (j *jsonProperty) Get(key string) any {
 	val, found := j.Lookup(key)
 	if !found {
-		panic("key not found")
+		panic(fmt.Sprintf("key[%s] not found", key))
 	}
 	return val
 }
@@ -41,7 +45,7 @@ func (j *jsonProperty) Lookup(key string) (any, bool) {
 	isOmap, found := out.(orderedmap.OrderedMap)
 	if found {
 		return &jsonProperty{
-			omap: &isOmap,
+			omap: isOmap,
 		}, true
 	}
 	return out, true

@@ -73,5 +73,56 @@ func TestSerialize(t *testing.T) {
 	v := TestJsonSubSchema()
 	js, err := json.Marshal(v)
 	assert.NoError(t, err)
-	assert.Equal(t, string(js), "{\"fileName\":\"sub.schema.json\",\"$id\":\"http://example.com/sub.schema.json\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Sub\",\"type\":\"object\",\"description\":\"Sub description\",\"properties\":{\"sub\":{\"type\":\"string\"},\"sub-down\":{\"$ref\":\"file://wurst/sub2.schema.json\"}},\"required\":[\"bar\",\"sub-down\"]}")
+	assert.Equal(t, string(js), "{\"filename\":\"sub.schema.json\",\"jsonProperty\":{\"$id\":\"http://example.com/sub.schema.json\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Sub\",\"type\":\"object\",\"description\":\"Sub description\",\"properties\":{\"sub\":{\"type\":\"string\"},\"sub-down\":{\"$ref\":\"file://wurst/sub2.schema.json\"}},\"required\":[\"bar\",\"sub-down\"]}}")
+}
+
+func TestJsonPropertySetMutable(t *testing.T) {
+	const input = `{
+		"foo": "bar",
+		"prop": {
+			"v1": 1,
+			"v2": "v1"
+		}
+	}`
+	out := NewJSONProperty()
+	err := json.Unmarshal([]byte(input), &out)
+	assert.NoError(t, err)
+
+	out.Get("prop").(JSONProperty).Set("v3", "blabla")
+
+	assert.Equal(t, "foo", out.Keys()[0])
+	assert.Equal(t, "bar", out.Get("foo"))
+	assert.Equal(t, "prop", out.Keys()[1])
+	inProp := out.Get("prop").(JSONProperty)
+	assert.Equal(t, "v1", inProp.Keys()[0])
+	assert.Equal(t, "v2", inProp.Keys()[1])
+	assert.Equal(t, "v3", inProp.Keys()[2])
+
+}
+
+func TestOrderedMapSetMutable(t *testing.T) {
+	const input = `{
+		"foo": "bar",
+		"prop": {
+			"v1": 1,
+			"v2": "v1"
+		}
+	}`
+	out := orderedmap.New()
+	err := json.Unmarshal([]byte(input), &out)
+	assert.NoError(t, err)
+
+	iout, _ := out.Get("prop")
+	iout.(orderedmap.OrderedMap).Set("v3", "blabla")
+
+	assert.Equal(t, "foo", out.Keys()[0])
+	// assert.Equal(t, "bar", out.Get("foo"))
+	assert.Equal(t, "prop", out.Keys()[1])
+	inPropX, _ := out.Get("prop")
+	inProp := inPropX.(orderedmap.OrderedMap)
+
+	assert.Equal(t, "v1", inProp.Keys()[0])
+	assert.Equal(t, "v2", inProp.Keys()[1])
+	assert.Equal(t, "v3", inProp.Keys()[2])
+
 }

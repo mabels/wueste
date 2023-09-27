@@ -15,10 +15,13 @@ type PropertyNumber interface {
 	Maximum() rusty.Optional[float64]
 	Minimum() rusty.Optional[float64]
 
-	Runtime() *PropertyRuntime
+	Meta() PropertyMeta
+
+	// Runtime() *PropertyRuntime
+	// Clone() Property
 }
 
-type PropertyNumberParam struct {
+type PropertyNumberBuilder struct {
 	// __loader    SchemaLoader
 	Id          string
 	Ref         rusty.Optional[string]
@@ -30,11 +33,15 @@ type PropertyNumberParam struct {
 	Maximum rusty.Optional[float64]
 	Minimum rusty.Optional[float64]
 
-	Runtime PropertyRuntime
-	Ctx     PropertyCtx
+	// Runtime PropertyRuntime
+	// Ctx     PropertyCtx
 }
 
-func (b *PropertyNumberParam) FromJson(js JSONProperty) *PropertyNumberParam {
+func NewPropertyNumberBuilder(pb *PropertiesBuilder) *PropertyNumberBuilder {
+	return &PropertyNumberBuilder{}
+}
+
+func (b *PropertyNumberBuilder) FromJson(js JSONProperty) *PropertyNumberBuilder {
 	b.Type = "number"
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
@@ -57,28 +64,38 @@ func PropertyNumberToJson(b PropertyNumber) JSONProperty {
 	return jsp
 }
 
-func (b *PropertyNumberParam) Build() rusty.Result[Property] {
-	return ConnectRuntime(NewPropertyNumber(*b))
+func (b *PropertyNumberBuilder) Build() rusty.Result[Property] {
+	return NewPropertyNumber(*b)
 }
 
 type propertyNumber struct {
-	param PropertyNumberParam
+	param PropertyNumberBuilder
+	meta  PropertyMeta
 }
 
-func NewPropertyNumber(p PropertyNumberParam) rusty.Result[Property] {
+func NewPropertyNumber(p PropertyNumberBuilder) rusty.Result[Property] {
 	p.Type = NUMBER
 	return rusty.Ok[Property](&propertyNumber{
 		param: p,
+		meta:  NewPropertyMeta(),
 	})
 }
+
+func (p *propertyNumber) Meta() PropertyMeta {
+	return p.meta
+}
+
+// func (p propertyNumber) Clone() Property {
+// 	return NewPropertyNumber(p.param).Ok()
+// }
 
 func (p *propertyNumber) Id() string {
 	return p.param.Id
 }
 
-func (p *propertyNumber) Runtime() *PropertyRuntime {
-	return &p.param.Runtime
-}
+// func (p *propertyNumber) Runtime() *PropertyRuntime {
+// 	return &p.param.Runtime
+// }
 
 func (p *propertyNumber) Ref() rusty.Optional[string] {
 	return p.param.Ref

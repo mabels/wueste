@@ -1,8 +1,6 @@
 package entity_generator
 
 import (
-	"fmt"
-
 	"github.com/mabels/wueste/entity-generator/rusty"
 )
 
@@ -17,97 +15,90 @@ const (
 	ARRAY   Type = "array"
 )
 
-type PropertyCtx struct {
-	Registry *SchemaRegistry
+type PropertyMeta interface {
+	Parent() rusty.Optional[Property]
+	SetParent(p Property)
+	FileName() rusty.Optional[string]
+	SetFileName(fn string)
+	SetMeta(m Property)
 }
 
-type PropertyRuntime struct {
-	FileName rusty.Optional[string]
-	Ref      rusty.Optional[string]
-	BaseDir  rusty.Optional[string]
-	Of       Property
+type propertyMeta struct {
+	parent   rusty.Optional[Property]
+	filename rusty.Optional[string]
 }
 
-// func NewRuntime(b SchemaLoader) PropertyMeta {
-// 	return PropertyMeta{
-// 		Loader: b,
-// 	}
+// SetMeta implements PropertyMeta.
+func (p *propertyMeta) SetMeta(m Property) {
+	if p.FileName().IsNone() {
+		p.SetFileName(m.Meta().FileName().Value())
+	}
+	p.SetParent(m)
+}
+
+// FileName implements PropertyMeta.
+func (m propertyMeta) FileName() rusty.Optional[string] {
+	return m.filename
+}
+
+// Parent implements PropertyMeta.
+func (m propertyMeta) Parent() rusty.Optional[Property] {
+	return m.parent
+}
+
+// SetFileName implements PropertyMeta.
+func (m *propertyMeta) SetFileName(fn string) {
+	m.filename = rusty.Some(fn)
+}
+
+// SetParent implements PropertyMeta.
+func (m *propertyMeta) SetParent(p Property) {
+	m.parent = rusty.Some(p)
+}
+
+func NewPropertyMeta() PropertyMeta {
+	return &propertyMeta{}
+}
+
+//
+// FileName rusty.Optional[string]
+// parent   rusty.Optional[Property]
 // }
-
-func ConnectRuntime[T Property](p rusty.Result[T]) rusty.Result[Property] {
-	if p.IsErr() {
-		return rusty.Err[Property](p.Err())
-	}
-	p.Ok().Runtime().Of = p.Ok()
-	return rusty.Ok[Property](p.Ok())
-}
-
-func (p *PropertyRuntime) SetFileName(name string) {
-	p.FileName = rusty.Some(name)
-}
-
-func (p *PropertyRuntime) SetRef(name string) {
-	p.Ref = rusty.Some(name)
-}
-
-func (p *PropertyRuntime) Assign(b PropertyRuntime) *PropertyRuntime {
-	// p.Registry = b.Registry
-	if b.Ref.IsSome() {
-		p.Ref = b.Ref
-	}
-	if p.FileName.IsNone() {
-		p.FileName = b.FileName
-	}
-	return p
-}
-
-func (p *PropertyRuntime) Clone() *PropertyRuntime {
-	return (&PropertyRuntime{}).Assign(*p)
-}
-
-func (p *PropertyRuntime) ToPropertyObject() rusty.Result[PropertyObject] {
-	var pi Property = p.Of
-	po, ok := pi.(PropertyObject)
-	if !ok {
-		return rusty.Err[PropertyObject](fmt.Errorf("not a PropertyObject"))
-	}
-	return rusty.Ok[PropertyObject](po)
-}
 
 type Property interface {
 	Id() string
 	Type() Type
 	Description() rusty.Optional[string]
-
 	Ref() rusty.Optional[string]
-
-	Runtime() *PropertyRuntime
+	Meta() PropertyMeta
 }
 
-type PropertyParam struct {
+type PropertyBuilder struct {
 	Id          string
 	Type        Type
 	Description rusty.Optional[string]
-
-	Ref     rusty.Optional[string]
-	Runtime PropertyRuntime
-	// Format      rusty.Optional[string]
-	// Optional    bool
+	Ref         rusty.Optional[string]
 }
 
 type property struct {
-	param PropertyParam
+	param PropertyBuilder
+	meta  PropertyMeta
 }
 
-func NewProperty(p PropertyParam) Property {
-	if p.Ref.IsSome() {
-		p.Runtime.Ref = p.Ref
-	}
+func NewProperty(p PropertyBuilder) Property {
+	// if p.Ref.IsSome() {
+	// 	p.Runtime.Ref = p.Ref
+	// }
 	r := &property{
 		param: p,
+		meta:  NewPropertyMeta(),
 	}
 	return r
 }
+
+// func (p property) Clone() Property {
+// 	return NewProperty(p.param)
+// }
 
 func (p *property) Ref() rusty.Optional[string] {
 	return p.param.Ref
@@ -117,9 +108,13 @@ func (p *property) Id() string {
 	return p.param.Id
 }
 
-func (p *property) Runtime() *PropertyRuntime {
-	return &p.param.Runtime
+func (p *property) Meta() PropertyMeta {
+	return p.meta
 }
+
+// func (p *property) Runtime() *PropertyRuntime {
+// 	return &p.param.Runtime
+// }
 
 // func (p *property) Id() string {
 // 	return p.param.Id

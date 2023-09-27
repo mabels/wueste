@@ -17,14 +17,17 @@ type PropertyInteger interface {
 	Minimum() rusty.Optional[int]
 
 	Ref() rusty.Optional[string]
-	Runtime() *PropertyRuntime
+	Meta() PropertyMeta
+	// Runtime() *PropertyRuntime
+
+	// Clone() Property
 
 	// ExclusiveMinimum() rusty.Optional[int]
 	// ExclusiveMaximum() rusty.Optional[int]
 	// MultipleOf() rusty.Optional[int]
 }
 
-type PropertyIntegerParam struct {
+type PropertyIntegerBuilder struct {
 	// __loader    SchemaLoader
 	Id          string
 	Type        Type
@@ -37,14 +40,18 @@ type PropertyIntegerParam struct {
 	Maximum rusty.Optional[int]
 	Minimum rusty.Optional[int]
 
-	Runtime PropertyRuntime
-	Ctx     PropertyCtx
+	// Runtime PropertyRuntime
+	// Ctx     PropertyCtx
 	// ExclusiveMinimum() rusty.Optional[int]
 	// ExclusiveMaximum() rusty.Optional[int]
 	// MultipleOf() rusty.Optional[int]
 }
 
-func (b *PropertyIntegerParam) FromJson(js JSONProperty) *PropertyIntegerParam {
+func NewPropertyIntegerBuilder(pb *PropertiesBuilder) *PropertyIntegerBuilder {
+	return &PropertyIntegerBuilder{}
+}
+
+func (b *PropertyIntegerBuilder) FromJson(js JSONProperty) *PropertyIntegerBuilder {
 	b.Type = "integer"
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
@@ -67,27 +74,38 @@ func PropertyIntegerToJson(b PropertyInteger) JSONProperty {
 	return jsp
 }
 
-func (b *PropertyIntegerParam) Build() rusty.Result[Property] {
-	return ConnectRuntime(NewPropertyInteger(*b))
+func (b *PropertyIntegerBuilder) Build() rusty.Result[Property] {
+	return NewPropertyInteger(*b)
 }
 
 type propertyInteger struct {
-	param PropertyIntegerParam
+	param PropertyIntegerBuilder
+	meta  PropertyMeta
 }
 
-func NewPropertyInteger(p PropertyIntegerParam) rusty.Result[Property] {
+func NewPropertyInteger(p PropertyIntegerBuilder) rusty.Result[Property] {
 	p.Type = INTEGER
 	return rusty.Ok[Property](&propertyInteger{
 		param: p,
+		meta:  NewPropertyMeta(),
 	})
 }
+
+func (p *propertyInteger) Meta() PropertyMeta {
+	return p.meta
+}
+
+// func (p propertyInteger) Clone() Property {
+// 	return NewPropertyInteger(p.param).Ok()
+// }
 
 func (p *propertyInteger) Id() string {
 	return p.param.Id
 }
-func (p *propertyInteger) Runtime() *PropertyRuntime {
-	return &p.param.Runtime
-}
+
+// func (p *propertyInteger) Runtime() *PropertyRuntime {
+// 	return &p.param.Runtime
+// }
 
 func (p *propertyInteger) Ref() rusty.Optional[string] {
 	return p.param.Ref

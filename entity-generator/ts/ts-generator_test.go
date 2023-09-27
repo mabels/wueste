@@ -47,7 +47,7 @@ func TestTypescript(t *testing.T) {
 	cfg := getConfig()
 	sl := eg.NewTestContext()
 
-	tfs := eg.TestFlatSchema(sl, eg.PropertyRuntime{}).Ok()
+	tfs := eg.TestFlatSchema(sl).Ok()
 
 	tfsObj := tfs.(eg.PropertyObject)
 	for _, pi := range tfsObj.Items() {
@@ -59,13 +59,18 @@ func TestTypescript(t *testing.T) {
 	}
 
 	TsGenerator(cfg, tfs, sl)
-	TsGenerator(cfg, eg.TestSchema(sl, eg.PropertyRuntime{}), sl)
-	for _, p := range sl.Registry.Items() {
-		if !p.Written() {
-			continue
-		}
-		TsGenerator(cfg, p.Property(), sl)
-	}
+	TsGenerator(cfg, eg.TestSchema(sl), sl)
+	// for _, prop := range g.includes.ActiveTypes() {
+	// 	if prop.property.IsSome() {
+	// 		TsGenerator(cfg, prop.property.Value(), sl)
+	// 	}
+	// }
+	// for _, p := range sl.Registry.Items() {
+	// 	// if !p.Written() {
+	// 	// 	continue
+	// 	// }
+	// 	TsGenerator(cfg, p.Property(), sl)
+	// }
 	err := runCmd("npm run build:js")
 	if err != nil {
 		t.Fatal(err)

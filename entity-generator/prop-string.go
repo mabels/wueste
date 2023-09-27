@@ -20,8 +20,10 @@ type PropertyString interface {
 	Default() rusty.Optional[string] // match Type
 	Format() rusty.Optional[StringFormat]
 	Ref() rusty.Optional[string]
+	Meta() PropertyMeta
 
-	Runtime() *PropertyRuntime
+	// Runtime() *PropertyRuntime
+	// Clone() Property
 	// MinLength() rusty.Optional[int]
 	// MaxLength() rusty.Optional[int]
 	// Pattern() rusty.Optional[string]
@@ -29,7 +31,7 @@ type PropertyString interface {
 	// ContentMediaType() rusty.Optional[string]
 }
 
-type PropertyStringParam struct {
+type PropertyStringBuilder struct {
 	// PropertyParam
 	Id          string
 	Type        Type
@@ -39,12 +41,25 @@ type PropertyStringParam struct {
 	// Enum      []string
 	// MinLength rusty.Optional[int]
 	// MaxLength rusty.Optional[int]
-	Format  rusty.Optional[StringFormat]
-	Runtime PropertyRuntime
-	Ctx     PropertyCtx
+	Format rusty.Optional[StringFormat]
+	// Runtime PropertyRuntime
+	// Ctx     PropertyCtx
 }
 
-func (b *PropertyStringParam) FromJson(js JSONProperty) *PropertyStringParam {
+func NewPropertyStringBuilder(pb *PropertiesBuilder) *PropertyStringBuilder {
+	return &PropertyStringBuilder{}
+}
+
+// func (b *PropertyStringBuilder) FromProperty(prop Property) *PropertyStringBuilder {
+// 	ps, found := prop.(PropertyString)
+// 	if !found {
+// 		panic("not a PropertyString")
+// 	}
+
+// 	return b
+// }
+
+func (b *PropertyStringBuilder) FromJson(js JSONProperty) *PropertyStringBuilder {
 	b.Type = STRING
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
@@ -63,18 +78,27 @@ func PropertyStringToJson(b PropertyString) JSONProperty {
 	return jsp
 }
 
-func (b *PropertyStringParam) Build() rusty.Result[Property] {
-	return ConnectRuntime(NewPropertyString(*b))
+func (b *PropertyStringBuilder) Build() rusty.Result[Property] {
+	return NewPropertyString(*b)
 }
 
 type propertyString struct {
 	// propertyLiteral[string]
-	param PropertyStringParam
+	param PropertyStringBuilder
+	meta  PropertyMeta
 }
 
-func (p *propertyString) Runtime() *PropertyRuntime {
-	return &p.param.Runtime
+func (p *propertyString) Meta() PropertyMeta {
+	return p.meta
 }
+
+// func (p propertyString) Clone() Property {
+// 	return NewPropertyString(p.param).Ok()
+// }
+
+// func (p *propertyString) Runtime() *PropertyRuntime {
+// 	return &p.param.Runtime
+// }
 
 // Description implements PropertyString.
 func (p *propertyString) Description() rusty.Optional[string] {
@@ -127,16 +151,17 @@ func (p *propertyString) Format() rusty.Optional[StringFormat] {
 }
 
 func (p *propertyString) Ref() rusty.Optional[string] {
-	return p.Runtime().Ref
+	return p.param.Ref
 }
 
 func (p *propertyString) Id() string {
 	return p.param.Id
 }
 
-func NewPropertyString(p PropertyStringParam) rusty.Result[Property] {
+func NewPropertyString(p PropertyStringBuilder) rusty.Result[Property] {
 	p.Type = STRING
 	return rusty.Ok[Property](&propertyString{
 		param: p,
+		meta:  NewPropertyMeta(),
 	})
 }

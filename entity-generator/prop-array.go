@@ -20,12 +20,14 @@ type PropertyArray interface {
 	// Containts() Property
 	// AdditionalItems() rusty.Optional[Property]
 	Ref() rusty.Optional[string]
-	Runtime() *PropertyRuntime
+	// Runtime() *PropertyRuntime
+	// Clone() Property
 
-	ToPropertyObject() rusty.Result[PropertyObject]
+	// ToPropertyObject() rusty.Result[PropertyObject]
+	Meta() PropertyMeta
 }
 
-type PropertyArrayParam struct {
+type PropertyArrayBuilder struct {
 	// __loader SchemaLoader
 	Id          string
 	Type        Type
@@ -37,22 +39,32 @@ type PropertyArrayParam struct {
 	MaxItems rusty.Optional[int]
 	Items    rusty.Result[Property]
 	// Errors   []error
-	Runtime PropertyRuntime
-	Ctx     PropertyCtx
+	// Runtime PropertyRuntime
+	// Ctx     PropertyCtx
 	// Default rusty.Optional[string]
 	// Enum      []string
 	// MinLength rusty.Optional[int]
 	// MaxLength rusty.Optional[int]
 	// Format    rusty.Optional[StringFormat]
+	_propertiesBuilder *PropertiesBuilder
 }
 
-func (b *PropertyArrayParam) FromJson(js JSONProperty) *PropertyArrayParam {
+func NewPropertyArrayBuilder(pb *PropertiesBuilder) *PropertyArrayBuilder {
+	return &PropertyArrayBuilder{
+		_propertiesBuilder: pb,
+	}
+}
+
+func (b *PropertyArrayBuilder) FromJson(js JSONProperty) *PropertyArrayBuilder {
 	b.Type = ARRAY
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.MaxItems = getFromAttributeOptionalInt(js, "maxItems")
 	b.MinItems = getFromAttributeOptionalInt(js, "minItems")
-	b.Items = NewPropertiesBuilder(b.Ctx).FromJson(b.Runtime, js.Get("items").(JSONProperty)).Build()
+
+	builder := NewPropertiesBuilder(b._propertiesBuilder.ctx)
+	builder.filename = b._propertiesBuilder.filename
+	b.Items = builder.FromJson(js.Get("items").(JSONProperty)).Build()
 	return b
 }
 
@@ -67,21 +79,34 @@ func PropertyArrayToJson(b PropertyArray) JSONProperty {
 	return jsp
 }
 
-func (b *PropertyArrayParam) Build() rusty.Result[Property] {
-	if b.Items != nil {
-		return ConnectRuntime(NewPropertyArray(*b))
+func (b *PropertyArrayBuilder) Build() rusty.Result[Property] {
+	if b.Items.IsOk() {
+		pa := NewPropertyArray(*b)
+		if b.Items.IsOk() {
+			b.Items.Ok().Meta().SetParent(pa.Ok())
+		}
+		return pa
 	} else {
-		return rusty.Err[Property](fmt.Errorf("Array needs items"))
+		return rusty.Err[Property](fmt.Errorf("Array needs items:%v", b.Items.Err()))
 	}
 }
 
 type propertyArray struct {
-	param PropertyArrayParam
+	param PropertyArrayBuilder
+	meta  PropertyMeta
 }
 
-func (p *propertyArray) ToPropertyObject() rusty.Result[PropertyObject] {
-	return rusty.Err[PropertyObject](fmt.Errorf("not a PropertyObject"))
+func (p *propertyArray) Meta() PropertyMeta {
+	return p.meta
 }
+
+// func (p *propertyArray) Clone() Property {
+// 	return NewPropertyArray(p.param).Ok()
+// }
+
+// func (p *propertyArray) ToPropertyObject() rusty.Result[PropertyObject] {
+// 	return rusty.Err[PropertyObject](fmt.Errorf("not a PropertyObject"))
+// }
 
 // Description implements PropertyArray.
 func (p *propertyArray) Description() rusty.Optional[string] {
@@ -140,9 +165,9 @@ func (p *propertyArray) Ref() rusty.Optional[string] {
 	return p.param.Ref
 }
 
-func (p *propertyArray) Runtime() *PropertyRuntime {
-	return &p.param.Runtime
-}
+// func (p *propertyArray) Runtime() *PropertyRuntime {
+// 	return &p.param.Runtime
+// }
 
 // func (p *propertyArray) Default() rusty.Optional[wueste.Literal[string]] {
 // 	if !p.param.Default.IsNone() {
@@ -165,9 +190,14 @@ func (p *propertyArray) Runtime() *PropertyRuntime {
 // 	return p.param.format
 // }
 
-func NewPropertyArray(p PropertyArrayParam) rusty.Result[Property] {
+func NewPropertyArray(p PropertyArrayBuilder) rusty.Result[Property] {
 	p.Type = ARRAY
-	return rusty.Ok[Property](&propertyArray{
+	pa := &propertyArray{
 		param: p,
-	})
+		meta:  NewPropertyMeta(),
+	}
+	if p.Id == "" {
+		pa.param.Id = fmt.Sprintf("array-%p", pa)
+	}
+	return rusty.Ok[Property](pa)
 }

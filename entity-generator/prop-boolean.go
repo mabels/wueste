@@ -9,26 +9,23 @@ type PropertyBoolean interface {
 	Type() Type
 	Description() rusty.Optional[string]
 	Default() rusty.Optional[bool] // match Type
-
 	Ref() rusty.Optional[string]
-	Runtime() *PropertyRuntime
+	Meta() PropertyMeta
 }
 
-type PropertyBooleanParam struct {
-	// __loader SchemaLoader
+type PropertyBooleanBuilder struct {
 	Id          string
 	Type        Type
 	Description rusty.Optional[string]
 	Default     rusty.Optional[bool]
 	Ref         rusty.Optional[string]
-
-	Runtime PropertyRuntime
-	Ctx     PropertyCtx
-	// Optional    bool
 }
 
-func (b *PropertyBooleanParam) FromJson(js JSONProperty) *PropertyBooleanParam {
-	// b.Id = getFromAttributeString(js, "$id")
+func NewPropertyBooleanBuilder(pb *PropertiesBuilder) *PropertyBooleanBuilder {
+	return &PropertyBooleanBuilder{}
+}
+
+func (b *PropertyBooleanBuilder) FromJson(js JSONProperty) *PropertyBooleanBuilder {
 	b.Type = "boolean"
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
@@ -45,24 +42,40 @@ func PropertyBooleanToJson(b PropertyBoolean) JSONProperty {
 	return jsp
 }
 
-func (b *PropertyBooleanParam) Build() rusty.Result[Property] {
-	return ConnectRuntime(NewPropertyBoolean(*b))
+func (b *PropertyBooleanBuilder) Build() rusty.Result[Property] {
+	// return ConnectRuntime(NewPropertyBoolean(*b))
+	return NewPropertyBoolean(*b)
 }
 
 type propertyBoolean struct {
-	// property
-	// propertyLiteral[bool]
-	param PropertyBooleanParam
+	param PropertyBooleanBuilder
+	meta  PropertyMeta
 }
+
+func NewPropertyBoolean(p PropertyBooleanBuilder) rusty.Result[Property] {
+	p.Type = BOOLEAN
+	return rusty.Ok[Property](&propertyBoolean{
+		param: p,
+		meta:  NewPropertyMeta(),
+	})
+}
+
+func (p *propertyBoolean) Meta() PropertyMeta {
+	return p.meta
+}
+
+// func (p propertyBoolean) Clone() Property {
+// 	return NewPropertyBoolean(p.param).Ok()
+// }
 
 // Description implements PropertyBoolean.
 func (p *propertyBoolean) Description() rusty.Optional[string] {
 	return p.param.Description
 }
 
-func (p *propertyBoolean) Runtime() *PropertyRuntime {
-	return &p.param.Runtime
-}
+// func (p *propertyBoolean) Runtime() *PropertyRuntime {
+// 	return &p.param.Runtime
+// }
 
 // func (p *propertyBoolean) Format() rusty.Optional[string] {
 // 	panic("implement me")
@@ -102,11 +115,4 @@ func (p *propertyBoolean) Id() string {
 
 func (p *propertyBoolean) Ref() rusty.Optional[string] {
 	return p.param.Ref
-}
-
-func NewPropertyBoolean(p PropertyBooleanParam) rusty.Result[Property] {
-	p.Type = BOOLEAN
-	return rusty.Ok[Property](&propertyBoolean{
-		param: p,
-	})
 }

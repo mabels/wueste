@@ -1,7 +1,8 @@
-import { Payload, PayloadFactory } from "../../src/generated/go/payload";
+// import { Payload, PayloadFactory } from "../../src/generated/go/payload";
 
-import { NestedTypeFactory } from "../../src/generated/go/nested_type";
-import { SimpleTypeFactory, SimpleTypeParam } from "../../src/generated/go/simple_type";
+import { NestedTypeFactory } from "../../src/generated/go/nestedtype";
+import { NestedType$Payload, NestedType$PayloadFactory } from "../../src/generated/go/nestedtype$payload";
+import { SimpleTypeFactory, SimpleTypeParam } from "../../src/generated/go/simpletype";
 
 const simpleTypeParam: SimpleTypeParam = {
   bool: true,
@@ -533,7 +534,7 @@ it(`NestedType-Builder Object-JSON-Object`, () => {
 });
 
 it(`Payload OpenObject`, () => {
-  const json: Payload = {
+  const json: NestedType$Payload = {
     Test: "x",
     Open: {
       X: {
@@ -541,8 +542,8 @@ it(`Payload OpenObject`, () => {
       },
     },
   };
-  const obj = PayloadFactory.Builder().Coerce(json).unwrap();
-  const ref = PayloadFactory.ToObject(obj);
+  const obj = NestedType$PayloadFactory.Builder().Coerce(json).unwrap();
+  const ref = NestedType$PayloadFactory.ToObject(obj);
 
   expect(ref).toEqual(json);
 });

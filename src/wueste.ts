@@ -32,21 +32,39 @@ export interface WuestenAttributeParameter<T> {
   // format?: string // date-time
 }
 
-export interface WuestenReflection {
-  readonly type: string;
+export type SchemaTypes = "string" | "number" | "integer" | "boolean" | "object" | "array";
+
+export type WuestenReflection = WuestenReflectionObject | WuestenReflectionArray | WuestenReflectionLiteral;
+
+export interface WuestenReflectionBase {
+  readonly type: SchemaTypes;
+}
+
+export interface WuestenReflectionLiteral extends WuestenReflectionBase {
+  readonly type: "string" | "number" | "integer" | "boolean";
   coerceFromString(val: string): void;
   // getAsString(): string;
-  readonly properties?: WuestenReflectionObjectItem[];
 }
 
 export interface WuestenReflectionObjectItem {
   readonly name: string;
   readonly property: WuestenReflection;
 }
+export interface WuestenReflectionObject extends WuestenReflectionBase {
+  readonly type: "object";
+  readonly id?: string;
+  readonly title?: string;
+  readonly properties: WuestenReflectionObjectItem[];
+}
+export interface WuestenReflectionArray extends WuestenReflectionBase {
+  readonly id: string;
+  readonly type: "array";
+  readonly items: WuestenReflection;
+}
+
 export interface WuestenAttribute<G, I = G> {
   readonly param: WuestenAttributeParameter<G>;
   SetNameSuffix(...idxs: number[]): void;
-  Reflection(): WuestenReflection;
   CoerceAttribute(val: unknown): Result<G>;
   Coerce(value: I): Result<G>;
   Get(): Result<G>;
@@ -54,7 +72,7 @@ export interface WuestenAttribute<G, I = G> {
 
 export interface WuestenGeneratorFunctions<I, G> {
   readonly coerce: (t: I) => Result<G>;
-  readonly reflection?: () => WuestenReflection;
+  readonly reflection?: WuestenReflection;
 }
 
 function coerceAttribute<T, I>(val: unknown, param: WuestenAttributeParameter<T>, coerce: (t: I) => Result<T>): Result<T> {
@@ -81,6 +99,19 @@ export function WuestenAttributeName<T>(param: WuestenAttributeParameter<T>): st
   return names.join(".");
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function WuestenCoerceAttribute<T>(val: unknown): Result<T> {
+  throw new Error("Method not implemented.");
+  // if (!(typeof val === "object" && val !== null)) {
+  //   return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
+  // }
+  // const res = coerceAttribute<G, I>(val, this.param, this.Coerce.bind(this));
+  // if (res.is_err()) {
+  //   return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] ${res.unwrap_err().message}`);
+  // }
+  // return res;
+}
+
 export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
   _value?: G;
   _idxs: number[] = [];
@@ -97,12 +128,6 @@ export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
       ...param,
       default: def,
     };
-  }
-  Reflection(): WuestenReflection {
-    if (!this._fnParams.reflection) {
-      throw new Error("no reflection");
-    }
-    return this._fnParams.reflection();
   }
   SetNameSuffix(...idxs: number[]): void {
     this._idxs = idxs;
@@ -151,9 +176,7 @@ export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undef
     };
     this._value = attr.param.default as T;
   }
-  Reflection(): WuestenReflection {
-    return this._attr.Reflection();
-  }
+
   SetNameSuffix(...idxs: number[]): void {
     this._idxs = idxs;
   }
@@ -215,9 +238,7 @@ export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, Wuest
       jsonname: "WuestenObjectBuilder",
     };
   }
-  Reflection(): WuestenReflection {
-    throw new Error("WuestenObjectBuilder:Reflection Method not implemented.");
-  }
+
   Get(): Result<WuestenObject, Error> {
     throw new Error("WuestenObjectBuilder:Get Method not implemented.");
   }
@@ -504,6 +525,10 @@ export const wuesten = {
   AttributeObject: <E, I, O>(def: WuestenAttributeParameter<I>, factory: WuestenFactory<E, I, O>): WuestenAttribute<E, I> => {
     return new WuestenAttributeObject<E, I, O>(def, factory);
   },
+  // AttributeObjectOptional: <E, I, O extends WuestenAttribute<E | undefined, I | undefined>>(o: O): WuestenAttribute<E | undefined, I | undefined> => {
+  //   return new WuestenAttrOptional<E, I>(o);
+  // },
+
   AttributeObjectOptional: <E, I, O>(
     def: WuestenAttributeParameter<I>,
     factory: WuestenFactory<E, I, O>,

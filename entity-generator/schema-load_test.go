@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mabels/wueste/entity-generator/rusty"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,28 +12,14 @@ type JSONPropertyItems struct {
 	Prop JSONProperty
 }
 
-// func toSorted(m map[string]JSONProperty) []JSONPropertyItems {
-// 	out := []JSONPropertyItems{}
-// 	for k, v := range m {
-// 		out = append(out, JSONPropertyItems{
-// 			Name: k,
-// 			Prop: v,
-// 		})
-// 	}
-// 	sort.Slice(out, func(i, j int) bool {
-// 		return out[i].Name < out[j].Name
-// 	})
-// 	return out
-// }
-
 func TestFlatJsonAndProp(t *testing.T) {
 	jsobj := TestJsonFlatSchema()
 	prop := NewPropertiesBuilder(NewTestContext()).
-		FromJson(PropertyRuntime{}, jsobj).Build().Ok().Runtime().ToPropertyObject().Ok()
+		FromJson(jsobj.JSONProperty).Build().Ok().(PropertyObject)
 	pjs := PropertyToJson(prop)
 	// assert.Equal(t, jsobj, pjs)
 
-	jsonJsObj, err := json.MarshalIndent(jsobj, "", "  ")
+	jsonJsObj, err := json.MarshalIndent(jsobj.JSONProperty, "", "  ")
 	assert.NoError(t, err)
 	jsonPjs, err := json.MarshalIndent(pjs, "", "  ")
 	assert.NoError(t, err)
@@ -55,56 +40,57 @@ func TestFlatJsonAndProp(t *testing.T) {
 
 func TestPayloadOpen(t *testing.T) {
 	ctx := NewTestContext()
-	rt := PropertyRuntime{
-		FileName: rusty.Some("file://./payload.schema.json"),
-	}
-	v := TestPayloadSchema(ctx, rt)
+	v := TestPayloadSchema(ctx)
 	assert.True(t, v.IsOk())
-	assert.Equal(t, v.Ok().Runtime().Of, v.Ok())
-	assert.Equal(t, v.Ok().Runtime().FileName.Value(), "/abs/file:/sub.schema.json")
+	assert.Equal(t, v.Ok().Meta().FileName().Value(), "/abs/payload.schema.json")
+	assert.True(t, v.Ok().Meta().Parent().IsNone())
 
-	vo := v.Ok().Runtime().ToPropertyObject().Ok()
+	vo := v.Ok().(PropertyObject)
 	test, found := vo.Properties().Lookup("Test")
 	assert.True(t, found)
 	// assert.Equal(t, open.Id(), "")
-	assert.Equal(t, test.Runtime().FileName.Value(), "/abs/file:/sub.schema.json")
-	assert.Equal(t, test.Runtime().Of, test)
+	assert.Equal(t, test.Meta().FileName().Value(), "/abs/payload.schema.json")
 
-	vo = v.Ok().Runtime().ToPropertyObject().Ok()
+	vo = v.Ok().(*propertyObject)
 	open, found := vo.Properties().Lookup("Open")
 	assert.True(t, found)
 	// assert.Equal(t, open.Id(), "")
-	assert.Equal(t, open.Runtime().FileName.Value(), "/abs/file:/sub.schema.json")
-	assert.Equal(t, open.Runtime().Of, open)
+	assert.Equal(t, open.Meta().FileName().Value(), "/abs/payload.schema.json")
+	assert.Equal(t, open.Meta().Parent().Value(), v.Ok())
 }
 
 func TestFileNames(t *testing.T) {
 
 	ctx := NewTestContext()
-	sub := TestPayloadSchema(ctx, PropertyRuntime{}).Ok()
-	assert.Equal(t, sub.Runtime().FileName.Value(), "/abs/sub.schema.json")
-	_, found := ctx.Registry.registry[sub.Runtime().FileName.Value()]
+	prop := NewJSONProperty()
+	prop.Set("$ref", "file://./payload.schema.json")
+	rsub := NewPropertiesBuilder(ctx).FromJson(prop).Build()
+	assert.True(t, rsub.IsOk())
+	sub := rsub.Ok().(PropertyObject)
+	assert.Equal(t, sub.Meta().FileName().Value(), "/abs/payload.schema.json")
+	_, found := ctx.Registry.registry[sub.Meta().FileName().Value()]
 	assert.True(t, found)
 
-	ctx = NewTestContext()
-	base := TestFlatSchema(ctx, PropertyRuntime{}).Ok().Runtime().ToPropertyObject().Ok()
-	assert.Equal(t, base.Runtime().FileName.Value(), "/abs/simple_type.schema.json")
-	_, found = ctx.Registry.registry[base.Runtime().FileName.Value()]
+	prop.Set("$ref", "file://./simple_type.schema.json")
+	base := NewPropertiesBuilder(ctx).FromJson(prop).Build().Ok().(PropertyObject)
+	assert.Equal(t, base.Meta().FileName().Value(), "/abs/simple_type.schema.json")
+	_, found = ctx.Registry.registry[base.Meta().FileName().Value()]
 	assert.True(t, found)
 	baseSub, _ := base.Properties().Lookup("opt-sub")
-	assert.Equal(t, baseSub.Runtime().FileName.Value(), "/abs/sub.schema.json")
+	assert.Equal(t, baseSub.Meta().FileName().Value(), "/abs/simple_type.schema.json")
 
-	nested := TestSchema(ctx, PropertyRuntime{})
-	assert.Equal(t, nested.Runtime().FileName.Value(), "/abs/nested_type.schema.json")
-	_, found = ctx.Registry.registry[nested.Runtime().FileName.Value()]
+	prop.Set("$ref", "file://./nested_type.schema.json")
+	nested := NewPropertiesBuilder(ctx).FromJson(prop).Build().Ok().(PropertyObject)
+	assert.Equal(t, nested.Meta().FileName().Value(), "/abs/nested_type.schema.json")
+	_, found = ctx.Registry.registry[nested.Meta().FileName().Value()]
 	assert.True(t, found)
 
 }
 
 func TestNestedJsonAndProp(t *testing.T) {
-	ref := TestSchema(NewTestContext(), PropertyRuntime{})
+	ref := TestSchema(NewTestContext())
 	refJs := PropertyToJson(ref)
-	ret := NewPropertiesBuilder(NewTestContext()).FromJson(PropertyRuntime{}, refJs).Build().Ok().Runtime().ToPropertyObject().Ok()
+	ret := NewPropertiesBuilder(NewTestContext()).FromJson(refJs).Build().Ok().(PropertyObject)
 	retJs := PropertyToJson(ret)
 	// ref := TestFlatSchema(NewTestSchemaLoader()).(PropertyObject)
 

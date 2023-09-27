@@ -7,87 +7,37 @@ import (
 )
 
 type PropertiesBuilder struct {
-	// items   []PropertyItem
 	property rusty.Optional[Property]
-	errors   []error
-	_ctx     PropertyCtx
-	// _loader  SchemaLoader
+	filename rusty.Optional[string]
+	// ref      rusty.Optional[string]
+	errors []error
+	ctx    PropertyCtx
 }
 
 func NewPropertiesBuilder(run PropertyCtx) *PropertiesBuilder {
 	return &PropertiesBuilder{
-		_ctx: run,
+		ctx: run,
+		// meta: NewPropertyMeta(),
 	}
 }
 
-func (b *PropertiesBuilder) FileName(fname string) *PropertiesBuilder {
-	if b.property.IsNone() {
-		b.errors = append(b.errors, fmt.Errorf("FileName Set with no property set"))
-		return b
-	}
-	b.property.Value().Runtime().SetFileName(fname)
+func (b *PropertiesBuilder) SetFileName(fname string) *PropertiesBuilder {
+	b.filename = rusty.Some(fname)
 	return b
 }
 
-func (b *PropertiesBuilder) Resolve(rt PropertyRuntime, prop Property) rusty.Result[Property] {
-	if prop.Ref().IsNone() {
-		return rusty.Ok(prop)
-	}
-	refVal := prop.Ref().Value()
-
-	return b._ctx.Registry.EnsureSchema(refVal, rt, func(fname string, rt PropertyRuntime) rusty.Result[Property] {
-		return loadSchema(fname, b._ctx, func(abs string, prop JSONProperty) rusty.Result[Property] {
-			return NewPropertiesBuilder(b._ctx).FromJson(rt, prop).FileName(abs).Build()
-		})
-	})
-}
-
-func (b *PropertiesBuilder) BuildObject(rt PropertyRuntime) *PropertyObjectParam {
-	return &PropertyObjectParam{
-		Runtime: rt,
-		Ctx:     b._ctx,
-		Type:    OBJECT,
-	}
-}
-func (b *PropertiesBuilder) BuildArray(rt PropertyRuntime) *PropertyArrayParam {
-	return &PropertyArrayParam{
-		Runtime: rt,
-		Ctx:     b._ctx,
-		Type:    ARRAY,
-	}
-}
-
-func (b *PropertiesBuilder) BuildString(rt PropertyRuntime) *PropertyStringParam {
-	return &PropertyStringParam{
-		Runtime: rt,
-		Ctx:     b._ctx,
-		Type:    STRING,
-	}
-}
-
-func (b *PropertiesBuilder) BuildBoolean(rt PropertyRuntime) *PropertyBooleanParam {
-	return &PropertyBooleanParam{
-		Runtime: rt,
-		Ctx:     b._ctx,
-		Type:    BOOLEAN,
-	}
-}
-
-func (b *PropertiesBuilder) BuildInteger(rt PropertyRuntime) *PropertyIntegerParam {
-	return &PropertyIntegerParam{
-		Runtime: rt,
-		Ctx:     b._ctx,
-		Type:    INTEGER,
-	}
-}
-
-func (b *PropertiesBuilder) BuildNumber(rt PropertyRuntime) *PropertyNumberParam {
-	return &PropertyNumberParam{
-		Runtime: rt,
-		Ctx:     b._ctx,
-		Type:    NUMBER,
-	}
-}
+// func (b *PropertiesBuilder) SetFileName(fname string) *PropertiesBuilder {
+// 	if b.property.IsNone() {
+// 		b.errors = append(b.errors, fmt.Errorf("FileName Set with no property set"))
+// 		return b
+// 	}
+// 	if b.property.Value().Meta().FileName().IsSome() {
+// 		b.errors = append(b.errors, fmt.Errorf("double FileName Set"))
+// 		return b
+// 	}
+// 	b.property.Value().Meta().SetFileName(fname)
+// 	return b
+// }
 
 func isOptional(name string, req []string) bool {
 	for _, r := range req {
@@ -132,48 +82,133 @@ func JSONsetOptionalInt(js JSONProperty, key string, value rusty.Optional[int]) 
 	}
 }
 
-func (b *PropertiesBuilder) FromJson(rt PropertyRuntime, js JSONProperty) *PropertiesBuilder {
+// func (b *PropertiesBuilder) FromProperty(prop Property, optParent ...PropertyMeta) *PropertiesBuilder {
+// 	propMeta := NewPropertyMeta()
+// 	if len(optParent) > 0 {
+// 		propMeta = optParent[0]
+// 	}
+// 	rProp := b.Resolve(propMeta, prop)
+// 	if rProp.IsErr() {
+// 		b.errors = append(b.errors, rProp.Err())
+// 		return b
+// 	}
+// 	switch prop.Type() {
+// 	case OBJECT:
+// 		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+// 			return NewPropertyObjectBuilder(b).FromProperty(rProp.Ok()).Build()
+// 		})
+// 	case STRING:
+// 		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+// 			return NewPropertyStringBuilder(b).FromProperty(rProp.Ok()).Build()
+// 		})
+// 	case NUMBER:
+// 		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+// 			return NewPropertyNumberBuilder(b).FromProperty(rProp.Ok()).Build()
+// 		})
+// 	case INTEGER:
+// 		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+// 			return NewPropertyIntegerBuilder(b).FromProperty(rProp.Ok()).Build()
+// 		})
+// 	case BOOLEAN:
+// 		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+// 			return NewPropertyBooleanBuilder(b).FromProperty(rProp.Ok()).Build()
+// 		})
+// 	case ARRAY:
+// 		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+// 			return NewPropertyArrayBuilder(b).FromProperty(rProp.Ok()).Build()
+// 		})
+// 	default:
+// 		b.errors = append(b.errors, fmt.Errorf("unknown type: %s", prop.Type()))
+// 	}
+// 	return b
+// }
+
+func (b *PropertiesBuilder) MergeJson(fname rusty.Optional[string], ref string, js JSONProperty) rusty.Result[JSonFile] {
+	// refVal := b.ref.Value()
+	rJson := b.ctx.Registry.EnsureJSONProperty(fname, ref)
+	if rJson.IsErr() {
+		return rusty.Err[JSonFile](rJson.Err())
+	}
+	fjs := rJson.Ok().JSONProperty
+	for _, k := range fjs.Keys() {
+		v, _ := fjs.Lookup(k)
+		js.Set(k, v)
+	}
+	return rusty.Ok[JSonFile](JSonFile{
+		FileName:     rJson.Ok().FileName,
+		JSONProperty: js,
+	})
+}
+
+func (b *PropertiesBuilder) FromJson(js JSONProperty) *PropertiesBuilder {
 	ref, found := js.Lookup("$ref")
 	if found {
-		// b.property = b.Resolve(NewProperty(PropertyParam{Ref: rusty.Some(ref)}))
-		res := b.Resolve(rt, NewProperty(PropertyParam{Ref: coerceString(ref)}))
-		if res.IsErr() {
-			b.errors = append(b.errors, res.Err())
-		} else {
-			b.property = rusty.Some(res.Ok())
+		b.filename = rusty.None[string]()
+		if b.property.IsSome() {
+			b.filename = b.property.Value().Meta().FileName()
 		}
-		return b
+		refStr := coerceString(ref)
+		if refStr.IsNone() {
+			b.errors = append(b.errors, fmt.Errorf("ref not a string"))
+			return b
+		}
+		rJs := b.MergeJson(b.filename, refStr.Value(), js)
+		if rJs.IsErr() {
+			b.errors = append(b.errors, rJs.Err())
+			return b
+		}
+		js = rJs.Ok().JSONProperty
+		b.filename = rusty.Some(rJs.Ok().FileName)
 	}
 	_typ, found := js.Lookup("type")
 	if !found {
-		panic("no type found")
+		b.errors = append(b.errors, fmt.Errorf("no type"))
+		return b
 	}
 	typ := coerceString(_typ).Value()
 	switch typ {
 	case OBJECT:
-		b.assignProperty(b.BuildObject(rt).FromJson(js).Build())
+		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+			return NewPropertyObjectBuilder(b).FromJson(js).Build()
+		})
 	case STRING:
-		b.assignProperty(b.BuildString(rt).FromJson(js).Build())
+		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+			return NewPropertyStringBuilder(b).FromJson(js).Build()
+		})
 	case NUMBER:
-		b.assignProperty(b.BuildNumber(rt).FromJson(js).Build())
+		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+			return NewPropertyNumberBuilder(b).FromJson(js).Build()
+		})
 	case INTEGER:
-		b.assignProperty(b.BuildInteger(rt).FromJson(js).Build())
+		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+			return NewPropertyIntegerBuilder(b).FromJson(js).Build()
+		})
 	case BOOLEAN:
-		b.assignProperty(b.BuildBoolean(rt).FromJson(js).Build())
+		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+			return NewPropertyBooleanBuilder(b).FromJson(js).Build()
+		})
 	case ARRAY:
-		b.assignProperty(b.BuildArray(rt).FromJson(js).Build())
+		b.assignProperty(func(b *PropertiesBuilder) rusty.Result[Property] {
+			return NewPropertyArrayBuilder(b).FromJson(js).Build()
+		})
 	default:
 		panic("unknown type:" + typ)
 	}
 	return b
 }
 
-func (b *PropertiesBuilder) assignProperty(p rusty.Result[Property]) {
+func (b *PropertiesBuilder) assignProperty(fn func(b *PropertiesBuilder) rusty.Result[Property]) *PropertiesBuilder {
+	p := fn(b)
 	if p.IsErr() {
 		b.errors = append(b.errors, p.Err())
 	} else {
+		if b.property.IsSome() {
+			b.errors = append(b.errors, fmt.Errorf("property already set"))
+			return b
+		}
 		b.property = rusty.Some(p.Ok())
 	}
+	return b
 }
 
 func PropertyToJson(iprop Property) JSONProperty {
@@ -191,14 +226,29 @@ func PropertyToJson(iprop Property) JSONProperty {
 	case PropertyObject:
 		return PropertyObjectToJson(prop)
 	default:
-		panic("unknown type: " + prop.Type())
+		panic("PropertyToJson unknown type: " + prop.Type())
 	}
-
 }
 
+// func (b *PropertiesBuilder) Resolve(meta PropertyMeta, prop Property) rusty.Result[Property] {
+// 	if prop.Ref().IsSome() && prop.Meta().FileName().IsSome() {
+// 		return rusty.Ok(prop)
+// 	}
+// 	refVal := prop.Ref().Value()
+// 	return b.ctx.Registry.EnsureSchema(refVal, meta.FileName(), func(fname string) rusty.Result[Property] {
+// 		return loadSchema(fname, b.ctx, func(abs string, prop JSONProperty) rusty.Result[Property] {
+// 			return NewPropertiesBuilder(b.ctx).FromJson(prop).SetFileName(abs).Build()
+// 		})
+// 	})
+// }
+
 func (b *PropertiesBuilder) Build() rusty.Result[Property] {
+
 	if b.property.IsNone() {
 		b.errors = append(b.errors, fmt.Errorf("no property set"))
+	}
+	if b.filename.IsSome() {
+		b.property.Value().Meta().SetFileName(b.filename.Value())
 	}
 	if len(b.errors) > 0 {
 		str := ""
@@ -209,150 +259,3 @@ func (b *PropertiesBuilder) Build() rusty.Result[Property] {
 	}
 	return rusty.Ok[Property](b.property.Value())
 }
-
-// func (b *PropertiesBuilder) X(js JSONProperty, req []string) *PropertiesBuilder {
-// 	for name, p := range js {
-// 		// falsch !!!
-// 		var pn Property
-// 		switch p.Type {
-// 		case "string":
-// 			pn = NewPropertyString(PropertyStringParam{
-// 				PropertyParam: PropertyParam{
-// 					Id:          p.Id,
-// 					Type:        p.Type,
-// 					Description: rusty.OptionalFromPtr(p.Description),
-// 					Format:      rusty.OptionalFromPtr(p.Format),
-// 					Optional:    isOptional(name, req),
-// 				},
-// 				Default: rusty.OptionalFromPtr(interfaceToStringPtr(p.Default)),
-// 				Format:  rusty.OptionalFromPtr(p.Format),
-// 			})
-// 		case "boolean":
-// 			pn = NewPropertyBoolean(PropertyBooleanParam{
-// 				Id:          p.Id,
-// 				Type:        p.Type,
-// 				Description: rusty.OptionalFromPtr(p.Description),
-// 				Optional:    isOptional(name, req),
-// 				Default:     rusty.OptionalFromPtr(p.Default.(*bool)),
-// 			})
-// 		case "integer":
-// 			var format string
-// 			if p.Format == nil {
-// 				format = "int"
-// 			} else {
-// 				format = *p.Format
-// 			}
-// 			switch format {
-// 			case "int":
-// 				pn = NewPropertyInteger[int](PropertyIntegerParam[int]{
-// 					Id:          p.Id,
-// 					Type:        p.Type,
-// 					Description: rusty.OptionalFromPtr(p.Description),
-// 					Format:      rusty.Some("int"),
-// 					Optional:    isOptional(name, req),
-// 					Default:     rusty.OptionalFromPtr(p.Default.(*int)),
-// 					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*int)),
-// 					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*int)),
-// 				})
-// 			case "int8":
-// 				pn = NewPropertyInteger[int8](PropertyIntegerParam[int8]{
-// 					Id:          p.Id,
-// 					Type:        p.Type,
-// 					Description: rusty.OptionalFromPtr(p.Description),
-// 					Format:      rusty.Some("int8"),
-// 					Optional:    isOptional(name, req),
-// 					Default:     rusty.OptionalFromPtr(p.Default.(*int8)),
-// 					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*int8)),
-// 					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*int8)),
-// 				})
-// 			case "int16":
-// 				pn = NewPropertyInteger[int16](PropertyIntegerParam[int16]{
-// 					Id:          p.Id,
-// 					Type:        p.Type,
-// 					Description: rusty.OptionalFromPtr(p.Description),
-// 					Format:      rusty.Some("float32"),
-// 					Optional:    isOptional(name, req),
-// 					Default:     rusty.OptionalFromPtr(p.Default.(*int16)),
-// 					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*int16)),
-// 					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*int16)),
-// 				})
-// 			case "int32":
-// 				pn = NewPropertyInteger[int32](PropertyIntegerParam[int32]{
-// 					Id:          p.Id,
-// 					Type:        p.Type,
-// 					Description: rusty.OptionalFromPtr(p.Description),
-// 					Format:      rusty.Some("float32"),
-// 					Optional:    isOptional(name, req),
-// 					Default:     rusty.OptionalFromPtr(p.Default.(*int32)),
-// 					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*int32)),
-// 					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*int32)),
-// 				})
-// 			case "int64":
-// 				pn = NewPropertyInteger[int64](PropertyIntegerParam[int64]{
-// 					Id:          p.Id,
-// 					Type:        p.Type,
-// 					Description: rusty.OptionalFromPtr(p.Description),
-// 					Format:      rusty.Some("float32"),
-// 					Optional:    isOptional(name, req),
-// 					Default:     rusty.OptionalFromPtr(p.Default.(*int64)),
-// 					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*int64)),
-// 					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*int64)),
-// 				})
-// 			default:
-// 				panic("unknown format")
-// 			}
-// 		case "number":
-// 			var format string
-// 			if p.Format == nil {
-// 				format = "float64"
-// 			} else {
-// 				format = *p.Format
-// 			}
-// 			switch format {
-// 			case "float32":
-// 				pn = NewPropertyNumber[float32](PropertyNumberParam[float32]{
-// 					Id:          p.Id,
-// 					Type:        p.Type,
-// 					Description: rusty.OptionalFromPtr(p.Description),
-// 					Format:      rusty.Some("float32"),
-// 					Optional:    isOptional(name, req),
-// 					Default:     rusty.OptionalFromPtr(p.Default.(*float32)),
-// 					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*float32)),
-// 					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*float32)),
-// 				})
-// 			case "float64":
-// 				pn = NewPropertyNumber[float64](PropertyNumberParam[float64]{
-// 					Id:          p.Id,
-// 					Type:        p.Type,
-// 					Description: rusty.OptionalFromPtr(p.Description),
-// 					Format:      rusty.Some("float32"),
-// 					Optional:    isOptional(name, req),
-// 					Default:     rusty.OptionalFromPtr(p.Default.(*float64)),
-// 					Maximum:     rusty.OptionalFromPtr(p.Maximum.(*float64)),
-// 					Minimum:     rusty.OptionalFromPtr(p.Minimum.(*float64)),
-// 				})
-// 			default:
-// 				panic("unknown format")
-// 			}
-// 		case "object":
-// 			pn = NewPropertyObject(PropertyObjectParam{
-// 				FileName:    p.FileName,
-// 				Id:          p.Id,
-// 				Title:       p.Title,
-// 				Schema:      p.Schema,
-// 				Description: rusty.OptionalFromPtr(p.Description),
-// 				Properties:  NewPropertiesBuilder(b._loader).FromJson(p.Properties, p.Required).Build(),
-// 				Required:    p.Required,
-// 				Ref:         rusty.OptionalFromPtr(p.Ref),
-// 			})
-// 		default:
-// 			panic("unknown type")
-// 		}
-// 		b.Add(NewPropertyItem(name, pn))
-// 	}
-// 	return b
-// }
-
-// func (b *PropertiesBuilder) Build() PropertiesObject {
-// 	return b
-// }

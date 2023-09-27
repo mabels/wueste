@@ -1,8 +1,6 @@
 {
   "$id": "https://github.com/mabels/wueste#readme",
   "title": "helperTest",
-  "version": "0.0.0",
-  "description": "",
   "type": "object",
   "properties": {
     "test": {
