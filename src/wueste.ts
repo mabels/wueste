@@ -32,21 +32,27 @@ export interface WuestenAttributeParameter<T> {
   // format?: string // date-time
 }
 
-export type SchemaTypes = "string" | "number" | "integer" | "boolean" | "object" | "array";
+export type SchemaTypes = "string" | "number" | "integer" | "boolean" | "object" | "array" | "objectitem";
 
-export type WuestenReflection = WuestenReflectionObject | WuestenReflectionArray | WuestenReflectionLiteral;
+export type WuestenReflection =
+  | WuestenReflectionObject
+  | WuestenReflectionArray
+  | WuestenReflectionLiteral
+  | WuestenReflectionObjectItem;
 
 export interface WuestenReflectionBase {
   readonly type: SchemaTypes;
+  readonly ref?: string;
 }
 
 export interface WuestenReflectionLiteral extends WuestenReflectionBase {
   readonly type: "string" | "number" | "integer" | "boolean";
-  coerceFromString(val: string): void;
-  // getAsString(): string;
+  // coerceFromString(val: string): void;
+  // getAsString(): string|undefined;
 }
 
 export interface WuestenReflectionObjectItem {
+  readonly type: "objectitem";
   readonly name: string;
   readonly property: WuestenReflection;
 }
@@ -54,7 +60,7 @@ export interface WuestenReflectionObject extends WuestenReflectionBase {
   readonly type: "object";
   readonly id?: string;
   readonly title?: string;
-  readonly properties: WuestenReflectionObjectItem[];
+  readonly properties?: WuestenReflectionObjectItem[];
   readonly required?: string[];
 }
 export interface WuestenReflectionArray extends WuestenReflectionBase {
@@ -66,10 +72,23 @@ export interface WuestenReflectionArray extends WuestenReflectionBase {
 export interface WuestenAttribute<G, I = G> {
   readonly param: WuestenAttributeParameter<G>;
   // SetNameSuffix(...idxs: number[]): void;
-  Reflection(): WuestenReflection;
+  // Reflection(): WuestenReflection;
   CoerceAttribute(val: unknown): Result<G>;
   Coerce(value: I): Result<G>;
   Get(): Result<G>;
+}
+
+export type WuestenGetterFn = (level: WuestenReflection[], value: unknown) => void;
+
+export function WuestenRecordGetter<T>(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  fn: WuestenGetterFn,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  level: WuestenReflection[],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  v?: Record<string, unknown> | ArrayLike<T>,
+) {
+  throw new Error("WuestenRecordGetter:Method not implemented.");
 }
 
 export interface WuestenGeneratorFunctions<G, I> {
@@ -131,9 +150,9 @@ export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
       default: def,
     };
   }
-  Reflection(): WuestenReflection {
-    throw new Error("Reflection:Method not implemented.");
-  }
+  // Reflection(): WuestenReflection {
+  //   throw new Error("Reflection:Method not implemented.");
+  // }
   // SetNameSuffix(...idxs: number[]): void {
   //   this._idxs = idxs;
   // }
@@ -258,11 +277,11 @@ export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undef
   }
 }
 
-export interface WuestenSchema {
-  readonly Id: string;
-  readonly Schema: string;
-  readonly Title: string;
-}
+// export interface WuestenSchema {
+//   readonly Id: string;
+//   readonly Schema: string;
+//   readonly Title: string;
+// }
 
 export interface WuestenBuilder<T, I, O> extends WuestenAttribute<T, I> {
   Get(): Result<T>;

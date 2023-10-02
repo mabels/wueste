@@ -7,12 +7,14 @@ import (
 type Type = string
 
 const (
-	OBJECT  Type = "object"
-	STRING  Type = "string"
-	NUMBER  Type = "number"
-	INTEGER Type = "integer"
-	BOOLEAN Type = "boolean"
-	ARRAY   Type = "array"
+	OBJECT     Type = "object"
+	OBJECTITEM Type = "objectitem"
+	STRING     Type = "string"
+	NUMBER     Type = "number"
+	INTEGER    Type = "integer"
+	BOOLEAN    Type = "boolean"
+	ARRAY      Type = "array"
+	ARRAYITEM  Type = "arrayitem"
 )
 
 type PropertyMeta interface {

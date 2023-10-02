@@ -7,14 +7,6 @@ import (
 	"github.com/mabels/wueste/entity-generator/rusty"
 )
 
-type PropertyItem interface {
-	Property() Property
-	Optional() bool
-	// SetOrder(order int)
-	// Order() int
-	Name() string
-}
-
 type properties struct {
 	oprops orderedmap.OrderedMap
 }
@@ -152,7 +144,7 @@ func (s *propertyObject) PropertyByName(name string) rusty.Result[PropertyItem] 
 	if !found {
 		return rusty.Err[PropertyItem](fmt.Errorf("property not found:%s", name))
 	}
-	return NewPropertyItem(name, rusty.Ok(v), isOptional(name, s.param.Required))
+	return NewPropertyObjectItem(name, rusty.Ok(v), -1, isOptional(name, s.param.Required))
 }
 
 func (s *propertyObject) Items() []PropertyItem {
@@ -200,26 +192,26 @@ func NewPropertyObjectBuilder(pb *PropertiesBuilder) *PropertyObjectBuilder {
 // 	return b
 // }
 
-func (b *PropertyObjectBuilder) propertiesAdd(pin rusty.Result[PropertyItem]) *PropertyObjectBuilder {
-	if pin.IsErr() {
-		b.Errors = append(b.Errors, pin.Err())
-		return b
-	}
-	// ConnectRuntime(rusty.Ok(pin.Ok().Property()))
-	property := pin.Ok()
-	// property.Property().Runtime().Assign(b.Runtime)
-	if b.Properties == nil {
-		b.Properties = newProperties()
-	}
-	b.Properties.Set(property.Name(), property.Property())
-	if b.Required == nil {
-		b.Required = []string{}
-	}
-	if !property.Optional() {
-		b.Required = append(b.Required, property.Name())
-	}
-	return b
-}
+// func (b *PropertyObjectBuilder) propertiesAdd(pin rusty.Result[PropertyItem]) *PropertyObjectBuilder {
+// 	if pin.IsErr() {
+// 		b.Errors = append(b.Errors, pin.Err())
+// 		return b
+// 	}
+// 	// ConnectRuntime(rusty.Ok(pin.Ok().Property()))
+// 	property := pin.Ok()
+// 	// property.Property().Runtime().Assign(b.Runtime)
+// 	if b.Properties == nil {
+// 		b.Properties = newProperties()
+// 	}
+// 	b.Properties.Set(property.Name(), property.Property())
+// 	if b.Required == nil {
+// 		b.Required = []string{}
+// 	}
+// 	if !property.Optional() {
+// 		b.Required = append(b.Required, property.Name())
+// 	}
+// 	return b
+// }
 
 // func (b *PropertyObjectParam) fileName(fnam string) *PropertyObjectParam {
 // 	b.FileName = fnam
@@ -233,35 +225,35 @@ func (b *PropertyObjectBuilder) propertiesAdd(pin rusty.Result[PropertyItem]) *P
 // 	return p.items
 // }
 
-func (p *PropertyObjectBuilder) description(id string) *PropertyObjectBuilder {
-	p.Description = rusty.Some(id)
-	return p
-}
+// func (p *PropertyObjectBuilder) description(id string) *PropertyObjectBuilder {
+// 	p.Description = rusty.Some(id)
+// 	return p
+// }
 
 // func (p *PropertyObjectParam) properties(property map[string]any) *PropertyObjectParam {
 // 	p.Properties = property
 // 	return p
 // }
 
-func (p *PropertyObjectBuilder) id(id string) *PropertyObjectBuilder {
-	p.Id = id
-	return p
-}
+// func (p *PropertyObjectBuilder) id(id string) *PropertyObjectBuilder {
+// 	p.Id = id
+// 	return p
+// }
 
-func (p *PropertyObjectBuilder) title(title string) *PropertyObjectBuilder {
-	p.Title = title
-	return p
-}
+// func (p *PropertyObjectBuilder) title(title string) *PropertyObjectBuilder {
+// 	p.Title = title
+// 	return p
+// }
 
 // func (p *PropertyObjectParam) schema(schema string) *PropertyObjectParam {
 // 	p.Schema = schema
 // 	return p
 // }
 
-func (p *PropertyObjectBuilder) required(required []string) *PropertyObjectBuilder {
-	p.Required = required
-	return p
-}
+// func (p *PropertyObjectBuilder) required(required []string) *PropertyObjectBuilder {
+// 	p.Required = required
+// 	return p
+// }
 
 // func (b *PropertyObjectBuilder) FromProperty(prop Property) *PropertyObjectBuilder {
 // 	po, found := prop.(PropertyObject)
@@ -408,48 +400,4 @@ func NewPropertyObject(p PropertyObjectBuilder) rusty.Result[Property] {
 		// deref:       map[string]PropertyItem{},
 	}
 	return rusty.Ok[Property](r)
-}
-
-type propertyItem struct {
-	name     string
-	optional bool
-	property Property
-	// order    int
-}
-
-// Description implements PropertyItem.
-func (pi *propertyItem) Name() string {
-	return pi.name
-}
-
-// Optional implements PropertyItem.
-func (pi *propertyItem) Optional() bool {
-	return pi.optional
-}
-
-// func (pi *propertyItem) Order() int {
-// 	return pi.order
-// }
-
-// func (pi *propertyItem) SetOrder(order int) {
-// 	pi.order = order
-// }
-
-func (pi *propertyItem) Property() Property {
-	return pi.property
-}
-
-func NewPropertyItem(name string, property rusty.Result[Property], optionals ...bool) rusty.Result[PropertyItem] {
-	if property.IsErr() {
-		return rusty.Err[PropertyItem](property.Err())
-	}
-	optional := true
-	if len(optionals) > 0 {
-		optional = optionals[0]
-	}
-	return rusty.Ok[PropertyItem](&propertyItem{
-		name:     name,
-		optional: optional,
-		property: property.Ok(),
-	})
 }

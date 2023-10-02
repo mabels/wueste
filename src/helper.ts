@@ -2,25 +2,26 @@ import { WuestenAttr, WuestenReflection } from "./wueste";
 
 // type Builder<T, P, O> = WuestenAttr<T, Partial<T> | Partial<P> | Partial<O>>;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function fromEnv<T, P>(builder: WuestenAttr<T, P>, env: Record<string, string>): WuestenAttr<T, P> {
-  const ref = builder.Reflection();
-  if (ref.type !== "object") {
-    throw new Error("reflection top type must be object");
-  }
-  walk(ref, [ref.title || ref.id || ""], (path, ref) => {
-    if (ref.type === "object" || ref.type === "array") {
-      return;
-    }
-    ref.coerceFromString(env[path.map((p) => p.toUpperCase().replace(/[^A-Za-z0-9]/, "_")).join("_")]);
-  });
+  // const ref = builder.Reflection();
+  // if (ref.type !== "object") {
+  //   throw new Error("reflection top type must be object");
+  // }
+  // walk(ref, [ref.title || ref.id || ""], (path, ref) => {
+  //   if (ref.type === "object" || ref.type === "array") {
+  //     return;
+  //   }
+  //   // ref.coerceFromString(env[path.map((p) => p.toUpperCase().replace(/[^A-Za-z0-9]/, "_")).join("_")]);
+  // });
   return builder;
 }
 
-export function fromHash<T, P>(builder: WuestenAttr<T, P>, exclude: string[][] = []): string {
-  const ref = builder.Reflection();
-  if (ref.type !== "object") {
-    throw new Error("reflection top type must be object");
-  }
+export function fromHash(ref: WuestenReflection, exclude: string[][] = []): string {
+  // const ref = builder.Reflection();
+  // if (ref.type !== "object") {
+  //   throw new Error("reflection top type must be object");
+  // }
 
   // crypto.subtle.digest("SHA-256", new TextEncoder().encode("test")).then((hashBuffer) => {
   // async function digestMessage(message) {
@@ -41,6 +42,7 @@ export function fromHash<T, P>(builder: WuestenAttr<T, P>, exclude: string[][] =
     if (excl.has(key)) {
       return;
     }
+    // ref.getAsString();
   });
   return "XXXX";
 }

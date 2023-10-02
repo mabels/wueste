@@ -4,7 +4,6 @@ import {
   WuestenFactory,
   wuesten,
   WuesteIterable,
-  WuestenSchema,
   WuestenBuilder,
   Payload,
   WuestenDecoder,
@@ -420,9 +419,9 @@ class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
   Clone(typ: Entity): Result<Entity, Error> {
     throw new Error("Method not implemented.");
   }
-  Schema(): WuestenSchema {
-    throw new Error("Method not implemented.");
-  }
+  // Schema(): WuestenSchema {
+  //   throw new Error("Method not implemented.");
+  // }
 }
 
 describe("object coerce", () => {
