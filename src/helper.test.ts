@@ -10,6 +10,10 @@ const ref: helperTest = {
       },
       {
         test: "test2",
+        open: {
+          k1: new Date("2023-03-30"),
+          a1: 42,
+        },
       },
     ],
     bool: true,
@@ -23,14 +27,27 @@ const ref: helperTest = {
 describe("helper", () => {
   it("toHash", async () => {
     const hash = await toHash(helperTestGetter(ref), new Set(["helperTest.sub.bool"]));
-    // echo -n 'testtest1test21.100000000000000e+04.200000000000000e+1himurks' | openssl sha1 -hmac ""
-    expect(Buffer.from(hash).toString("hex")).toEqual("efb5f75a1899d00208b5a2f0bd7894c532b205f0");
+    // echo -n 'testtest1test2a14.200000000000000e+1k12023-03-30T00:00:00.000Z1.100000000000000e+04.200000000000000e+1himurks' | openssl sha1 -hmac ""
+    expect(Buffer.from(hash).toString("hex")).toEqual("c9bcb79097342ddec7af9cba01e55a545c6da696");
   });
 
   it("hashit", () => {
     const fn = jest.fn();
     helperTestGetter(ref).Apply(fn);
-    expect(fn.mock.calls.map((i) => i[1])).toEqual(["test", "test1", "test2", true, 1.1, 42, "hi", "murks"]);
+    expect(fn.mock.calls.map((i) => i[1])).toEqual([
+      "test",
+      "test1",
+      "test2",
+      "a1",
+      42,
+      "k1",
+      new Date("2023-03-30").toISOString(),
+      true,
+      1.1,
+      42,
+      "hi",
+      "murks",
+    ]);
   });
 
   it.skip("from Environment", () => {

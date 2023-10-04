@@ -22,6 +22,9 @@
             "properties": {
               "test": {
                 "type": "string"
+              },
+              "open": {
+                "type": "object"
               }
             },
             "required": ["test"]

@@ -103,21 +103,21 @@ export function WuestenRecordGetter(
         v[i],
       );
     }
+  } else if (v instanceof Date) {
+    fn(level, v.toISOString());
   } else if (typeof v === "object" && v !== null) {
-    for (const k in v) {
+    for (const k of Object.keys(v).sort()) {
       const val = (v as Record<string, unknown>)[k];
-      WuestenRecordGetter(
-        fn,
-        [
-          ...level,
-          {
-            type: "objectitem",
-            name: k,
-            property: undefined as unknown as WuestenReflection,
-          },
-        ],
-        val,
-      );
+      const myl: WuestenReflection[] = [
+        ...level,
+        {
+          type: "objectitem",
+          name: k,
+          property: undefined as unknown as WuestenReflection,
+        },
+      ];
+      WuestenRecordGetter(fn, myl, k);
+      WuestenRecordGetter(fn, myl, val);
     }
   } else if (typeof v === "boolean") {
     fn(level, v);

@@ -488,13 +488,29 @@ describe("object coerce", () => {
       },
     });
     expect(fn.mock.calls).toEqual([
+      [[{ name: "a", property: undefined, type: "objectitem" }], "a"],
       [[{ name: "a", property: undefined, type: "objectitem" }], 1],
+      [[{ name: "b", property: undefined, type: "objectitem" }], "b"],
+      [
+        [
+          { name: "b", property: undefined, type: "objectitem" },
+          { name: "c", property: undefined, type: "objectitem" },
+        ],
+        "c",
+      ],
       [
         [
           { name: "b", property: undefined, type: "objectitem" },
           { name: "c", property: undefined, type: "objectitem" },
         ],
         2,
+      ],
+      [
+        [
+          { name: "b", property: undefined, type: "objectitem" },
+          { name: "d", property: undefined, type: "objectitem" },
+        ],
+        "d",
       ],
       [
         [
@@ -525,7 +541,29 @@ describe("object coerce", () => {
           { id: "[1]", items: undefined, type: "array" },
           { name: "a", property: undefined, type: "objectitem" },
         ],
+        "a",
+      ],
+      [
+        [
+          { id: "[1]", items: undefined, type: "array" },
+          { name: "a", property: undefined, type: "objectitem" },
+        ],
         1,
+      ],
+      [
+        [
+          { id: "[1]", items: undefined, type: "array" },
+          { name: "b", property: undefined, type: "objectitem" },
+        ],
+        "b",
+      ],
+      [
+        [
+          { id: "[1]", items: undefined, type: "array" },
+          { name: "b", property: undefined, type: "objectitem" },
+          { name: "c", property: undefined, type: "objectitem" },
+        ],
+        "c",
       ],
       [
         [
@@ -536,6 +574,27 @@ describe("object coerce", () => {
         1,
       ],
     ]);
+    /*
+    [
+
+    [[{ id: "[0]", items: undefined, type: "array" }], 4],
+    [
+      [
+        { id: "[1]", items: undefined, type: "array" },
+        { name: "a", property: undefined, type: "objectitem" },
+      ],
+      1,
+    ],
+    [
+      [
+        { id: "[1]", items: undefined, type: "array" },
+        { name: "b", property: undefined, type: "objectitem" },
+        { name: "c", property: undefined, type: "objectitem" },
+      ],
+      1,
+    ],
+  ]);
+  */
   });
 
   it("objectoptional no default", () => {

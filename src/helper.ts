@@ -49,7 +49,6 @@ export async function toHash(ref: WuestenGetterBuilder, exclude: Set<string> = n
   const enc = new TextEncoder();
   ref.Apply((path, ref) => {
     const dotted = asDottedPath(path);
-    console.log(">>>>>>", dotted);
     if (exclude.has(dotted)) {
       return;
     }
@@ -63,6 +62,7 @@ export async function toHash(ref: WuestenGetterBuilder, exclude: Set<string> = n
     } else if (ref instanceof Date) {
       val = ref.toISOString();
     }
+    console.log(">>>>>>", dotted, val);
     val && mac.update(enc.encode(val));
   });
   return mac.digest();
