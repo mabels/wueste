@@ -1,4 +1,7 @@
-import { WuestenAttr, WuestenReflection } from "./wueste";
+import { WuestenAttr, WuestenGetterBuilder, WuestenReflection } from "./wueste";
+
+import { hmac } from "@noble/hashes/hmac";
+import { sha1 } from "@noble/hashes/sha1";
 
 // type Builder<T, P, O> = WuestenAttr<T, Partial<T> | Partial<P> | Partial<O>>;
 
@@ -17,59 +20,50 @@ export function fromEnv<T, P>(builder: WuestenAttr<T, P>, env: Record<string, st
   return builder;
 }
 
-export function fromHash(ref: WuestenReflection, exclude: string[][] = []): string {
-  // const ref = builder.Reflection();
-  // if (ref.type !== "object") {
-  //   throw new Error("reflection top type must be object");
-  // }
-
-  // crypto.subtle.digest("SHA-256", new TextEncoder().encode("test")).then((hashBuffer) => {
-  // async function digestMessage(message) {
-  //   const msgUint8 = new TextEncoder().encode(message); // encode as (utf-8) Uint8Array
-  //   const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8); // hash the message
-  //   const hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
-  //   const hashHex = hashArray
-  //     .map((b) => b.toString(16).padStart(2, "0"))
-  //     .join(""); // convert bytes to hex string
-  //   return hashHex;
-  // }
-  const excl = new Set(exclude.map((p) => p.join("|")));
-  walk(ref, [], (path, ref) => {
-    const key = path.join("|");
-    if (ref.type === "object" || ref.type === "array") {
-      return;
-    }
-    if (excl.has(key)) {
-      return;
-    }
-    // ref.getAsString();
-  });
-  return "XXXX";
+function asDottedPath(path: WuestenReflection[]): string {
+  return path
+    .map((r) => {
+      switch (r.type) {
+        case "object":
+          return r.title || r.id || "_";
+        case "array":
+          return undefined;
+        case "objectitem":
+          return r.name;
+        case "string":
+        case "number":
+        case "integer":
+        case "boolean":
+          return undefined;
+        default:
+          throw new Error("invalid type");
+      }
+    })
+    .filter((i) => i)
+    .join(".");
 }
 
-function walk(reflection: WuestenReflection, path: string[], actionFN: (path: string[], ref: WuestenReflection) => void) {
-  switch (reflection.type) {
-    case "object": {
-      if (!reflection.properties) {
-        throw new Error("no properties");
-      }
-      actionFN(path, reflection);
-      for (const item of reflection.properties) {
-        walk(item.property, path.concat(item.name), actionFN);
-      }
-      break;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function toHash(ref: WuestenGetterBuilder, exclude: Set<string> = new Set()): Promise<Uint8Array> {
+  const mac = hmac.create(sha1, "");
+  const enc = new TextEncoder();
+  ref.Apply((path, ref) => {
+    const dotted = asDottedPath(path);
+    console.log(">>>>>>", dotted);
+    if (exclude.has(dotted)) {
+      return;
     }
-    case "array":
-      actionFN(path, reflection);
-      walk(reflection.items, path.concat(`[${path.length}]`), actionFN);
-      break;
-    case "string":
-    case "number":
-    case "boolean":
-    case "integer":
-      actionFN(path, reflection);
-      break;
-    default:
-      throw new Error("unknown type");
-  }
+    let val: string | undefined = undefined;
+    if (typeof ref === "boolean") {
+      val = ref ? "true" : "false";
+    } else if (typeof ref === "number") {
+      val = ref.toExponential(15);
+    } else if (typeof ref === "string") {
+      val = ref;
+    } else if (ref instanceof Date) {
+      val = ref.toISOString();
+    }
+    val && mac.update(enc.encode(val));
+  });
+  return mac.digest();
 }

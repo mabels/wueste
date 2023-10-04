@@ -25,19 +25,19 @@ type propertyItem struct {
 }
 
 func (pi *propertyItem) Description() rusty.Optional[string] {
-	panic("implement me")
+	panic("propertyItem:Description: implement me")
 }
 func (pi *propertyItem) Id() string {
-	panic("implement me")
+	panic("propertyItem:Id: implement me")
 }
 func (pi *propertyItem) Type() Type {
 	return pi.typ
 }
 func (pi *propertyItem) Ref() rusty.Optional[string] {
-	panic("implement me")
+	panic("propertyItem:Ref: implement me")
 }
 func (pi *propertyItem) Meta() PropertyMeta {
-	panic("implement me")
+	panic("propertyItem:Meta: implement me")
 }
 
 func (pi *propertyItem) Idx() int {

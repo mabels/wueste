@@ -80,15 +80,62 @@ export interface WuestenAttribute<G, I = G> {
 
 export type WuestenGetterFn = (level: WuestenReflection[], value: unknown) => void;
 
-export function WuestenRecordGetter<T>(
+export function WuestenRecordGetter(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   fn: WuestenGetterFn,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   level: WuestenReflection[],
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  v?: Record<string, unknown> | ArrayLike<T>,
+  v: unknown,
 ) {
-  throw new Error("WuestenRecordGetter:Method not implemented.");
+  if (Array.isArray(v)) {
+    for (let i = 0; i < v.length; ++i) {
+      WuestenRecordGetter(
+        fn,
+        [
+          ...level,
+          {
+            id: `[${i}]`,
+            type: "array",
+            items: undefined as unknown as WuestenReflection,
+          },
+        ],
+        v[i],
+      );
+    }
+  } else if (typeof v === "object" && v !== null) {
+    for (const k in v) {
+      const val = (v as Record<string, unknown>)[k];
+      WuestenRecordGetter(
+        fn,
+        [
+          ...level,
+          {
+            type: "objectitem",
+            name: k,
+            property: undefined as unknown as WuestenReflection,
+          },
+        ],
+        val,
+      );
+    }
+  } else if (typeof v === "boolean") {
+    fn(level, v);
+  } else if (typeof v === "string") {
+    fn(level, v);
+  } else if (typeof v === "number") {
+    fn(level, v);
+  }
+}
+
+export class WuestenGetterBuilder {
+  readonly _getterAction: (wgf: WuestenGetterFn) => void;
+  constructor(fn: (wgf: WuestenGetterFn) => void) {
+    this._getterAction = fn;
+  }
+  Apply(wgf: WuestenGetterFn) {
+    this._getterAction(wgf);
+  }
 }
 
 export interface WuestenGeneratorFunctions<G, I> {

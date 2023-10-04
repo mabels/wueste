@@ -9,6 +9,7 @@ import {
   WuestenDecoder,
   WuestenEncoder,
   WuestenReflection,
+  WuestenRecordGetter,
 } from "./wueste";
 
 it("WuesteIterate", () => {
@@ -463,6 +464,78 @@ describe("object coerce", () => {
       id: "bla",
       test: 6,
     });
+  });
+
+  it("WuestenRecordGetter Nothing", () => {
+    const fn = jest.fn();
+    WuestenRecordGetter(fn, [], undefined);
+    expect(fn.mock.calls.length).toBe(0);
+  });
+
+  it("WuestenRecordGetter ObjectEmpty", () => {
+    const fn = jest.fn();
+    WuestenRecordGetter(fn, [], {});
+    expect(fn.mock.calls.length).toBe(0);
+  });
+
+  it("WuestenRecordGetter ObjectEmpty", () => {
+    const fn = jest.fn();
+    WuestenRecordGetter(fn, [], {
+      a: 1,
+      b: {
+        c: 2,
+        d: [10, 11],
+      },
+    });
+    expect(fn.mock.calls).toEqual([
+      [[{ name: "a", property: undefined, type: "objectitem" }], 1],
+      [
+        [
+          { name: "b", property: undefined, type: "objectitem" },
+          { name: "c", property: undefined, type: "objectitem" },
+        ],
+        2,
+      ],
+      [
+        [
+          { name: "b", property: undefined, type: "objectitem" },
+          { name: "d", property: undefined, type: "objectitem" },
+          { id: "[0]", items: undefined, type: "array" },
+        ],
+        10,
+      ],
+      [
+        [
+          { name: "b", property: undefined, type: "objectitem" },
+          { name: "d", property: undefined, type: "objectitem" },
+          { id: "[1]", items: undefined, type: "array" },
+        ],
+        11,
+      ],
+    ]);
+  });
+
+  it("WuestenRecordGetter ArrayEmpty", () => {
+    const fn = jest.fn();
+    WuestenRecordGetter(fn, [], [4, { a: 1, b: { c: 1 } }]);
+    expect(fn.mock.calls).toEqual([
+      [[{ id: "[0]", items: undefined, type: "array" }], 4],
+      [
+        [
+          { id: "[1]", items: undefined, type: "array" },
+          { name: "a", property: undefined, type: "objectitem" },
+        ],
+        1,
+      ],
+      [
+        [
+          { id: "[1]", items: undefined, type: "array" },
+          { name: "b", property: undefined, type: "objectitem" },
+          { name: "c", property: undefined, type: "objectitem" },
+        ],
+        1,
+      ],
+    ]);
   });
 
   it("objectoptional no default", () => {

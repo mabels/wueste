@@ -12,6 +12,21 @@
       "title": "helperTestSub",
       "$id": "https://github.com/mabels/wueste#sub",
       "properties": {
+        "array": {
+          "$id": "subArray",
+          "type": "array",
+          "items": {
+            "$id": "subArrayItem",
+            "title": "subArrayItem",
+            "type": "object",
+            "properties": {
+              "test": {
+                "type": "string"
+              }
+            },
+            "required": ["test"]
+          }
+        },
         "bool": { "type": "boolean" },
         "num": { "type": "number" },
         "int": { "type": "integer" },
@@ -21,7 +36,7 @@
         "opt-int": { "type": "integer" },
         "opt-str": { "type": "string" }
       },
-      "required": ["bool", "num", "int", "str"]
+      "required": ["array", "bool", "num", "int", "str"]
     }
   },
   "required": ["test", "sub"]

@@ -1,6 +1,6 @@
 // import { Payload, PayloadFactory } from "../../src/generated/go/payload";
 
-import { NestedTypeFactory } from "../../src/generated/go/nestedtype";
+import { NestedTypeFactory, NestedTypeGetter } from "../../src/generated/go/nestedtype";
 import { NestedType$Payload, NestedType$PayloadFactory } from "../../src/generated/go/nestedtype$payload";
 import { SimpleTypeFactory, SimpleTypeParam } from "../../src/generated/go/simpletype";
 
@@ -259,7 +259,7 @@ it(`SimpleType-Builder ToObject`, () => {
 
 it("SimpleType-BuilderCoerce", () => {
   const builder = SimpleTypeFactory.Builder();
-  const now = new Date();
+  const now = new Date("2023-01-27");
   builder.Coerce({
     bool: true,
     createdAt: now,
@@ -336,6 +336,51 @@ it("SimpleType-BuilderCoerce", () => {
   });
 });
 
+it("Nested-Getter", () => {
+  const nested = createNested();
+  const fn = jest.fn();
+  NestedTypeGetter(nested).Apply(fn);
+  expect(fn.mock.calls.map((i) => i[1])).toEqual([
+    true,
+    false,
+    "42",
+    "43",
+    42.42,
+    43.43,
+    42,
+    43,
+    true,
+    false,
+    "Test42",
+    42,
+    "43",
+    42,
+    "Test42",
+    42,
+    "43",
+    42,
+    "Test42",
+    42,
+    "xxx",
+    "hallo",
+    "hallo",
+    new Date("2023-01-27T00:00:00.000Z"),
+    new Date("2023-12-31T23:59:59.000Z"),
+    new Date("2023-12-31T23:59:59.000Z"),
+    48.9,
+    5000,
+    50,
+    49,
+    64,
+    32,
+    true,
+    true,
+    true,
+    "Test42",
+    42,
+  ]);
+});
+
 it("SimpleType-BuilderCoerce-Default", () => {
   const builder = SimpleTypeFactory.Builder();
   const now = new Date();
@@ -377,97 +422,103 @@ it("SimpleType-BuilderCoerce-Default", () => {
   expect(builder.Get().unwrap().default_int64).toEqual(42);
 });
 
-it(`NestedType-Builder Object-JSON-Object`, () => {
+function createNested() {
   const builder = NestedTypeFactory.Builder();
-  const now = new Date();
-  expect(
-    builder
-      .Coerce({
-        arrayBool: [true, "false"],
-        arrayInteger: [42.44, "43.44"],
-        arrayNumber: [42.42, "43.43"],
-        arrayString: ["42", 43],
-        arraySubType: [
-          {
-            Test: "Test42",
-            Open: {
-              X: {
-                Y: {
-                  Z: 42,
-                },
+  const now = new Date("2023-01-27");
+  return builder
+    .Coerce({
+      arrayBool: [true, "false"],
+      arrayInteger: [42.44, "43.44"],
+      arrayNumber: [42.42, "43.43"],
+      arrayString: ["42", 43],
+      arraySubType: [
+        {
+          Test: "Test42",
+          Open: {
+            X: {
+              Y: {
+                Z: 42,
               },
             },
           },
-          {
-            Test: 43,
-            Open: {
-              X: {
-                Y: {
-                  Z: 42,
-                },
+        },
+        {
+          Test: 43,
+          Open: {
+            X: {
+              Y: {
+                Z: 42,
               },
             },
           },
-        ],
-        arrayarrayBool: [[[[true]]], [[["false"]]]],
-        arrayarrayFlatSchema: [
+        },
+      ],
+      arrayarrayBool: [[[[true]]], [[["false"]]]],
+      arrayarrayFlatSchema: [
+        [
           [
             [
-              [
-                {
-                  Test: "Test42",
-                  Open: {
-                    X: {
-                      Y: {
-                        Z: 42,
-                      },
+              {
+                Test: "Test42",
+                Open: {
+                  X: {
+                    Y: {
+                      Z: 42,
                     },
                   },
                 },
-              ],
-              [
-                {
-                  Test: 43,
-                  Open: {
-                    X: {
-                      Y: {
-                        Z: 42,
-                      },
+              },
+            ],
+            [
+              {
+                Test: 43,
+                Open: {
+                  X: {
+                    Y: {
+                      Z: 42,
                     },
                   },
                 },
-              ],
+              },
             ],
           ],
         ],
-        bool: true,
-        float64: 48.9,
-        createdAt: now,
-        int64: 49,
-        string: "xxx",
-        sub: {
-          Test: "Test42",
-          Open: {
-            X: {
-              Y: {
-                Z: 42,
-              },
+      ],
+      bool: true,
+      float64: 48.9,
+      createdAt: now,
+      int64: 49,
+      string: "xxx",
+      sub: {
+        Test: "Test42",
+        Open: {
+          X: {
+            Y: {
+              Z: 42,
             },
           },
         },
-        sub_flat: {
-          Test: "Test42",
-          Open: {
-            X: {
-              Y: {
-                Z: 42,
-              },
+      },
+      sub_flat: {
+        Test: "Test42",
+        Open: {
+          X: {
+            Y: {
+              Z: 42,
             },
           },
         },
-      })
-      .unwrap(),
-  ).toEqual(builder.Get().unwrap());
+      },
+    })
+    .unwrap();
+}
+
+it(`NestedType-Builder Object-JSON-Object`, () => {
+  const builder = NestedTypeFactory.Builder();
+  // const now = new Date();
+  const nested = createNested();
+  builder.Coerce(NestedTypeFactory.ToObject(nested));
+  expect(nested).toEqual(builder.Get().unwrap());
   const json = JSON.stringify(NestedTypeFactory.ToObject(builder.Get().unwrap()));
   const fromJson = NestedTypeFactory.Builder();
   fromJson.Coerce(JSON.parse(json));
