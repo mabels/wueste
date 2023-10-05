@@ -15,7 +15,7 @@ const simpleTypeParam: SimpleTypeParam = {
     Open: {
       X: {
         Y: {
-          Z: 42,
+          Z: 47,
         },
       },
     },
@@ -25,7 +25,7 @@ const simpleTypeParam: SimpleTypeParam = {
     Open: {
       X: {
         Y: {
-          Z: 42,
+          Z: 49,
         },
       },
     },
@@ -351,16 +351,32 @@ it("Nested-Getter", () => {
     43,
     true,
     false,
-    "Test42",
-    42,
-    "43",
-    42,
-    "Test42",
-    42,
-    "43",
-    42,
-    "Test42",
-    42,
+    "Test37",
+    "X",
+    "Y",
+    "Z",
+    37,
+    "39",
+    "X",
+    "Y",
+    "Z",
+    39,
+    "Test49",
+    "X",
+    "Y",
+    "Z",
+    49,
+    "47",
+    "X",
+    "Y",
+    "Z",
+    47,
+    "Test63",
+    "X",
+    "Y",
+    "Z",
+    63,
+
     "xxx",
     "hallo",
     "hallo",
@@ -376,8 +392,11 @@ it("Nested-Getter", () => {
     true,
     true,
     true,
-    "Test42",
-    42,
+    "Test57",
+    "X",
+    "Y",
+    "Z",
+    57,
   ]);
 });
 
@@ -433,21 +452,21 @@ function createNested() {
       arrayString: ["42", 43],
       arraySubType: [
         {
-          Test: "Test42",
+          Test: "Test49",
           Open: {
             X: {
               Y: {
-                Z: 42,
+                Z: 49,
               },
             },
           },
         },
         {
-          Test: 43,
+          Test: 47,
           Open: {
             X: {
               Y: {
-                Z: 42,
+                Z: 47,
               },
             },
           },
@@ -459,11 +478,11 @@ function createNested() {
           [
             [
               {
-                Test: "Test42",
+                Test: "Test37",
                 Open: {
                   X: {
                     Y: {
-                      Z: 42,
+                      Z: 37,
                     },
                   },
                 },
@@ -471,11 +490,11 @@ function createNested() {
             ],
             [
               {
-                Test: 43,
+                Test: 39,
                 Open: {
                   X: {
                     Y: {
-                      Z: 42,
+                      Z: 39,
                     },
                   },
                 },
@@ -490,21 +509,21 @@ function createNested() {
       int64: 49,
       string: "xxx",
       sub: {
-        Test: "Test42",
+        Test: "Test57",
         Open: {
           X: {
             Y: {
-              Z: 42,
+              Z: 57,
             },
           },
         },
       },
       sub_flat: {
-        Test: "Test42",
+        Test: "Test63",
         Open: {
           X: {
             Y: {
-              Z: 42,
+              Z: 63,
             },
           },
         },
@@ -522,61 +541,60 @@ it(`NestedType-Builder Object-JSON-Object`, () => {
   const json = JSON.stringify(NestedTypeFactory.ToObject(builder.Get().unwrap()));
   const fromJson = NestedTypeFactory.Builder();
   fromJson.Coerce(JSON.parse(json));
+  const dict = NestedTypeFactory.ToObject(fromJson.Get().unwrap());
   expect(fromJson.Get().unwrap()).toEqual(builder.Get().unwrap());
-  expect(fromJson.Get().unwrap().arrayBool).toEqual([true, false]);
-  expect(fromJson.Get().unwrap().arrayInteger).toEqual([42, 43]);
-  expect(fromJson.Get().unwrap().arrayNumber).toEqual([42.42, 43.43]);
-  expect(fromJson.Get().unwrap().arrayString).toEqual(["42", "43"]);
-  expect(fromJson.Get().unwrap().arraySubType).toEqual([
+  expect(dict.arrayBool).toEqual([true, false]);
+  expect(dict.arrayInteger).toEqual([42, 43]);
+  expect(dict.arrayNumber).toEqual([42.42, 43.43]);
+  expect(dict.arrayString).toEqual(["42", "43"]);
+  expect(dict.arraySubType).toEqual([
     {
-      Test: "Test42",
+      Test: "Test49",
       Open: {
         X: {
           Y: {
-            Z: 42,
+            Z: 49,
           },
         },
       },
     },
     {
-      Test: "43",
+      Test: "47",
       Open: {
         X: {
           Y: {
-            Z: 42,
+            Z: 47,
           },
         },
       },
     },
   ]);
-  expect(fromJson.Get().unwrap().arrayarrayBool).toEqual([[[[true]]], [[[false]]]]);
-  expect(fromJson.Get().unwrap().arrayarrayFlatSchema).toEqual([
+  expect(dict.arrayarrayBool).toEqual([[[[true]]], [[[false]]]]);
+  expect(dict.arrayarrayFlatSchema).toEqual([
     [
       [
         [
           {
-            Test: "Test42",
+            Test: "Test37",
             Open: {
               X: {
                 Y: {
-                  Z: 42,
+                  Z: 37,
                 },
               },
             },
-            opt_Test: undefined,
           },
         ],
         [
           {
-            Test: "43",
+            Test: "39",
             Open: {
               X: {
                 Y: {
-                  Z: 42,
+                  Z: 39,
                 },
               },
             },
-            opt_Test: undefined,
           },
         ],
       ],

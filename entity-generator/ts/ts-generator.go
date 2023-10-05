@@ -456,27 +456,6 @@ func (g *tsGenerator) generateJson(prop eg.PropertyObject) {
 	g.bodyWriter.WriteLine()
 }
 
-func (g *tsGenerator) genToObject(pi eg.PropertyItem) string {
-	switch pi.Property().Type() {
-	case eg.STRING, eg.INTEGER, eg.NUMBER, eg.BOOLEAN:
-		return g.lang.CallDot("obj", g.lang.PublicName(pi.Name()))
-	case eg.ARRAY:
-		return g.lang.CallDot("obj", g.lang.PublicName(pi.Name())) + "// Choose Factory"
-	case eg.OBJECT:
-		if pi.Property().(eg.PropertyObject).Title() != "" {
-			name := g.lang.PublicName(getObjectName(pi.Property()), "Factory")
-			g.includes.AddProperty(name, pi.Property())
-			return g.lang.CallDot(name, g.lang.Call("ToObject",
-				g.lang.CallDot("obj", g.lang.PublicName(pi.Name()))))
-		} else {
-			// TODO OpenObject
-			return g.lang.CallDot("obj", g.lang.PublicName(pi.Name()))
-		}
-	default:
-		panic("not implemented")
-	}
-}
-
 func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenFactory")
 
@@ -499,19 +478,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 			wr.WriteBlock("", g.lang.ReturnType(
 				g.lang.Call("ToObject", g.lang.ReturnType("obj", g.lang.PublicName(getObjectName(prop)))),
 				g.lang.PublicName(getObjectName(prop), "Object")), func(wr *eg.ForIfWhileLangWriter) {
-				wr.WriteLine("const ret: Record<string, unknown> = {}")
-				for _, pi := range prop.Items() {
-					if !pi.Optional() {
-						wr.FormatLine("ret[%s] = %s", g.lang.Quote(pi.Name()), g.genToObject(pi))
-						continue
-					}
-					wr.WriteBlock("if ", fmt.Sprintf("(typeof %s !== 'undefined')",
-						g.lang.CallDot("obj", g.lang.PublicName(pi.Name()))), func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("ret[%s] = %s", g.lang.Quote(pi.Name()), g.genToObject(pi))
-					})
-				}
-				wr.FormatLine("return ret as unknown as %s;", g.lang.PublicName(getObjectName(prop), "Object"))
-
+				wr.FormatLine("return %s", g.lang.Call(g.lang.PublicName(getObjectName(prop), "ToObject"), "obj"))
 			})
 
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteJsonDecoder")
@@ -956,6 +923,7 @@ func (g *tsGenerator) generateSchemaExport(prop eg.Property, baseName string) {
 			"ref", g.lang.Quote(g.lang.PublicName(baseName)))))
 		g.writeSchema(wr, prop)
 	}, " = {")
+	g.generateToObject(prop, baseName)
 }
 
 func (g *tsGenerator) generateAttributesClass(prop eg.PropertyObject, resultsClassName string) string {
@@ -1402,10 +1370,10 @@ func (g *externalTypes) AddProperty(typ string, prop eg.Property) {
 	et.types[typ] = nil
 	po, ok := prop.(eg.PropertyObject)
 	if ok && et.fileProperty.IsNone() {
-		fmt.Printf("TOP-AddProperty: %s -> %s\n", typ, fileName)
+		// fmt.Printf("TOP-AddProperty: %s -> %s\n", typ, fileName)
 		et.fileProperty = rusty.Some[eg.PropertyObject](po)
 	} else {
-		fmt.Printf("AddProperty: %s -> %s\n", typ, fileName)
+		// fmt.Printf("AddProperty: %s -> %s\n", typ, fileName)
 	}
 }
 
