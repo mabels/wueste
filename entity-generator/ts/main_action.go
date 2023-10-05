@@ -37,7 +37,7 @@ func MainAction(args []string) {
 		prop.Set("$ref", "file://"+file)
 		schema := eg.NewPropertiesBuilder(sl).FromJson(prop).Build()
 		if schema.IsErr() {
-			log.Fatal(schema.Err())
+			log.Fatalf("File:%s with %v", file, schema.Err())
 		}
 		TsGenerator(&cfg, schema.Ok(), sl)
 	}

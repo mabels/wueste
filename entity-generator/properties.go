@@ -246,6 +246,7 @@ func (b *PropertiesBuilder) Build() rusty.Result[Property] {
 
 	if b.property.IsNone() {
 		b.errors = append(b.errors, fmt.Errorf("no property set"))
+		return rusty.Err[Property](fmt.Errorf("no property set"))
 	}
 	if b.filename.IsSome() {
 		b.property.Value().Meta().SetFileName(b.filename.Value())

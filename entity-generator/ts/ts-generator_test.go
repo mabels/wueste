@@ -87,6 +87,7 @@ func TestMainAction(t *testing.T) {
 		"--write-test-schema", "true",
 		"--input-file", "../../src/generated/go/nested_type.schema.json",
 		"--input-file", "../../src/generated/go/simple_type.schema.json",
+		"--input-file", "../../opensea.event.item_listed.schema.json",
 		"--eg-from-wueste", cfg.EntityCfg.FromWueste,
 		"--eg-from-result", cfg.EntityCfg.FromResult,
 		"--output-dir", "../../src/generated/go",

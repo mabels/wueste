@@ -62,7 +62,7 @@ export async function toHash(ref: WuestenGetterBuilder, exclude: Set<string> = n
     } else if (ref instanceof Date) {
       val = ref.toISOString();
     }
-    // console.log(">>>>>>", dotted, val);
+    console.log(">>>>>>", dotted, val);
     val && mac.update(enc.encode(val));
   });
   return mac.digest();

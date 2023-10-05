@@ -60,6 +60,7 @@ export interface WuestenReflectionObject extends WuestenReflectionBase {
   readonly type: "object";
   readonly id?: string;
   readonly title?: string;
+  readonly schema?: string;
   readonly properties?: WuestenReflectionObjectItem[];
   readonly required?: string[];
 }
