@@ -27,8 +27,8 @@ const ref: helperTest = {
 describe("helper", () => {
   it("toHash", async () => {
     const hash = await toHash(helperTestGetter(ref), new Set(["helperTest.sub.bool"]));
-    // echo -n 'testtest1test2a14.200000000000000e+1k12023-03-30T00:00:00.000Z1.100000000000000e+04.200000000000000e+1himurks' | openssl sha1 -hmac ""
-    expect(Buffer.from(hash).toString("hex")).toEqual("c9bcb79097342ddec7af9cba01e55a545c6da696");
+    // echo -n 'testtest1test2a14.200000000000000e+1k12023-03-30T00:00:00.000Ztrue1.100000000000000e+04.200000000000000e+1himurks' | openssl sha1 -hmac ""
+    expect(Buffer.from(hash).toString("hex")).toEqual("7ecaefd2cf04a31ab4f72d6cf5d6080649c43bdb");
   });
 
   it("hashit", () => {

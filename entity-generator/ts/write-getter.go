@@ -151,9 +151,9 @@ func (g *tsGenerator) toPropLevel(baseName string, ps []eg.Property) string {
 	case eg.OBJECTITEM:
 		pi := p.(eg.PropertyItem)
 		property := ""
-		if len(ps) > 2 {
-			property = ".property"
-		}
+		// if len(ps) > 2 {
+		// 	property = ".property"
+		// }
 		return fmt.Sprintf("(%s%s as WuestenReflectionObject).properties![%d]",
 			g.toPropLevel(baseName, tail), property, pi.Idx())
 	case eg.ARRAYITEM:
@@ -197,27 +197,50 @@ func (g *tsGenerator) writeReflectionGetter(wr *eg.ForIfWhileLangWriter, baseNam
 				}
 				wr.FormatLine("/* %s:%v:%s */", l.Type(), name, g.getLastName(level))
 			}
-			if level[0].Type() != eg.OBJECT {
-				wr.FormatLine("/* ZZZ %s:%s */", g.getLastName(level), level[0].Type())
+			if len(level) == 0 {
+				panic("there must be a level")
+			}
+			lastLevel := level[len(level)-1]
+			if lastLevel.Type() == eg.OBJECTITEM {
+				// SimpleType$PayloadGetter(v0.sub, [])
 				getterName := g.lang.PublicName(getObjectName(prop), "Getter")
 				g.includes.AddProperty(getterName, prop)
-				wr.FormatLine("// !Object %s", getterName)
-				wr.WriteLine(
-					g.lang.Call(
-						g.lang.CallDot(
-							g.lang.Call(getterName,
-								g.lang.CallDot(vname.contextVar(), g.getLastPath(level)), "base"), "Apply"), "fn"))
-				return
-			}
-			wr.FormatLine("const %s = %s", nextWithVar,
-				g.lang.CallDot(vname.contextVar(), g.getLastName(level)))
-			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenReflectionObject")
-			for i, pi := range po.Items() {
-				pc := eg.NewPropertyObjectItem(pi.Name(), rusty.Ok(pi.Property()), i, pi.Optional()).Ok()
-				wrapOptional(pi.Optional(), g.lang.CallDot(nextWithVar, g.lang.PublicName(pi.Name())), wr, func(wr *eg.ForIfWhileLangWriter) {
-					g.writeReflectionGetter(wr, baseName, vname.newContext(nextWithVar), pi.Property(), append(level, pc))
-				})
-				//   out.push(gen(pi.property, vname.inc(), `${nextWithVar}`, [...level, { ...prop.properties[i], type: 'objectItem'}]));
+				// wr.WriteLine(
+				// 	g.lang.Call(getterName,
+				// 		g.lang.CallDot(vname.contextVar(), g.getLastPath(level))))
+
+				wr.WriteBlock(
+					getterName,
+					"",
+					func(wr *eg.ForIfWhileLangWriter) {
+						wr.WriteLine(
+							g.lang.Comma(g.lang.CallDot(vname.contextVar(), g.getLastPath(level))))
+						g.writeLevel(wr, baseName, level)
+					}, "(", ").Apply(fn)")
+
+			} else {
+				// if level[0].Type() != eg.OBJECT {
+				// 	wr.FormatLine("/* ZZZ %s:%s */", g.getLastName(level), level[0].Type())
+				// 	getterName := g.lang.PublicName(getObjectName(prop), "Getter")
+				// 	g.includes.AddProperty(getterName, prop)
+				// 	wr.FormatLine("// !Object %s", getterName)
+				// 	wr.WriteLine(
+				// 		g.lang.Call(
+				// 			g.lang.CallDot(
+				// 				g.lang.Call(getterName,
+				// 					g.lang.CallDot(vname.contextVar(), g.getLastPath(level)), "base"), "Apply"), "fn"))
+				// 	return
+				// }
+				wr.FormatLine("const %s = %s", nextWithVar,
+					g.lang.CallDot(vname.contextVar(), g.getLastName(level)))
+				g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenReflectionObject")
+				for i, pi := range po.Items() {
+					pc := eg.NewPropertyObjectItem(pi.Name(), rusty.Ok(pi.Property()), i, pi.Optional()).Ok()
+					wrapOptional(pi.Optional(), g.lang.CallDot(nextWithVar, g.lang.PublicName(pi.Name())), wr, func(wr *eg.ForIfWhileLangWriter) {
+						g.writeReflectionGetter(wr, baseName, vname.newContext(nextWithVar), pi.Property(), append(level, pc))
+					})
+					//   out.push(gen(pi.property, vname.inc(), `${nextWithVar}`, [...level, { ...prop.properties[i], type: 'objectItem'}]));
+				}
 			}
 		} else {
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenRecordGetter")
