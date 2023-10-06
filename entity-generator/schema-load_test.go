@@ -9,7 +9,7 @@ import (
 
 type JSONPropertyItems struct {
 	Name string
-	Prop JSONProperty
+	Prop JSONDict
 }
 
 func TestFlatJsonAndProp(t *testing.T) {
@@ -62,7 +62,7 @@ func TestPayloadOpen(t *testing.T) {
 func TestFileNames(t *testing.T) {
 
 	ctx := NewTestContext()
-	prop := NewJSONProperty()
+	prop := NewJSONDict()
 	prop.Set("$ref", "file://./payload.schema.json")
 	rsub := NewPropertiesBuilder(ctx).FromJson(prop).Build()
 	assert.True(t, rsub.IsOk())

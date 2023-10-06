@@ -25,8 +25,8 @@ type SchemaRegistryItem interface {
 }
 
 type JSonFile struct {
-	FileName     string       `json:"filename"`
-	JSONProperty JSONProperty `json:"jsonProperty"`
+	FileName     string   `json:"filename"`
+	JSONProperty JSONDict `json:"jsonProperty"`
 }
 
 type schemaRegistryItem struct {
@@ -199,11 +199,11 @@ func (schemaLoader) Unmarshal(bytes []byte, v interface{}) error {
 	return json.Unmarshal(bytes, v)
 }
 
-func loadSchemaFromBytes(bytes []byte, loader SchemaLoader) rusty.Result[JSONProperty] {
-	jsonSchema := NewJSONProperty()
+func loadSchemaFromBytes(bytes []byte, loader SchemaLoader) rusty.Result[JSONDict] {
+	jsonSchema := NewJSONDict()
 	err := loader.Unmarshal(bytes, jsonSchema)
 	if err != nil {
-		return rusty.Err[JSONProperty](fmt.Errorf("error parsing json schema: %v:%w", string(bytes), err))
+		return rusty.Err[JSONDict](fmt.Errorf("error parsing json schema: %v:%w", string(bytes), err))
 	}
 	return rusty.Ok(jsonSchema)
 }

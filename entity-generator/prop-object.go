@@ -273,7 +273,7 @@ func NewPropertyObjectBuilder(pb *PropertiesBuilder) *PropertyObjectBuilder {
 // 	return b
 // }
 
-func (b *PropertyObjectBuilder) FromJson(js JSONProperty) *PropertyObjectBuilder {
+func (b *PropertyObjectBuilder) FromJson(js JSONDict) *PropertyObjectBuilder {
 	b.Type = OBJECT
 	b.Id = getFromAttributeString(js, "$id")
 	b.Title = getFromAttributeString(js, "title")
@@ -282,20 +282,20 @@ func (b *PropertyObjectBuilder) FromJson(js JSONProperty) *PropertyObjectBuilder
 	b.Properties = newProperties()
 	_properties, found := js.Lookup("properties")
 	if found {
-		properties, found := _properties.(JSONProperty)
+		properties, found := _properties.(JSONDict)
 		if !found {
 			b.Errors = append(b.Errors, fmt.Errorf("properties[%s] is not JSONProperty", b.Id))
 			return b
 		}
 		for _, k := range properties.Keys() {
 			_v := properties.Get(k)
-			v, found := _v.(JSONProperty)
+			v, found := _v.(JSONDict)
 			if !found {
 				b.Errors = append(b.Errors, fmt.Errorf("properties[%s->%s] is not JSONProperty", b.Id, k))
 				continue
 			}
 			builder := NewPropertiesBuilder(b._propertiesBuilder.ctx)
-			builder.filename = b._propertiesBuilder.filename
+			builder.parentFileName = b._propertiesBuilder.filename
 			r := builder.FromJson(v).Build()
 			if r.IsErr() {
 				b.Errors = append(b.Errors, r.Err())
@@ -332,8 +332,8 @@ func (b *PropertyObjectBuilder) FromJson(js JSONProperty) *PropertyObjectBuilder
 	return b
 }
 
-func PropertyObjectToJson(b PropertyObject) JSONProperty {
-	jsp := NewJSONProperty()
+func PropertyObjectToJson(b PropertyObject) JSONDict {
+	jsp := NewJSONDict()
 	JSONsetString(jsp, "type", b.Type())
 	// if b.Runtime().FileName.IsSome() {
 	// 	JSONsetString("fileName", *b.Runtime().FileName.Value())
@@ -346,7 +346,7 @@ func PropertyObjectToJson(b PropertyObject) JSONProperty {
 		JSONsetString(jsp, "$schema", b.Schema())
 	}
 	JSONsetOptionalString(jsp, "description", b.Description())
-	props := NewJSONProperty()
+	props := NewJSONDict()
 	items := b.Items()
 	for _, v := range items {
 		props.Set(v.Name(), PropertyToJson(v.Property()))

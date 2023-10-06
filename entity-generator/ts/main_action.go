@@ -33,7 +33,7 @@ func MainAction(args []string) {
 		Registry: eg.NewSchemaRegistry(),
 	}
 	for _, file := range cfg.InputFiles {
-		prop := eg.NewJSONProperty()
+		prop := eg.NewJSONDict()
 		prop.Set("$ref", "file://"+file)
 		schema := eg.NewPropertiesBuilder(sl).FromJson(prop).Build()
 		if schema.IsErr() {

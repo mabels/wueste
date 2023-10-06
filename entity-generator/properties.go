@@ -7,8 +7,9 @@ import (
 )
 
 type PropertiesBuilder struct {
-	property rusty.Optional[Property]
-	filename rusty.Optional[string]
+	parentFileName rusty.Optional[string]
+	property       rusty.Optional[Property]
+	filename       rusty.Optional[string]
 	// ref      rusty.Optional[string]
 	errors []error
 	ctx    PropertyCtx
@@ -21,10 +22,10 @@ func NewPropertiesBuilder(run PropertyCtx) *PropertiesBuilder {
 	}
 }
 
-func (b *PropertiesBuilder) SetFileName(fname string) *PropertiesBuilder {
-	b.filename = rusty.Some(fname)
-	return b
-}
+// func (b *PropertiesBuilder) SetFileName(fname string) *PropertiesBuilder {
+// 	b.filename = rusty.Some(fname)
+// 	return b
+// }
 
 // func (b *PropertiesBuilder) SetFileName(fname string) *PropertiesBuilder {
 // 	if b.property.IsNone() {
@@ -48,35 +49,35 @@ func isOptional(name string, req []string) bool {
 	return true
 }
 
-func JSONsetString(js JSONProperty, key string, value string) {
+func JSONsetString(js JSONDict, key string, value string) {
 	js.Set(key, value)
 }
 
-func JSONsetId(jsp JSONProperty, p Property) {
+func JSONsetId(jsp JSONDict, p Property) {
 	if p.Id() != "" {
 		jsp.Set("$id", p.Id())
 	}
 }
 
-func JSONsetOptionalString(js JSONProperty, key string, value rusty.Optional[string]) {
+func JSONsetOptionalString(js JSONDict, key string, value rusty.Optional[string]) {
 	if !value.IsNone() {
 		js.Set(key, value.Value())
 	}
 }
 
-func JSONsetOptionalBoolean(js JSONProperty, key string, value rusty.Optional[bool]) {
+func JSONsetOptionalBoolean(js JSONDict, key string, value rusty.Optional[bool]) {
 	if !value.IsNone() {
 		js.Set(key, value.Value())
 	}
 }
 
-func JSONsetOptionalFloat64(js JSONProperty, key string, value rusty.Optional[float64]) {
+func JSONsetOptionalFloat64(js JSONDict, key string, value rusty.Optional[float64]) {
 	if !value.IsNone() {
 		js.Set(key, value.Value())
 	}
 }
 
-func JSONsetOptionalInt(js JSONProperty, key string, value rusty.Optional[int]) {
+func JSONsetOptionalInt(js JSONDict, key string, value rusty.Optional[int]) {
 	if !value.IsNone() {
 		js.Set(key, value.Value())
 	}
@@ -123,9 +124,9 @@ func JSONsetOptionalInt(js JSONProperty, key string, value rusty.Optional[int]) 
 // 	return b
 // }
 
-func (b *PropertiesBuilder) MergeJson(fname rusty.Optional[string], ref string, js JSONProperty) rusty.Result[JSonFile] {
+func (b *PropertiesBuilder) MergeJson(parentFname rusty.Optional[string], ref string, js JSONDict) rusty.Result[JSonFile] {
 	// refVal := b.ref.Value()
-	rJson := b.ctx.Registry.EnsureJSONProperty(fname, ref)
+	rJson := b.ctx.Registry.EnsureJSONProperty(parentFname, ref)
 	if rJson.IsErr() {
 		return rusty.Err[JSonFile](rJson.Err())
 	}
@@ -140,19 +141,18 @@ func (b *PropertiesBuilder) MergeJson(fname rusty.Optional[string], ref string, 
 	})
 }
 
-func (b *PropertiesBuilder) FromJson(js JSONProperty) *PropertiesBuilder {
+func (b *PropertiesBuilder) FromJson(js JSONDict) *PropertiesBuilder {
 	ref, found := js.Lookup("$ref")
 	if found {
-		b.filename = rusty.None[string]()
-		if b.property.IsSome() {
-			b.filename = b.property.Value().Meta().FileName()
-		}
+		// if b.property.IsSome() {
+		// 	b.fixlename = b.property.Value().Meta().FileName()
+		// }
 		refStr := coerceString(ref)
 		if refStr.IsNone() {
 			b.errors = append(b.errors, fmt.Errorf("ref not a string"))
 			return b
 		}
-		rJs := b.MergeJson(b.filename, refStr.Value(), js)
+		rJs := b.MergeJson(b.parentFileName, refStr.Value(), js)
 		if rJs.IsErr() {
 			b.errors = append(b.errors, rJs.Err())
 			return b
@@ -211,7 +211,7 @@ func (b *PropertiesBuilder) assignProperty(fn func(b *PropertiesBuilder) rusty.R
 	return b
 }
 
-func PropertyToJson(iprop Property) JSONProperty {
+func PropertyToJson(iprop Property) JSONDict {
 	switch prop := iprop.(type) {
 	case PropertyString:
 		return PropertyStringToJson(prop)
@@ -243,6 +243,13 @@ func PropertyToJson(iprop Property) JSONProperty {
 // }
 
 func (b *PropertiesBuilder) Build() rusty.Result[Property] {
+	if len(b.errors) > 0 {
+		str := ""
+		for _, v := range b.errors {
+			str += v.Error() + "\n"
+		}
+		return rusty.Err[Property](fmt.Errorf(str))
+	}
 
 	if b.property.IsNone() {
 		b.errors = append(b.errors, fmt.Errorf("no property set"))
@@ -251,12 +258,6 @@ func (b *PropertiesBuilder) Build() rusty.Result[Property] {
 	if b.filename.IsSome() {
 		b.property.Value().Meta().SetFileName(b.filename.Value())
 	}
-	if len(b.errors) > 0 {
-		str := ""
-		for _, v := range b.errors {
-			str += v.Error() + "\n"
-		}
-		return rusty.Err[Property](fmt.Errorf(str))
-	}
+
 	return rusty.Ok[Property](b.property.Value())
 }

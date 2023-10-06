@@ -41,7 +41,7 @@ func NewPropertyNumberBuilder(pb *PropertiesBuilder) *PropertyNumberBuilder {
 	return &PropertyNumberBuilder{}
 }
 
-func (b *PropertyNumberBuilder) FromJson(js JSONProperty) *PropertyNumberBuilder {
+func (b *PropertyNumberBuilder) FromJson(js JSONDict) *PropertyNumberBuilder {
 	b.Type = "number"
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
@@ -52,8 +52,8 @@ func (b *PropertyNumberBuilder) FromJson(js JSONProperty) *PropertyNumberBuilder
 	return b
 }
 
-func PropertyNumberToJson(b PropertyNumber) JSONProperty {
-	jsp := NewJSONProperty()
+func PropertyNumberToJson(b PropertyNumber) JSONDict {
+	jsp := NewJSONDict()
 	JSONsetId(jsp, b)
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "format", b.Format())

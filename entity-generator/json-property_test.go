@@ -16,7 +16,7 @@ type Item struct {
 func TestOrderedMap(t *testing.T) {
 	const input = `{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6}`
 	for i := 0; i < 100; i++ {
-		out := NewJSONProperty()
+		out := NewJSONDict()
 		err := json.Unmarshal([]byte(input), &out)
 		assert.NoError(t, err)
 		testOrder(t, out)
@@ -27,12 +27,12 @@ func TestOrderedMap(t *testing.T) {
 	}
 }
 
-func testOrder(t *testing.T, out JSONProperty) {
+func testOrder(t *testing.T, out JSONDict) {
 	order := []Item{}
 	for _, k := range out.Keys() {
 		v := out.Get(k)
 		if k == "nested" {
-			testOrder(t, v.(JSONProperty))
+			testOrder(t, v.(JSONDict))
 			continue
 		}
 		order = append(order, Item{
@@ -61,10 +61,10 @@ func TestNestedOrder(t *testing.T) {
 
 func TestTypeUnmarshal(t *testing.T) {
 	const input = `{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6,"nested":{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6}}`
-	out := NewJSONProperty()
+	out := NewJSONDict()
 	err := json.Unmarshal([]byte(input), &out)
 	assert.NoError(t, err)
-	_, ok := out.Get("nested").(JSONProperty)
+	_, ok := out.Get("nested").(JSONDict)
 	assert.True(t, ok)
 
 }
@@ -84,16 +84,16 @@ func TestJsonPropertySetMutable(t *testing.T) {
 			"v2": "v1"
 		}
 	}`
-	out := NewJSONProperty()
+	out := NewJSONDict()
 	err := json.Unmarshal([]byte(input), &out)
 	assert.NoError(t, err)
 
-	out.Get("prop").(JSONProperty).Set("v3", "blabla")
+	out.Get("prop").(JSONDict).Set("v3", "blabla")
 
 	assert.Equal(t, "foo", out.Keys()[0])
 	assert.Equal(t, "bar", out.Get("foo"))
 	assert.Equal(t, "prop", out.Keys()[1])
-	inProp := out.Get("prop").(JSONProperty)
+	inProp := out.Get("prop").(JSONDict)
 	assert.Equal(t, "v1", inProp.Keys()[0])
 	assert.Equal(t, "v2", inProp.Keys()[1])
 	assert.Equal(t, "v3", inProp.Keys()[2])

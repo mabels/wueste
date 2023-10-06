@@ -25,7 +25,7 @@ func NewPropertyBooleanBuilder(pb *PropertiesBuilder) *PropertyBooleanBuilder {
 	return &PropertyBooleanBuilder{}
 }
 
-func (b *PropertyBooleanBuilder) FromJson(js JSONProperty) *PropertyBooleanBuilder {
+func (b *PropertyBooleanBuilder) FromJson(js JSONDict) *PropertyBooleanBuilder {
 	b.Type = "boolean"
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
@@ -33,8 +33,8 @@ func (b *PropertyBooleanBuilder) FromJson(js JSONProperty) *PropertyBooleanBuild
 	return b
 }
 
-func PropertyBooleanToJson(b PropertyBoolean) JSONProperty {
-	jsp := NewJSONProperty()
+func PropertyBooleanToJson(b PropertyBoolean) JSONDict {
+	jsp := NewJSONDict()
 	JSONsetId(jsp, b)
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "description", b.Description())

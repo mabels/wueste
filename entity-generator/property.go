@@ -19,10 +19,10 @@ const (
 
 type PropertyMeta interface {
 	Parent() rusty.Optional[Property]
-	SetParent(p Property)
+	SetParent(p Property) PropertyMeta
 	FileName() rusty.Optional[string]
-	SetFileName(fn string)
-	SetMeta(m Property)
+	SetFileName(fn string) PropertyMeta
+	SetMeta(m Property) PropertyMeta
 }
 
 type propertyMeta struct {
@@ -31,17 +31,23 @@ type propertyMeta struct {
 }
 
 // SetMeta implements PropertyMeta.
-func (p *propertyMeta) SetMeta(m Property) {
+func (p *propertyMeta) SetMeta(m Property) PropertyMeta {
 	if p.FileName().IsNone() {
 		if m.Meta().FileName().IsSome() {
 			p.SetFileName(m.Meta().FileName().Value())
 		}
 	}
 	p.SetParent(m)
+	return p
 }
 
 // FileName implements PropertyMeta.
 func (m propertyMeta) FileName() rusty.Optional[string] {
+	if m.filename.IsNone() {
+		if m.parent.IsSome() {
+			return m.parent.Value().Meta().FileName()
+		}
+	}
 	return m.filename
 }
 
@@ -51,13 +57,15 @@ func (m propertyMeta) Parent() rusty.Optional[Property] {
 }
 
 // SetFileName implements PropertyMeta.
-func (m *propertyMeta) SetFileName(fn string) {
+func (m *propertyMeta) SetFileName(fn string) PropertyMeta {
 	m.filename = rusty.Some(fn)
+	return m
 }
 
 // SetParent implements PropertyMeta.
-func (m *propertyMeta) SetParent(p Property) {
+func (m *propertyMeta) SetParent(p Property) PropertyMeta {
 	m.parent = rusty.Some(p)
+	return m
 }
 
 func NewPropertyMeta() PropertyMeta {

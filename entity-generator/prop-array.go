@@ -55,7 +55,7 @@ func NewPropertyArrayBuilder(pb *PropertiesBuilder) *PropertyArrayBuilder {
 	}
 }
 
-func (b *PropertyArrayBuilder) FromJson(js JSONProperty) *PropertyArrayBuilder {
+func (b *PropertyArrayBuilder) FromJson(js JSONDict) *PropertyArrayBuilder {
 	b.Type = ARRAY
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
@@ -63,13 +63,13 @@ func (b *PropertyArrayBuilder) FromJson(js JSONProperty) *PropertyArrayBuilder {
 	b.MinItems = getFromAttributeOptionalInt(js, "minItems")
 
 	builder := NewPropertiesBuilder(b._propertiesBuilder.ctx)
-	builder.filename = b._propertiesBuilder.filename
-	b.Items = builder.FromJson(js.Get("items").(JSONProperty)).Build()
+	builder.parentFileName = b._propertiesBuilder.filename
+	b.Items = builder.FromJson(js.Get("items").(JSONDict)).Build()
 	return b
 }
 
-func PropertyArrayToJson(b PropertyArray) JSONProperty {
-	jsp := NewJSONProperty()
+func PropertyArrayToJson(b PropertyArray) JSONDict {
+	jsp := NewJSONDict()
 	JSONsetId(jsp, b)
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "description", b.Description())
@@ -82,9 +82,7 @@ func PropertyArrayToJson(b PropertyArray) JSONProperty {
 func (b *PropertyArrayBuilder) Build() rusty.Result[Property] {
 	if b.Items.IsOk() {
 		pa := NewPropertyArray(*b)
-		if b.Items.IsOk() {
-			b.Items.Ok().Meta().SetParent(pa.Ok())
-		}
+		b.Items.Ok().Meta().SetParent(pa.Ok())
 		return pa
 	} else {
 		return rusty.Err[Property](fmt.Errorf("Array needs items:%v", b.Items.Err()))

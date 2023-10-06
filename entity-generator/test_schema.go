@@ -87,14 +87,14 @@ func (l *TestSchemaLoader) Unmarshal(bytes []byte, v interface{}) error {
 }
 
 func json2JSonFile(inp string) JSonFile {
-	jsonFile := NewJSONProperty()
+	jsonFile := NewJSONDict()
 	err := json.Unmarshal([]byte(inp), &jsonFile)
 	if err != nil {
 		panic(fmt.Errorf("json2JSonFile: %w:%v", err, inp))
 	}
 	return JSonFile{
 		FileName:     jsonFile.Get("filename").(string),
-		JSONProperty: jsonFile.Get("jsonProperty").(JSONProperty),
+		JSONProperty: jsonFile.Get("jsonProperty").(JSONDict),
 	}
 }
 
@@ -189,7 +189,7 @@ func Sub2Schema() JSonFile {
 		"description": "Sub2 description",
 		"properties": {
 			"bar": {
-				"$ref": "file://./wurst/sub3.schema.json"
+				"$ref": "file://./sub3.schema.json"
 			}
 		},
 		"required": ["bar"]
@@ -385,13 +385,13 @@ func TestJsonFlatSchema() JSonFile {
 	// if !ok {
 	// 	panic("not ok")
 	// }
-	json.JSONProperty.Get("properties").(JSONProperty).Set("sub", TestJSONPayloadSchema().JSONProperty)
-	json.JSONProperty.Get("properties").(JSONProperty).Set("opt-sub", TestJSONPayloadSchema().JSONProperty)
+	json.JSONProperty.Get("properties").(JSONDict).Set("sub", TestJSONPayloadSchema().JSONProperty)
+	json.JSONProperty.Get("properties").(JSONDict).Set("opt-sub", TestJSONPayloadSchema().JSONProperty)
 	return json
 }
 
 func TestPayloadSchema(sl PropertyCtx) rusty.Result[Property] {
-	prop := NewJSONProperty()
+	prop := NewJSONDict()
 	prop.Set("$ref", "file://payload.schema.json")
 	return NewPropertiesBuilder(sl).FromJson(prop).Build()
 
@@ -410,7 +410,7 @@ func TestPayloadSchema(sl PropertyCtx) rusty.Result[Property] {
 }
 
 func TestFlatSchema(sl PropertyCtx) rusty.Result[Property] {
-	prop := NewJSONProperty()
+	prop := NewJSONDict()
 	prop.Set("$ref", "file://simple_type.schema.json")
 	return NewPropertiesBuilder(sl).FromJson(prop).Build()
 
@@ -470,7 +470,7 @@ func TestFlatSchema(sl PropertyCtx) rusty.Result[Property] {
 }
 
 func TestJSONSchema() JSonFile {
-	dict := NewJSONProperty()
+	dict := NewJSONDict()
 	jsonStr := `{
 		"$id": "https://NestedType",
 		"title": "NestedType",
@@ -607,28 +607,28 @@ func TestJSONSchema() JSonFile {
 	}
 	payloadFile := TestJSONPayloadSchema()
 
-	props := dict.Get("properties").(JSONProperty)
+	props := dict.Get("properties").(JSONDict)
 
-	props.Get("arraySubType").(JSONProperty).Set("items", payloadFile.JSONProperty)
-	props.Get("opt-arraySubType").(JSONProperty).Set("items", payloadFile.JSONProperty)
+	props.Get("arraySubType").(JSONDict).Set("items", payloadFile.JSONProperty)
+	props.Get("opt-arraySubType").(JSONDict).Set("items", payloadFile.JSONProperty)
 
 	props.Set("sub-flat", payloadFile.JSONProperty)
 	props.Set("opt-sub-flat", payloadFile.JSONProperty)
 
-	props.Get("arrayarrayFlatSchema").(JSONProperty).
-		Get("items").(JSONProperty).
-		Get("items").(JSONProperty).
-		Get("items").(JSONProperty).
+	props.Get("arrayarrayFlatSchema").(JSONDict).
+		Get("items").(JSONDict).
+		Get("items").(JSONDict).
+		Get("items").(JSONDict).
 		Set("items", payloadFile.JSONProperty)
 
-	props.Get("opt-arrayarrayFlatSchema").(JSONProperty).
-		Get("items").(JSONProperty).
-		Get("items").(JSONProperty).
-		Get("items").(JSONProperty).
+	props.Get("opt-arrayarrayFlatSchema").(JSONDict).
+		Get("items").(JSONDict).
+		Get("items").(JSONDict).
+		Get("items").(JSONDict).
 		Set("items", payloadFile.JSONProperty)
 
 	flat := TestJsonFlatSchema()
-	flatProp := flat.JSONProperty.Get("properties").(JSONProperty)
+	flatProp := flat.JSONProperty.Get("properties").(JSONDict)
 
 	for _, item := range flatProp.Keys() {
 		val := flatProp.Get(item)
@@ -645,7 +645,7 @@ func TestJSONSchema() JSonFile {
 }
 
 func TestSchema(sl PropertyCtx) Property {
-	prop := NewJSONProperty()
+	prop := NewJSONDict()
 	prop.Set("$ref", "file://./nested_type.schema.json")
 	return NewPropertiesBuilder(sl).FromJson(prop).Build().Ok()
 

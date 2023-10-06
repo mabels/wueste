@@ -59,7 +59,7 @@ func NewPropertyStringBuilder(pb *PropertiesBuilder) *PropertyStringBuilder {
 // 	return b
 // }
 
-func (b *PropertyStringBuilder) FromJson(js JSONProperty) *PropertyStringBuilder {
+func (b *PropertyStringBuilder) FromJson(js JSONDict) *PropertyStringBuilder {
 	b.Type = STRING
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
@@ -68,8 +68,8 @@ func (b *PropertyStringBuilder) FromJson(js JSONProperty) *PropertyStringBuilder
 	return b
 }
 
-func PropertyStringToJson(b PropertyString) JSONProperty {
-	jsp := NewJSONProperty()
+func PropertyStringToJson(b PropertyString) JSONDict {
+	jsp := NewJSONDict()
 	JSONsetId(jsp, b)
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "description", b.Description())

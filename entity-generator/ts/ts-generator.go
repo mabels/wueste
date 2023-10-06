@@ -409,12 +409,12 @@ func (g *tsGenerator) generateClass(prop eg.PropertyObject) {
 			g.lang.ReturnType(
 				g.lang.Readonly(g.lang.Type(g.lang.PublicType(pi.Name()), pi.Optional())),
 				g.lang.AsTypeNullable(pi.Property(),
-					WithAddType(func(typ string, prop eg.Property) {
+					WithAddType(func(typ string, addProp eg.Property) {
 						out = append(out, typ)
-						if prop == nil {
+						if addProp == nil {
 							g.includes.AddType(g.cfg.EntityCfg.FromWueste, typ)
 						} else {
-							g.includes.AddProperty(typ, prop)
+							g.includes.AddProperty(typ, addProp)
 						}
 					}),
 				))))
@@ -1364,7 +1364,7 @@ type externalType struct {
 	schemaFileName string
 	tsFileName     string
 	types          map[string]*string
-	fileProperty   rusty.Optional[eg.PropertyObject]
+	fileProperty   rusty.Optional[eg.Property]
 }
 
 type ImportType struct {
@@ -1417,7 +1417,7 @@ func (g *externalTypes) AddProperty(typ string, prop eg.Property) {
 	po, ok := prop.(eg.PropertyObject)
 	if ok && et.fileProperty.IsNone() {
 		// fmt.Printf("TOP-AddProperty: %s -> %s\n", typ, fileName)
-		et.fileProperty = rusty.Some[eg.PropertyObject](po)
+		et.fileProperty = rusty.Some[eg.Property](po)
 	} else {
 		// fmt.Printf("AddProperty: %s -> %s\n", typ, fileName)
 	}
@@ -1478,9 +1478,10 @@ func TsGenerator(cfg *eg.GeneratorConfig, prop eg.Property, sl eg.PropertyCtx) {
 	}
 
 	g.generatePropertyObject(prop.(eg.PropertyObject), sl)
-	for _, prop := range g.includes.ActiveTypes() {
-		if prop.fileProperty.IsSome() {
-			TsGenerator(cfg, prop.fileProperty.Value(), sl)
+	for _, at := range g.includes.ActiveTypes() {
+		if at.fileProperty.IsSome() &&
+			at.fileProperty.Value().Id() != prop.Id() {
+			TsGenerator(cfg, at.fileProperty.Value(), sl)
 		}
 	}
 }

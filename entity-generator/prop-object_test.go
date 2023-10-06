@@ -3,6 +3,7 @@ package entity_generator
 import (
 	"testing"
 
+	"github.com/mabels/wueste/entity-generator/rusty"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,7 +12,7 @@ func TestResolveRef(t *testing.T) {
 		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
 	}
 
-	prop := NewJSONProperty()
+	prop := NewJSONDict()
 	prop.Set("$ref", "file://./base.schema.json")
 
 	po := NewPropertiesBuilder(ctx).FromJson(prop).Build().Ok().(PropertyObject)
@@ -35,7 +36,7 @@ func TestParentSimple(t *testing.T) {
 	ctx := PropertyCtx{
 		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
 	}
-	prop := NewJSONProperty()
+	prop := NewJSONDict()
 	prop.Set("$ref", "file://./base.schema.json")
 	po := NewPropertiesBuilder(ctx).FromJson(prop).Build().Ok().(PropertyObject)
 	assert.True(t, po.Meta().Parent().IsNone())
@@ -56,14 +57,15 @@ func TestParentSimple(t *testing.T) {
 
 }
 
-func TestParentSimpleArray(t *testing.T) {
+func TestParentNestedArray(t *testing.T) {
 	ctx := PropertyCtx{
 		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
 	}
-	prop := NewJSONProperty()
+	prop := NewJSONDict()
 	prop.Set("$ref", "file://./nested_type.schema.json")
 	so := NewPropertiesBuilder(ctx).FromJson(prop).Build().Ok().(PropertyObject)
 	str := so.PropertyByName("string").Ok().Property()
+	assert.Equal(t, so.Id(), "https://NestedType")
 	assert.Equal(t, str.Meta().Parent().Value().Id(), so.Id())
 
 	arr0 := so.PropertyByName("arrayarrayFlatSchema").Ok().Property().(PropertyArray)
@@ -84,11 +86,40 @@ func TestParentSimpleArray(t *testing.T) {
 
 }
 
+func TestFileNameNestedArray(t *testing.T) {
+	ctx := PropertyCtx{
+		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+	}
+	prop := NewJSONDict()
+	prop.Set("$ref", "file://./nested_type.schema.json")
+	so := NewPropertiesBuilder(ctx).FromJson(prop).Build().Ok().(PropertyObject)
+	str := so.PropertyByName("string").Ok().Property()
+	assert.Equal(t, so.Meta().FileName().Value(), "/abs/nested_type.schema.json")
+	assert.Equal(t, str.Meta().FileName().Value(), so.Meta().FileName().Value())
+
+	arr0 := so.PropertyByName("arrayarrayFlatSchema").Ok().Property().(PropertyArray)
+	assert.Equal(t, arr0.Meta().FileName().Value(), "/abs/nested_type.schema.json")
+
+	arr1 := arr0.Items().(PropertyArray)
+	assert.Equal(t, arr1.Meta().FileName().Value(), "/abs/nested_type.schema.json")
+
+	arr2 := arr1.Items().(PropertyArray)
+	assert.Equal(t, arr2.Meta().FileName().Value(), "/abs/nested_type.schema.json")
+
+	arr3 := arr2.Items().(PropertyArray)
+	assert.Equal(t, arr3.Meta().FileName().Value(), "/abs/nested_type.schema.json")
+
+	obj := arr3.Items()
+	assert.Equal(t, obj.Id(), "https://Sub")
+	assert.Equal(t, obj.Meta().FileName().Value(), "/abs/nested_type.schema.json")
+
+}
+
 func TestDeref(t *testing.T) {
 	ctx := PropertyCtx{
 		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
 	}
-	prop := NewJSONProperty()
+	prop := NewJSONDict()
 	prop.Set("$ref", "file://./base.schema.json")
 	rpo := NewPropertiesBuilder(ctx).FromJson(prop).Build()
 	if rpo.IsErr() {
@@ -152,7 +183,7 @@ func TestLoaderResolveRef(t *testing.T) {
 	ctx := PropertyCtx{
 		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
 	}
-	prop := NewJSONProperty()
+	prop := NewJSONDict()
 	prop.Set("$ref", "file://./base.schema.json")
 	p := NewPropertiesBuilder(ctx).FromJson(prop).Build()
 	assert.False(t, p.IsErr())
@@ -176,7 +207,7 @@ func TestErrorUnnamedNestedObject(t *testing.T) {
 	ctx := PropertyCtx{
 		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
 	}
-	prop := NewJSONProperty()
+	prop := NewJSONDict()
 	prop.Set("$ref", "file://./unnamed_nested_object.schema.json")
 	p := NewPropertiesBuilder(ctx).FromJson(prop).Build()
 	assert.True(t, p.IsErr())
@@ -192,4 +223,18 @@ func TestInstances(t *testing.T) {
 	if res1 == res2 {
 		t.Fatal("res1 == res2")
 	}
+}
+
+func TestSetFilename(t *testing.T) {
+	ctx := PropertyCtx{
+		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+	}
+	jsDict := NewJSONDict()
+	jsDict.Set("$ref", "file://./sub2.schema.json")
+
+	builder := NewPropertiesBuilder(ctx)
+	builder.parentFileName = rusty.Some("/abs/wurst/doof.schema.json")
+	// builder.SetFileName("/abs/wurst/doof.schema.json")
+	r := builder.FromJson(jsDict).Build()
+	assert.False(t, r.IsErr())
 }

@@ -51,7 +51,7 @@ func NewPropertyIntegerBuilder(pb *PropertiesBuilder) *PropertyIntegerBuilder {
 	return &PropertyIntegerBuilder{}
 }
 
-func (b *PropertyIntegerBuilder) FromJson(js JSONProperty) *PropertyIntegerBuilder {
+func (b *PropertyIntegerBuilder) FromJson(js JSONDict) *PropertyIntegerBuilder {
 	b.Type = "integer"
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
@@ -62,8 +62,8 @@ func (b *PropertyIntegerBuilder) FromJson(js JSONProperty) *PropertyIntegerBuild
 	return b
 }
 
-func PropertyIntegerToJson(b PropertyInteger) JSONProperty {
-	jsp := NewJSONProperty()
+func PropertyIntegerToJson(b PropertyInteger) JSONDict {
+	jsp := NewJSONDict()
 	JSONsetId(jsp, b)
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "format", b.Format())

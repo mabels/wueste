@@ -6,8 +6,8 @@ import (
 	"github.com/iancoleman/orderedmap"
 )
 
-// type JSONProperty map[string]interface{}
-type JSONProperty interface {
+// type JSONDict map[string]interface{}
+type JSONDict interface {
 	// orderedmap.OrderedMap
 	Set(key string, value any)
 	Get(key string) any
@@ -18,17 +18,17 @@ type JSONProperty interface {
 	MarshalJSON() ([]byte, error)
 }
 
-type jsonProperty struct {
+type jsonDict struct {
 	omap orderedmap.OrderedMap
 }
 
 // Len implements JSONProperty.
-func (j *jsonProperty) Len() int {
+func (j *jsonDict) Len() int {
 	return len(j.omap.Keys())
 }
 
 // Get implements JSONProperty.
-func (j *jsonProperty) Get(key string) any {
+func (j *jsonDict) Get(key string) any {
 	val, found := j.Lookup(key)
 	if !found {
 		panic(fmt.Sprintf("key[%s] not found", key))
@@ -37,14 +37,14 @@ func (j *jsonProperty) Get(key string) any {
 }
 
 // Lookup implements JSONProperty.
-func (j *jsonProperty) Lookup(key string) (any, bool) {
+func (j *jsonDict) Lookup(key string) (any, bool) {
 	out, found := j.omap.Get(key)
 	if !found {
 		return nil, false
 	}
 	isOmap, found := out.(orderedmap.OrderedMap)
 	if found {
-		return &jsonProperty{
+		return &jsonDict{
 			omap: isOmap,
 		}, true
 	}
@@ -53,26 +53,26 @@ func (j *jsonProperty) Lookup(key string) (any, bool) {
 }
 
 // MarshalJSON implements JSONProperty.
-func (j *jsonProperty) MarshalJSON() ([]byte, error) {
+func (j *jsonDict) MarshalJSON() ([]byte, error) {
 	return j.omap.MarshalJSON()
 }
 
 // Set implements JSONProperty.
-func (j *jsonProperty) Set(key string, value any) {
+func (j *jsonDict) Set(key string, value any) {
 	j.omap.Set(key, value)
 }
 
 // UnmarshalJSON implements JSONProperty.
-func (j *jsonProperty) UnmarshalJSON(b []byte) error {
+func (j *jsonDict) UnmarshalJSON(b []byte) error {
 	return j.omap.UnmarshalJSON(b)
 }
 
-func (j *jsonProperty) Keys() []string {
+func (j *jsonDict) Keys() []string {
 	return j.omap.Keys()
 }
 
-func NewJSONProperty() JSONProperty {
-	return &jsonProperty{
+func NewJSONDict() JSONDict {
+	return &jsonDict{
 		omap: orderedmap.New(),
 	}
 }
