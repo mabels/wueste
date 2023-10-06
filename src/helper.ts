@@ -44,13 +44,18 @@ function asDottedPath(path: WuestenReflection[]): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function toHash(ref: WuestenGetterBuilder, exclude: Set<string> = new Set()): Promise<Uint8Array> {
+export async function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] = []): Promise<Uint8Array> {
   const mac = hmac.create(sha1, "");
   const enc = new TextEncoder();
   ref.Apply((path, ref) => {
     const dotted = asDottedPath(path);
-    if (exclude.has(dotted)) {
-      return;
+    for (const ex of exclude) {
+      if (typeof ex === "string" && ex === dotted) {
+        return;
+      }
+      if (ex instanceof RegExp && ex.test(dotted)) {
+        return;
+      }
     }
     let val: string | undefined = undefined;
     if (typeof ref === "boolean") {
@@ -62,7 +67,7 @@ export async function toHash(ref: WuestenGetterBuilder, exclude: Set<string> = n
     } else if (ref instanceof Date) {
       val = ref.toISOString();
     }
-    console.log(">>>>>>", dotted, val);
+    // console.log(">>>>>>", dotted, val);
     val && mac.update(enc.encode(val));
   });
   return mac.digest();

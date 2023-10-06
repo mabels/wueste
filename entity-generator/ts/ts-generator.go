@@ -364,6 +364,10 @@ func (l *tsLang) OrType(str ...string) string {
 func (l *tsLang) Const(str string) string {
 	return "const " + str
 }
+
+func (l *tsLang) Trinary(condition, trueish, falsisch string) string {
+	return condition + " ? " + trueish + " : " + falsisch
+}
 func (l *tsLang) Let(str string) string {
 	return "let " + str
 }
@@ -882,7 +886,7 @@ func (g *tsGenerator) generateLocalArrays(prop eg.PropertyObject, pa eg.Property
 	// 	})
 	className := g.lang.PublicName(baseName, "Builder")
 	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttr")
-	g.lang.Class(g.bodyWriter, "", g.lang.Extends(className,
+	g.lang.Class(g.bodyWriter, "export ", g.lang.Extends(className,
 		g.lang.Generics("WuestenAttr",
 			// g.lang.AsType(pi.Property()),
 			g.lang.AsTypeNullable(pi.Property() /*WithOptional(pi.Optional())*/),
@@ -1072,6 +1076,35 @@ func (g *tsGenerator) generateAttributesClass(prop eg.PropertyObject, resultsCla
 	return attrsClassName
 }
 
+func (g *tsGenerator) generateFunctionHandler(wr *eg.ForIfWhileLangWriter, pi eg.PropertyItem) {
+	wr.WriteIf(g.lang.RoundBrackets("typeof v === 'function'"), func(wr *eg.ForIfWhileLangWriter) {
+		switch pi.Property().Type() {
+		case eg.STRING, eg.BOOLEAN, eg.NUMBER, eg.INTEGER:
+			wr.WriteLine(g.lang.Const(
+				g.lang.AssignDefault("val",
+					g.lang.Call(
+						g.lang.CallDot(
+							g.lang.CallDot("this._attr", g.lang.PrivateName(pi.Name())),
+							"Get")))))
+			wr.WriteLine(g.lang.Const(g.lang.AssignDefault("ret", g.lang.Call("v",
+				g.lang.Trinary("val.is_ok()", "val.unwrap()", "undefined")))))
+		case eg.ARRAY:
+			wr.WriteLine(g.lang.Const(g.lang.AssignDefault("ret", g.lang.Call("v",
+				g.lang.CallDot("this._attr", g.lang.PrivateName(pi.Name()))))))
+		case eg.OBJECT:
+			wr.WriteLine(g.lang.Const(g.lang.AssignDefault("ret", g.lang.Call("v",
+				g.lang.CallDot("this._attr", g.lang.PrivateName(pi.Name()))))))
+		default:
+			panic("what is this?")
+		}
+		g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenRetValType")
+		wr.WriteIf("(!(ret instanceof WuestenRetValType))", func(wr *eg.ForIfWhileLangWriter) {
+			wr.WriteLine("return this")
+		})
+		wr.WriteLine(g.lang.AssignDefault("v", fmt.Sprintf("ret.Val as %s ", g.lang.AsType(pi.Property()))))
+	})
+}
+
 func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttribute")
 
@@ -1120,23 +1153,39 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 		g.lang.Generics("WuestenBuilder", genericType[0], genericType[1], g.lang.PublicName(getObjectName(prop), "Object"))), prop,
 		func(pi eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {
 			paramTyp := g.lang.Type(g.lang.AsType(pi.Property(), WithAddCoerce()), false)
-			if pi.Property().Type() == eg.OBJECT && isNamedType(pi.Property()) {
-				if pi.Optional() {
-					g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenFNGetBuilder")
-					// WuestenObjectOptional<SimpleType$Payload, SimpleType$PayloadCoerceType|undefined>
-					paramTyp = g.lang.Generics("WuestenFNGetBuilder",
-						g.lang.Generics("WuestenObjectOptional",
-							g.lang.PublicName(getObjectName(pi.Property()), "Builder"),
-							g.lang.PublicName(getObjectName(pi.Property())),
-							g.lang.AsTypeNullable(pi.Property(), WithAddCoerce(), WithOptional(pi.Optional())),
-						))
-				} else {
-					g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenFNGetBuilder")
-					paramTyp = g.lang.Generics("WuestenFNGetBuilder",
-						g.lang.PublicName(getObjectName(pi.Property()), "Builder"))
+			fnGetBuilderType := paramTyp
+			if pi.Property().Type() == eg.ARRAY || pi.Property().Type() == eg.OBJECT {
+				if pi.Property().Type() == eg.ARRAY || isNamedType(pi.Property()) {
+					baseName := getObjectName(pi.Property())
+					typeName := g.lang.PublicName(baseName)
+					if pi.Property().Type() == eg.ARRAY {
+						baseName = getObjectName(pi.Property(), []string{pi.Name()})
+						typeName = g.lang.AsType(pi.Property(), WithAddCoerce())
+					}
+					if pi.Optional() {
+						// WuestenObjectOptional<SimpleType$Payload, SimpleType$PayloadCoerceType|undefined>
+						g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenObjectOptional")
+						fnGetBuilderType =
+							g.lang.Generics("WuestenObjectOptional",
+								g.lang.PublicName(baseName, "Builder"),
+								typeName,
+								g.lang.AsTypeNullable(pi.Property(), WithAddCoerce(), WithOptional(pi.Optional())),
+							)
+					} else {
+						fnGetBuilderType = g.lang.PublicName(baseName, "Builder")
+					}
+				} else if pi.Property().Type() == eg.OBJECT {
+					g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttribute")
+					recordType := g.lang.Generics("Record", "string", "unknown")
+					if pi.Optional() {
+						recordType = g.lang.OrType(recordType, "undefined")
+					}
+					fnGetBuilderType = g.lang.Generics("WuestenAttribute", recordType, recordType)
 				}
-				paramTyp = g.lang.OrType(g.lang.AsType(pi.Property(), WithAddCoerce()), paramTyp)
+				// paramTyp = g.lang.OrType(g.lang.AsType(pi.Property(), WithAddCoerce()), paramTyp)
 			}
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenFNGetBuilder")
+			paramTyp = g.lang.OrType(paramTyp, g.lang.Generics("WuestenFNGetBuilder", fnGetBuilderType))
 			wr.WriteBlock(
 				g.lang.ReturnType(
 					g.lang.Call(g.lang.Type(g.lang.PublicType(pi.Name()), false),
@@ -1144,50 +1193,47 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 							paramTyp)),
 					className),
 				"", func(wr *eg.ForIfWhileLangWriter) {
-					if pi.Property().Type() == eg.OBJECT && isNamedType(pi.Property()) {
-						wr.WriteIf(g.lang.RoundBrackets("typeof v === 'function'"), func(wr *eg.ForIfWhileLangWriter) {
-							wr.FormatLine(g.lang.Call("v", g.lang.CallDot("this._attr", g.lang.PrivateName(pi.Name()))))
-							wr.FormatLine("return this;")
-						})
-					}
+					//if pi.Property().Type() == eg.OBJECT && isNamedType(pi.Property()) {
+					// }
+					g.generateFunctionHandler(wr, pi)
 					wr.FormatLine("this._attr.%s.Coerce(v);", g.lang.PrivateName(pi.Name()))
 					wr.FormatLine("return this;")
 				})
-			if pi.Property().Type() == eg.OBJECT && isNamedType(pi.Property()) {
-				retType := g.lang.PublicName(getObjectName(pi.Property()), "Builder")
-				if pi.Optional() {
-					retType = g.lang.Generics("WuestenObjectOptional",
-						// g.lang.AsTypeNullable(pi.Property(), WithOptional(pi.Optional()),
-						g.lang.PublicName(getObjectName(pi.Property()), "Builder"),
-						g.lang.PublicName(getObjectName(pi.Property())),
-						g.lang.AsTypeNullable(pi.Property(), WithAddCoerce(), WithOptional(pi.Optional())),
-					)
-				}
-				wr.WriteBlock(
-					g.lang.ReturnType(
-						g.lang.Call(g.lang.Type(g.lang.PublicType(pi.Name(), "Builder"), false)), retType),
-					"", func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return this._attr.%s;", g.lang.PrivateName(pi.Name()))
-					})
+			// if pi.Property().Type() == eg.OBJECT && isNamedType(pi.Property()) {
+			// 	retType := g.lang.PublicName(getObjectName(pi.Property()), "Builder")
+			// 	if pi.Optional() {
+			// 		retType = g.lang.Generics("WuestenObjectOptional",
+			// 			// g.lang.AsTypeNullable(pi.Property(), WithOptional(pi.Optional()),
+			// 			g.lang.PublicName(getObjectName(pi.Property()), "Builder"),
+			// 			g.lang.PublicName(getObjectName(pi.Property())),
+			// 			g.lang.AsTypeNullable(pi.Property(), WithAddCoerce(), WithOptional(pi.Optional())),
+			// 		)
+			// 	}
+			// 	wr.WriteBlock(
+			// 		g.lang.ReturnType(
+			// 			g.lang.Call(g.lang.Type(g.lang.PublicType(pi.Name(), "Builder"), false)), retType),
+			// 		"", func(wr *eg.ForIfWhileLangWriter) {
+			// 			wr.FormatLine("return this._attr.%s;", g.lang.PrivateName(pi.Name()))
+			// 		})
 
-			}
-			if pi.Property().Type() == eg.ARRAY {
-				retType := g.lang.PublicType(getObjectName(pi.Property(),
-					[]string{g.lang.PublicName(pi.Name())}), "Builder")
-				if pi.Optional() {
-					retType = g.lang.Generics("WuestenObjectOptional", retType,
-						g.lang.AsType(pi.Property()),
-						g.lang.AsTypeNullable(pi.Property(), WithAddCoerce(), WithOptional(pi.Optional())))
-					// readonly _opt_arrayarrayBool: WuestenObjectOptional<NestedType$opt_arrayarrayBoolBuilder,
-					// boolean[][][][], WuesteCoerceTypeboolean[][][][]|undefined>
-				}
-				wr.WriteBlock(
-					g.lang.ReturnType(
-						g.lang.Call(g.lang.Type(g.lang.PublicType(pi.Name(), "Builder"), false)), retType),
-					"", func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return this._attr.%s;", g.lang.PrivateName(pi.Name()))
-					})
-			}
+			// }
+			// if pi.Property().Type() == eg.ARRAY {
+			// 	retType := g.lang.PublicType(getObjectName(pi.Property(),
+			// 		[]string{g.lang.PublicName(pi.Name())}), "Builder")
+			// 	if pi.Optional() {
+			// 		retType = g.lang.Generics("WuestenObjectOptional", retType,
+			// 			g.lang.AsType(pi.Property()),
+			// 			g.lang.AsTypeNullable(pi.Property(), WithAddCoerce(), WithOptional(pi.Optional())))
+			// 		// readonly _opt_arrayarrayBool: WuestenObjectOptional<NestedType$opt_arrayarrayBoolBuilder,
+			// 		// boolean[][][][], WuesteCoerceTypeboolean[][][][]|undefined>
+			// 	}
+			// 	wr.WriteBlock(
+			// 		g.lang.ReturnType(
+			// 			g.lang.Call(g.lang.Type(g.lang.PublicType(pi.Name(), "Builder"), false)), retType),
+			// 		"", func(wr *eg.ForIfWhileLangWriter) {
+			// 			wr.FormatLine("return this._attr.%s;", g.lang.PrivateName(pi.Name()))
+			// 		})
+			// }
 		}, func(wr *eg.ForIfWhileLangWriter) {
 
 			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result", "WuesteResult")

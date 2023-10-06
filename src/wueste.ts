@@ -79,6 +79,14 @@ export interface WuestenAttribute<G, I = G> {
   Get(): Result<G>;
 }
 
+export class WuestenRetValType {
+  constructor(readonly Val: unknown) {}
+}
+
+export function WuestenRetVal(val: unknown): WuestenRetValType {
+  return new WuestenRetValType(val);
+}
+
 export type WuestenGetterFn = (level: WuestenReflection[], value: unknown) => void;
 
 export function WuestenRecordGetter(
@@ -345,7 +353,7 @@ export interface WuestenFactory<T, I, O> {
 
 export type WuestenObject = Record<string, unknown>;
 
-export type WuestenFNGetBuilder<T> = (b: T) => void;
+export type WuestenFNGetBuilder<T> = (b: T | undefined) => unknown;
 export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, WuestenObject, WuestenObject> {
   readonly param: WuestenAttributeParameter<WuestenObject>;
   constructor(param?: WuestenAttributeParameter<WuestenObject>) {

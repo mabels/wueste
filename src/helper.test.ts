@@ -1,5 +1,7 @@
 import { fromEnv, toHash } from "./helper";
 import { helperTest, helperTestFactory, helperTestGetter } from "./generated/wasm/helpertest";
+import { WuestenRetVal } from "./wueste";
+import { helperTest$helperTestSubBuilder, helperTest$helperTestSub$arrayBuilder } from "./generated/wasm/helpertest$helpertestsub";
 
 const ref: helperTest = {
   test: "test",
@@ -25,10 +27,16 @@ const ref: helperTest = {
 };
 
 describe("helper", () => {
-  it("toHash", async () => {
-    const hash = await toHash(helperTestGetter(ref), new Set(["helperTest.sub.bool"]));
+  it("toHash Exclude String", async () => {
+    const hash = await toHash(helperTestGetter(ref), ["helperTest.sub.helperTestSub.bool"]);
     // echo -n 'testtest1test2a14.200000000000000e+1k12023-03-30T00:00:00.000Z1.100000000000000e+04.200000000000000e+1himurks' | openssl sha1 -hmac ""
-    expect(Buffer.from(hash).toString("hex")).toEqual("7aefd2cf04a31ab4f72d6cf5d6080649c43bdb");
+    expect(Buffer.from(hash).toString("hex")).toEqual("c9bcb79097342ddec7af9cba01e55a545c6da696");
+  });
+
+  it("toHash Exclude Regex", async () => {
+    const hash = await toHash(helperTestGetter(ref), [/.*\.bool$/]);
+    // echo -n 'testtest1test2a14.200000000000000e+1k12023-03-30T00:00:00.000Z1.100000000000000e+04.200000000000000e+1himurks' | openssl sha1 -hmac ""
+    expect(Buffer.from(hash).toString("hex")).toEqual("c9bcb79097342ddec7af9cba01e55a545c6da696");
   });
 
   it("hashit", () => {
@@ -47,6 +55,36 @@ describe("helper", () => {
       42,
       "hi",
       "murks",
+    ]);
+  });
+
+  it("coerce is function", () => {
+    const builder = helperTestFactory.Builder();
+    builder.Coerce(ref);
+    // string|number|boolean|Date
+    builder.test((test: string) => {
+      return WuestenRetVal(test.toUpperCase());
+    });
+    builder.sub((sub?: helperTest$helperTestSubBuilder) => {
+      sub!.array((array?: helperTest$helperTestSub$arrayBuilder) => {
+        return WuestenRetVal(array!.Get().unwrap().concat({ test: "test3" }));
+      });
+    });
+    const obj = builder.Get().unwrap();
+    expect(obj.test).toEqual("TEST");
+    expect(obj.sub.array).toEqual([
+      {
+        open: undefined,
+        test: "test1",
+      },
+      {
+        open: {
+          a1: 42,
+          k1: new Date("2023-03-30T00:00:00.000Z"),
+        },
+        test: "test2",
+      },
+      { test: "test3" },
     ]);
   });
 
