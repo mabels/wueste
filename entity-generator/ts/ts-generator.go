@@ -781,7 +781,6 @@ func (g *tsGenerator) genWuesteBuilderAttribute(name string, pi eg.PropertyItem,
 			return g.lang.New(baseName, paramFn())
 		}
 	case eg.OBJECT:
-		g.includes.AddType(g.cfg.EntityCfg.FromWueste, "wuesten")
 		po := prop.(eg.PropertyObject)
 		objName := getObjectName(po)
 		if pi.Optional() {
@@ -803,6 +802,7 @@ func (g *tsGenerator) genWuesteBuilderAttribute(name string, pi eg.PropertyItem,
 		} else {
 			if !isNamedType(po) {
 				// return g.lang.Call(g.lang.Generics("wuesten.AttributeObject", generics()...), paramFn(), factory)
+				g.includes.AddType(g.cfg.EntityCfg.FromWueste, "wuesten")
 				factory := "WuestenObjectFactory"
 				g.includes.AddType(g.cfg.EntityCfg.FromWueste, factory)
 				return g.lang.Call("wuesten.AttributeObject", paramFn(), factory)
@@ -981,6 +981,7 @@ func (g *tsGenerator) generateAttributesClass(prop eg.PropertyObject, resultsCla
 								g.lang.PublicName(name, "Builder"))))
 					}
 				} else {
+					g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttribute")
 					wr.WriteLine(
 						g.lang.Readonly(g.lang.ReturnType(g.lang.PrivateName(pi.Name()), g.lang.Generics("WuestenAttribute",
 							g.lang.AsTypeNullable(pi.Property(), WithOptional(pi.Optional())),
@@ -1106,7 +1107,6 @@ func (g *tsGenerator) generateFunctionHandler(wr *eg.ForIfWhileLangWriter, pi eg
 }
 
 func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
-	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttribute")
 
 	for _, pi := range prop.Items() {
 		pa, ok := pi.Property().(eg.PropertyArray)
@@ -1175,11 +1175,11 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 						fnGetBuilderType = g.lang.PublicName(baseName, "Builder")
 					}
 				} else if pi.Property().Type() == eg.OBJECT {
-					g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttribute")
 					recordType := g.lang.Generics("Record", "string", "unknown")
 					if pi.Optional() {
 						recordType = g.lang.OrType(recordType, "undefined")
 					}
+					g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttribute")
 					fnGetBuilderType = g.lang.Generics("WuestenAttribute", recordType, recordType)
 				}
 				// paramTyp = g.lang.OrType(g.lang.AsType(pi.Property(), WithAddCoerce()), paramTyp)
