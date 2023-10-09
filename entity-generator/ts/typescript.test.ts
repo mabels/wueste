@@ -2,7 +2,7 @@
 
 import { NestedTypeFactory, NestedTypeGetter } from "../../src/generated/go/nestedtype";
 import { NestedType$Payload, NestedType$PayloadFactory } from "../../src/generated/go/nestedtype$payload";
-import { SimpleTypeFactory, SimpleTypeParam } from "../../src/generated/go/simpletype";
+import { SimpleTypeFactory, SimpleTypeObject, SimpleTypeParam } from "../../src/generated/go/simpletype";
 
 const simpleTypeParam: SimpleTypeParam = {
   bool: true,
@@ -209,7 +209,7 @@ it(`SimpleType-Builder Object-Clone`, () => {
 it(`SimpleType-Builder ToObject`, () => {
   const builder = SimpleTypeFactory.Builder();
   const now = new Date();
-  const dict = {
+  const dict: SimpleTypeObject = {
     bool: true,
     createdAt: now,
     float64: 42.42,

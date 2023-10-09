@@ -447,15 +447,20 @@ func (g *tsGenerator) generateClass(prop eg.PropertyObject) {
 
 }
 
-func (g *tsGenerator) generateJson(prop eg.PropertyObject) {
+func (g *tsGenerator) generateJSONDict(prop eg.PropertyObject) {
 	g.lang.Interface(g.bodyWriter, "export ", g.lang.PublicType(getObjectName(prop), "Object"), prop, func(pi eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {
+		typ := g.lang.AsTypeNullable(pi.Property())
 		if isNamedType(pi.Property()) {
-			g.includes.AddProperty(g.lang.AsType(pi.Property()), pi.Property())
+			typ = g.lang.PublicName(g.lang.AsType(pi.Property()), "Object")
+			g.includes.AddProperty(typ, pi.Property())
+			// if pi.Optional() {
+			// 	typ = g.lang.OrType(typ, "undefined")
+			// }
 		}
 		wr.WriteLine(g.lang.Line(
 			g.lang.ReturnType(
 				g.lang.Readonly(g.lang.Type(g.lang.Quote(pi.Name()), pi.Optional())),
-				g.lang.AsTypeNullable(pi.Property())), g.lang.JsonAnnotation(pi.Property())))
+				typ), g.lang.JsonAnnotation(pi.Property())))
 	})
 	g.bodyWriter.WriteLine()
 }
@@ -1297,7 +1302,7 @@ type tsGenerator struct {
 
 func (g *tsGenerator) generatePropertyObject(prop eg.PropertyObject, sl eg.PropertyCtx) {
 	g.generateClass(prop)
-	g.generateJson(prop)
+	g.generateJSONDict(prop)
 	g.generateBuilder(prop)
 	g.generateFactory(prop)
 
