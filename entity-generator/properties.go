@@ -22,6 +22,13 @@ func NewPropertiesBuilder(run PropertyCtx) *PropertiesBuilder {
 	}
 }
 
+func (b *PropertiesBuilder) FileName() rusty.Optional[string] {
+	if b.filename.IsSome() {
+		return b.filename
+	}
+	return b.parentFileName
+}
+
 // func (b *PropertiesBuilder) SetFileName(fname string) *PropertiesBuilder {
 // 	b.filename = rusty.Some(fname)
 // 	return b

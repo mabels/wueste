@@ -98,10 +98,14 @@ func TestBaseSchemaFilename(t *testing.T) {
 	assert.Equal(t, sub.Meta().FileName().Value(), "/abs/sub.schema.json")
 	subDown := sub.PropertyByName("sub-down").Ok().Property().(PropertyObject)
 	assert.Equal(t, subDown.Meta().FileName().Value(), "/abs/wurst/sub2.schema.json")
-	maxSheep := subDown.PropertyByName("maxSheep").Ok().Property().(PropertyArray)
+	maxSheep := subDown.PropertyByName("maxSheep").Ok().Property().(PropertyObject)
 	assert.Equal(t, maxSheep.Meta().FileName().Value(), "/abs/wurst/sub2.schema.json")
-	maxSheepItem := maxSheep.Items().(PropertyObject)
-	assert.Equal(t, maxSheepItem.Meta().FileName().Value(), "/abs/wurst/sub3.schema.json")
+	flat := maxSheep.PropertyByName("flat").Ok().Property().(PropertyObject)
+	assert.Equal(t, flat.Meta().FileName().Value(), "/abs/wurst/sub3.schema.json")
+	nested := maxSheep.PropertyByName("nested").Ok().Property().(PropertyArray)
+	assert.Equal(t, nested.Meta().FileName().Value(), "/abs/wurst/sub2.schema.json")
+	nestedObject := nested.Items().(PropertyObject)
+	assert.Equal(t, nestedObject.Meta().FileName().Value(), "/abs/wurst/sub3.schema.json")
 
 }
 

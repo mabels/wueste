@@ -295,7 +295,7 @@ func (b *PropertyObjectBuilder) FromJson(js JSONDict) *PropertyObjectBuilder {
 				continue
 			}
 			builder := NewPropertiesBuilder(b._propertiesBuilder.ctx)
-			builder.parentFileName = b._propertiesBuilder.filename
+			builder.parentFileName = b._propertiesBuilder.FileName()
 			r := builder.FromJson(v).Build()
 			if r.IsErr() {
 				b.Errors = append(b.Errors, r.Err())

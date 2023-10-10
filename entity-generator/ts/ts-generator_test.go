@@ -85,7 +85,6 @@ func TestMainAction(t *testing.T) {
 	cfg := getConfig()
 	MainAction([]string{
 		"--write-test-schema", "true",
-		// "--input-file", "../../event_item_listed.schema.json",
 		"--input-file", "../../src/generated/go/base.schema.json",
 		"--input-file", "../../src/generated/go/simple_type.schema.json",
 		"--input-file", "../../src/generated/go/nested_type.schema.json",

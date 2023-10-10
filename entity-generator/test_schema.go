@@ -193,9 +193,19 @@ func Sub2Schema() JSonFile {
 				"$ref": "file://./sub3.schema.json"
 			},
 			"maxSheep": {
-				"type": "array",
-				"items": {
-					"$ref": "file://./sub3.schema.json"
+				"$id": "Sheep",
+				"title": "Sheep",
+				"type": "object",
+				"properties": {
+					"flat": {
+						"$ref": "file://./sub3.schema.json"
+					},
+					"nested": {
+						"type": "array",
+						"items": {
+							"$ref": "file://./sub3.schema.json"
+						}
+					}
 				}
 			}
 		},
