@@ -163,6 +163,7 @@ func TestJsonSubSchema() JSonFile {
 			"sub": {
 				"type": "string"
 			},
+
 			"sub-down": {
 				"$ref": "file://wurst/sub2.schema.json"
 			}
@@ -190,6 +191,12 @@ func Sub2Schema() JSonFile {
 		"properties": {
 			"bar": {
 				"$ref": "file://./sub3.schema.json"
+			},
+			"maxSheep": {
+				"type": "array",
+				"items": {
+					"$ref": "file://./sub3.schema.json"
+				}
 			}
 		},
 		"required": ["bar"]
@@ -720,5 +727,32 @@ func WriteTestSchema(cfg *GeneratorConfig) string {
 	schemaFile = path.Join(cfg.OutputDir, "nested_type.schema.json")
 	os.WriteFile(schemaFile, bytes, 0644)
 	fmt.Println("Wrote schema to -> ", schemaFile)
+
+	jsonSchema = BaseSchema().JSONProperty
+	bytes, _ = json.MarshalIndent(jsonSchema, "", "  ")
+	schemaFile = path.Join(cfg.OutputDir, "base.schema.json")
+	os.WriteFile(schemaFile, bytes, 0644)
+	fmt.Println("Wrote schema to -> ", schemaFile)
+
+	jsonSchema = TestJsonSubSchema().JSONProperty
+	bytes, _ = json.MarshalIndent(jsonSchema, "", "  ")
+	schemaFile = path.Join(cfg.OutputDir, "sub.schema.json")
+	os.WriteFile(schemaFile, bytes, 0644)
+	fmt.Println("Wrote schema to -> ", schemaFile)
+
+	jsonSchema = Sub2Schema().JSONProperty
+	bytes, _ = json.MarshalIndent(jsonSchema, "", "  ")
+	schemaFile = path.Join(cfg.OutputDir, "wurst/sub2.schema.json")
+	os.MkdirAll(path.Dir(schemaFile), 0755)
+	os.WriteFile(schemaFile, bytes, 0644)
+	fmt.Println("Wrote schema to -> ", schemaFile)
+
+	jsonSchema = Sub3Schema().JSONProperty
+	bytes, _ = json.MarshalIndent(jsonSchema, "", "  ")
+	schemaFile = path.Join(cfg.OutputDir, "wurst/sub3.schema.json")
+	os.MkdirAll(path.Dir(schemaFile), 0755)
+	os.WriteFile(schemaFile, bytes, 0644)
+	fmt.Println("Wrote schema to -> ", schemaFile)
+
 	return schemaFile
 }

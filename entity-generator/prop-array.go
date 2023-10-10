@@ -63,7 +63,7 @@ func (b *PropertyArrayBuilder) FromJson(js JSONDict) *PropertyArrayBuilder {
 	b.MinItems = getFromAttributeOptionalInt(js, "minItems")
 
 	builder := NewPropertiesBuilder(b._propertiesBuilder.ctx)
-	builder.parentFileName = b._propertiesBuilder.filename
+	builder.parentFileName = b._propertiesBuilder.parentFileName
 	b.Items = builder.FromJson(js.Get("items").(JSONDict)).Build()
 	return b
 }
