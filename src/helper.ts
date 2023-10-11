@@ -43,10 +43,10 @@ function asDottedPath(path: WuestenReflection[]): string {
     .join(".");
 }
 
+const enc = new TextEncoder();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] = []): Promise<Uint8Array> {
+export function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] = []): Uint8Array {
   const mac = hmac.create(sha1, "");
-  const enc = new TextEncoder();
   ref.Apply((path, ref) => {
     const dotted = asDottedPath(path);
     for (const ex of exclude) {

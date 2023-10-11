@@ -27,14 +27,14 @@ const ref: helperTest = {
 };
 
 describe("helper", () => {
-  it("toHash Exclude String", async () => {
-    const hash = await toHash(helperTestGetter(ref), ["helperTest.sub.helperTestSub.bool"]);
+  it("toHash Exclude String", () => {
+    const hash = toHash(helperTestGetter(ref), ["helperTest.sub.helperTestSub.bool"]);
     // echo -n 'testtest1test2a14.200000000000000e+1k12023-03-30T00:00:00.000Z1.100000000000000e+04.200000000000000e+1himurks' | openssl sha1 -hmac ""
     expect(Buffer.from(hash).toString("hex")).toEqual("c9bcb79097342ddec7af9cba01e55a545c6da696");
   });
 
   it("toHash Exclude Regex", async () => {
-    const hash = await toHash(helperTestGetter(ref), [/.*\.bool$/]);
+    const hash = toHash(helperTestGetter(ref), [/.*\.bool$/]);
     // echo -n 'testtest1test2a14.200000000000000e+1k12023-03-30T00:00:00.000Z1.100000000000000e+04.200000000000000e+1himurks' | openssl sha1 -hmac ""
     expect(Buffer.from(hash).toString("hex")).toEqual("c9bcb79097342ddec7af9cba01e55a545c6da696");
   });
