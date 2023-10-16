@@ -13,6 +13,8 @@ func MainAction(args []string) {
 	var cfg eg.GeneratorConfig
 	pflag.StringVar(&cfg.OutputDir, "output-dir", "./", "output directory")
 	pflag.StringArrayVar(&cfg.InputFiles, "input-file", []string{}, "input files")
+	pflag.StringVar(&cfg.BaseDir, "base-dir", "", "base-dir of the input-files")
+	pflag.StringVar(&cfg.PackageBase, "package-base", "./", "package base of the generated files(default node relative)")
 	pflag.BoolVar(&cfg.WriteTestSchema, "write-test-schema", false, "write test schema")
 	eg.FromArgs("eg-", &cfg.EntityCfg)
 

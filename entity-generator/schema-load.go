@@ -62,6 +62,14 @@ func NewSchemaRegistry(loaders ...SchemaLoader) *SchemaRegistry {
 	}
 }
 
+func StripSchema(str string) string {
+	fname := str
+	if strings.HasPrefix(str, "file://") {
+		fname = str[len("file://"):]
+	}
+	return fname
+}
+
 func (sr *SchemaRegistry) EnsureJSONProperty(parentFname rusty.Optional[string], inRef string) rusty.Result[JSonFile] {
 	ref := strings.TrimSpace(inRef)
 	if ref[0] == '#' {
@@ -70,8 +78,8 @@ func (sr *SchemaRegistry) EnsureJSONProperty(parentFname rusty.Optional[string],
 	if !strings.HasPrefix(ref, "file://") {
 		return rusty.Err[JSonFile](fmt.Errorf("only file:// ref supported"))
 	}
-	fname := ref[len("file://"):]
-	if !strings.HasSuffix(fname, "/") {
+	fname := StripSchema(ref)
+	if !strings.HasPrefix(fname, "/") {
 		dir := "./"
 		if sr.BaseDir.IsSome() {
 			dir = sr.BaseDir.Value()

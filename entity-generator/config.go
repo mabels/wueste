@@ -13,6 +13,8 @@ type Config struct {
 type GeneratorConfig struct {
 	OutputDir       string
 	InputFiles      []string
+	BaseDir         string
+	PackageBase     string
 	EntityCfg       Config
 	WriteTestSchema bool
 }

@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/iancoleman/strcase"
 	eg "github.com/mabels/wueste/entity-generator"
 	"github.com/mabels/wueste/entity-generator/rusty"
 	"github.com/mabels/wueste/entity-generator/wueste"
@@ -696,7 +698,7 @@ func reverse[S ~[]E, E any](s S) S {
 	return s
 }
 
-func getObjectName(p eg.Property, namess ...[]string) string {
+func getObjectNames(p eg.Property, namess ...[]string) []string {
 	names := []string{}
 	if len(namess) > 0 {
 		names = namess[0]
@@ -707,22 +709,65 @@ func getObjectName(p eg.Property, namess ...[]string) string {
 			name = p.(eg.PropertyObject).Title()
 		}
 		// fmt.Printf("getObjectName NoParent %s\n", name)
-		return strings.Join(reverse(append(names, name)), "$")
+		return reverse(append(names, name))
+	}
+	if p.Ref().IsSome() && p.Type() == eg.OBJECT {
+		return reverse(append(names, p.(eg.PropertyObject).Title()))
 	}
 	if p.Type() != eg.OBJECT {
-		return getObjectName(p.Meta().Parent().Value(), names)
+		return getObjectNames(p.Meta().Parent().Value(), names)
 	}
 	title := p.(eg.PropertyObject).Title()
 	// fmt.Printf("getObjectName Parent %s\n", title)
 	// if p.Meta().Ref.IsSome() {
 	// return strings.Join(append(names, title), "$")
 	// }
-	return getObjectName(p.Meta().Parent().Value(), append(names, title))
+	return getObjectNames(p.Meta().Parent().Value(), append(names, title))
+}
+
+func getObjectName(p eg.Property, namess ...[]string) string {
+	return strings.Join(getObjectNames(p, namess...), "$")
+}
+
+func sumRef(baseDir string, refs []string) string {
+	paths := []string{}
+	for _, ref := range refs {
+		fname := filepath.Dir(eg.StripSchema(ref))
+		paths = append(paths, fname)
+		if strings.HasPrefix(fname, "/") {
+			break
+		}
+	}
+	sumPath := ""
+	prevPath := ""
+	paths = reverse(paths)
+	if len(paths) > 0 {
+		baseDir = path.Join(baseDir, ".")
+		if !strings.HasPrefix(paths[0], baseDir) {
+			paths[0] = baseDir
+		}
+	}
+	for _, pelem := range paths {
+		sumPath = path.Join(prevPath, pelem)
+		prevPath = sumPath
+	}
+	return sumPath
+}
+
+func getRef(prop eg.Property, refs []string) []string {
+	if prop.Ref().IsSome() {
+		refs = append(refs, prop.Ref().Value())
+	}
+	if prop.Meta().Parent().IsSome() {
+		return getRef(prop.Meta().Parent().Value(), refs)
+	}
+	return refs
 }
 
 func getObjectFileName(prop eg.Property) string {
 	fname := getObjectName(prop)
-	fname = fmt.Sprintf("./%s", strings.ToLower(fname))
+
+	fname = fmt.Sprintf("./%s", fname)
 	return fname
 }
 
@@ -924,6 +969,7 @@ func (g *tsGenerator) generateLocalArrays(prop eg.PropertyObject, pa eg.Property
 
 func (g *tsGenerator) generateSchemaExport(prop eg.Property, baseName string) {
 	g.generateReflectionGetter(prop, baseName)
+	// g.generateReflectionSetter(prop, baseName)
 	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenReflection")
 	g.bodyWriter.WriteBlock(g.lang.Export(g.lang.Const(g.lang.ReturnType(
 		g.lang.PublicName(baseName, "Schema"),
@@ -1300,16 +1346,45 @@ type tsGenerator struct {
 	bodyWriter *eg.ForIfWhileLangWriter
 }
 
+func toFileName(prop eg.Property) string {
+	filenames := getObjectNames(prop, nil)
+	for i, filename := range filenames {
+		filenames[i] = strcase.ToKebab(filename)
+	}
+	filename := strings.Join(filenames, "$")
+	// if prop.Ref().IsSome() {
+	// 	if len(filenames) > 0 {
+	// 		filename = filenames[len(filenames)-1]
+	// 	} else {
+	// 		filename = "WHAT"
+	// 	}
+	// }
+	return filename
+}
+
+func nodeJoin(base string, node string) string {
+	out := filepath.Join(base, node)
+	if strings.HasPrefix(base, "./") && !strings.HasPrefix(out, "../") {
+		out = "./" + out
+	}
+	return out
+}
+
 func (g *tsGenerator) generatePropertyObject(prop eg.PropertyObject, sl eg.PropertyCtx) {
 	g.generateClass(prop)
 	g.generateJSONDict(prop)
 	g.generateBuilder(prop)
 	g.generateFactory(prop)
 
-	os.MkdirAll(g.cfg.OutputDir, 0755)
+	outDir, _ := filepath.Abs(g.cfg.OutputDir)
 
-	fname := filepath.Join(g.cfg.OutputDir, getObjectFileName(prop)+".ts")
-	tmpFname := filepath.Join(g.cfg.OutputDir, "."+getObjectFileName(prop)+uuid.New().String()+".ts")
+	filename := toFileName(prop)
+	filename = filepath.Join(sumRef("", getRef(prop, nil)), filename)
+
+	fname, _ := filepath.Abs(filepath.Join(outDir, filename+".ts"))
+	os.MkdirAll(filepath.Dir(fname), 0755)
+
+	tmpFname := filepath.Join(outDir, "/."+filename+uuid.New().String()+".gen.ts")
 
 	fmt.Printf("Generate: %s -> %s\n", prop.Meta().FileName().Value(), fname)
 	wr, err := os.OpenFile(tmpFname, os.O_CREATE|os.O_WRONLY, 0644)
@@ -1324,19 +1399,19 @@ func (g *tsGenerator) generatePropertyObject(prop eg.PropertyObject, sl eg.Prope
 
 	header := eg.NewForIfWhileLangWriter(eg.ForIfWhileLangWriter{OfsIndent: g.cfg.EntityCfg.Indent})
 	if len(g.includes.ActiveTypes()) > 0 {
-		myFname := getObjectFileName(prop)
+		// myFname := getObjectFileName(prop)
 		for _, externalTyp := range g.includes.ActiveTypes() {
-			filename := externalTyp.tsFileName
-			if filename == myFname {
-				continue
-			}
+			// filename := externalTyp.tsFileName
+			// if filename == myFname {
+			// 	continue
+			// }
 			// if externalTyp.activated && externalTyp.property.IsSome() {
 			// 	filename = getObjectFileName(externalTyp.property.Value())
 			// }
 			// getObjectName(include.property)
 			if len(externalTyp.Types()) <= 3 {
 				header.FormatLine("import { %s } from %s;", strings.Join(externalTyp.Types(), ", "),
-					g.lang.Quote(filename))
+					g.lang.Quote(nodeJoin(g.cfg.PackageBase, filename)))
 			} else {
 				header.WriteBlock("", "import", func(wr *eg.ForIfWhileLangWriter) {
 					for idx, t := range externalTyp.Types() {
@@ -1346,7 +1421,7 @@ func (g *tsGenerator) generatePropertyObject(prop eg.PropertyObject, sl eg.Prope
 						}
 						wr.FormatLine("%s%s", t, comma)
 					}
-				}, " {", fmt.Sprintf("} from %s;", g.lang.Quote(filename)))
+				}, " {", fmt.Sprintf("} from %s;", g.lang.Quote(nodeJoin(g.cfg.PackageBase, filename))))
 			}
 		}
 		header.WriteLine()
@@ -1366,10 +1441,11 @@ type externalType struct {
 	// toGenerate bool
 	// activated  bool
 	// prefix     string
+	key            string
 	schemaFileName string
-	tsFileName     string
-	types          map[string]*string
-	fileProperty   rusty.Optional[eg.Property]
+	// tsFileName     string
+	types        map[string]*string
+	fileProperty rusty.Optional[eg.Property]
 }
 
 type ImportType struct {
@@ -1407,14 +1483,16 @@ func (g *externalTypes) AddProperty(typ string, prop eg.Property) {
 	// 	// po = prop.(eg.PropertyObject)
 	// 	o_ok = true
 	// }
-	fileName := getObjectFileName(prop)
+	fileName := sumRef("", getRef(prop, nil))
 	et, ok := g.types[fileName]
 	if !ok {
 		et = &externalType{
 			// toGenerate:     true,
 			schemaFileName: prop.Meta().FileName().Value(),
-			tsFileName:     fileName,
-			types:          make(map[string]*string),
+			key:            fileName,
+			// tsFileName:     fileName,
+			fileProperty: rusty.Some(prop),
+			types:        make(map[string]*string),
 		}
 		g.types[fileName] = et
 	}
@@ -1440,8 +1518,8 @@ func (g *externalTypes) AddType(fileName, typeName string, optAlias ...string) *
 	if !ok {
 		et = &externalType{
 			// toGenerate: false,
-			tsFileName: fileName,
-			types:      make(map[string]*string),
+			key:   fileName,
+			types: make(map[string]*string),
 		}
 		g.types[fileName] = et
 	}
@@ -1457,7 +1535,7 @@ func (g *externalTypes) ActiveTypes() []*externalType {
 		// }
 	}
 	sort.Slice(atyp, func(i, j int) bool {
-		return strings.Compare(atyp[i].tsFileName, atyp[j].tsFileName) < 0
+		return strings.Compare(atyp[i].key, atyp[j].key) < 0
 	})
 	return atyp
 }

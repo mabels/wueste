@@ -185,7 +185,7 @@ func Sub2Schema() JSonFile {
 	"jsonProperty": {
 		"$id":         "http://example.com/sub2.schema.json",
 		"$schema":     "http://json-schema.org/draft-07/schema#",
-		"title":       "Result",
+		"title":       "WurstSub2",
 		"type":        "object",
 		"description": "Sub2 description",
 		"properties": {
@@ -225,7 +225,7 @@ func Sub3Schema() JSonFile {
 	"jsonProperty": {
 		"$id":         "http://example.com/sub3.schema.json",
 		"$schema":     "http://json-schema.org/draft-07/schema#",
-		"title":       "Sub3",
+		"title":       "WurstSub3",
 		"type":        "object",
 		"description": "Sub3 description",
 		"properties": {

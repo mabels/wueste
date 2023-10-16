@@ -85,6 +85,7 @@ func TestMainAction(t *testing.T) {
 	cfg := getConfig()
 	MainAction([]string{
 		"--write-test-schema", "true",
+		// "--base-dir", "../../src/generated/go",
 		"--input-file", "../../src/generated/go/base.schema.json",
 		"--input-file", "../../src/generated/go/simple_type.schema.json",
 		"--input-file", "../../src/generated/go/nested_type.schema.json",
@@ -92,4 +93,18 @@ func TestMainAction(t *testing.T) {
 		"--eg-from-result", cfg.EntityCfg.FromResult,
 		"--output-dir", "../../src/generated/go",
 	})
+}
+
+func TestSumPath(t *testing.T) {
+	assert.Equal(t, "", sumRef("./baseDir/huhu", nil))
+	assert.Equal(t, "baseDir/huhu", sumRef("./baseDir/huhu", []string{"file:///max/abs/doof"}))
+	assert.Equal(t, "baseDir/huhu", sumRef("./baseDir/huhu", []string{"file://./max/abs/doof"}))
+	assert.Equal(t, "baseDir/huhu", sumRef("./baseDir/huhu", []string{"file://max/abs/doof"}))
+
+	assert.Equal(t, "baseDir/huhu", sumRef("./baseDir/huhu", []string{"file://./wurst", "file:///max/abs/doof", "file:///total/doof"}))
+	assert.Equal(t, "baseDir/huhu", sumRef("./baseDir/huhu", []string{"file://wurst", "file:///max/abs/doof", "file:///total/doof"}))
+	assert.Equal(t, "baseDir/huhu/lox", sumRef("./baseDir/huhu", []string{"file://./lox/mmm", "file://murks", "file://./baseDir/huhu/doof"}))
+	assert.Equal(t, "baseDir/huhu/lox", sumRef("./baseDir/huhu", []string{"file://lox/mmm", "file://./murks", "file://baseDir/huhu/doof"}))
+	assert.Equal(t, "baseDir/huhu/total/abs", sumRef("./baseDir/huhu", []string{"file://./wurst", "file://abs/doof", "file://baseDir/huhu/total/doof"}))
+	assert.Equal(t, "baseDir/huhu/total/abs", sumRef("./baseDir/huhu", []string{"file://wurst", "file://abs/doof", "file://baseDir/huhu/total/doof"}))
 }
