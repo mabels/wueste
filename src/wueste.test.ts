@@ -10,6 +10,7 @@ import {
   WuestenEncoder,
   WuestenReflection,
   WuestenRecordGetter,
+  WuestenGetterBuilder,
 } from "./wueste";
 
 it("WuesteIterate", () => {
@@ -326,7 +327,7 @@ interface Entity {
   test: number;
 }
 
-class Builder implements WuestenBuilder<Entity, Entity, Entity> {
+class Builder implements WuestenBuilder<Entity, Entity> {
   Reflection(): WuestenReflection {
     throw new Error("Method not implemented.");
   }
@@ -351,11 +352,6 @@ class Builder implements WuestenBuilder<Entity, Entity, Entity> {
     this._test = wuesten.AttributeInteger({ jsonname: "test", varname: "Test", base });
     this._test.CoerceAttribute(param);
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  AsPayload(encoder: WuestenEncoder<Entity>): Result<Payload> {
-    throw new Error("Method not implemented.");
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   SetNameSuffix(...idxs: number[]): void {
     throw new Error("Method not implemented.");
@@ -412,12 +408,23 @@ class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
     throw new Error("Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  FromPayload(val: Payload, decoder: WuestenDecoder<Entity>): Result<Entity> {
+  FromPayload(val: Payload, decoder: WuestenDecoder): Result<Entity> {
+    throw new Error("Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ToPayload(typ: Entity, encoder?: WuestenEncoder): Result<Payload, Error> {
     throw new Error("Method not implemented.");
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Clone(typ: Entity): Result<Entity, Error> {
+    throw new Error("Method not implemented.");
+  }
+  Schema(): WuestenReflection {
+    throw new Error("Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Getter(typ: Entity, base: WuestenReflection[]): WuestenGetterBuilder {
     throw new Error("Method not implemented.");
   }
   // Schema(): WuestenSchema {

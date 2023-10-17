@@ -3,6 +3,7 @@
 import { NestedTypeFactory, NestedTypeGetter } from "../../src/generated/go/nestedtype";
 import { NestedType$Payload, NestedType$PayloadFactory } from "../../src/generated/go/nestedtype$payload";
 import { SimpleTypeFactory, SimpleTypeObject, SimpleTypeParam } from "../../src/generated/go/simpletype";
+import { WuesteJsonBytesDecoder, WuesteJsonBytesEncoder, WuestenReflectionObject } from "../../src/wueste";
 
 const simpleTypeParam: SimpleTypeParam = {
   bool: true,
@@ -141,10 +142,10 @@ it(`SimpleType-Builder Object-JSON-Object`, () => {
   const builder = SimpleTypeFactory.Builder();
   expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
   builder.float64("42.43");
-  const payload = builder.AsPayload().unwrap();
+  const payload = SimpleTypeFactory.ToPayload(builder.Get(), WuesteJsonBytesEncoder).unwrap();
   expect(payload.Type).toBe("https://SimpleType");
   const fromJson = SimpleTypeFactory.Builder();
-  fromJson.Coerce(JSON.parse(new TextDecoder().decode(payload.Data)));
+  fromJson.Coerce(JSON.parse(new TextDecoder().decode(payload.Data as Uint8Array)));
   expect(fromJson.Get().unwrap()).toEqual(builder.Get().unwrap());
   expect(fromJson.Get().unwrap().float64).toEqual(42.43);
 });
@@ -152,20 +153,32 @@ it(`SimpleType-Builder Object-JSON-Object`, () => {
 it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   const builder = SimpleTypeFactory.Builder();
   expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
-  const payload = builder.AsPayload().unwrap();
-  const fromPayload = SimpleTypeFactory.FromPayload(payload).unwrap();
+  const payload = SimpleTypeFactory.ToPayload(builder.Get(), WuesteJsonBytesEncoder).unwrap();
+  const fromPayload = SimpleTypeFactory.FromPayload(payload, WuesteJsonBytesDecoder).unwrap();
   expect(fromPayload).toEqual(builder.Get().unwrap());
 });
 
 it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   const builder = SimpleTypeFactory.Builder();
   expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
-  const payload = builder.AsPayload().unwrap();
+  const payload = SimpleTypeFactory.ToPayload(builder.Get().unwrap(), WuesteJsonBytesEncoder).unwrap();
   // const fromPayload = SimpleTypeFactory.Builder();
   (payload as { Type: string }).Type = "Kaput";
   expect(SimpleTypeFactory.FromPayload(payload).unwrap_err().message).toEqual(
     "WuestePayload Type mismatch:[SimpleType,https://SimpleType,SimpleType] != Kaput",
   );
+});
+
+it(`Factory Contains Schema`, () => {
+  expect((SimpleTypeFactory.Schema() as WuestenReflectionObject).id).toEqual("https://SimpleType");
+});
+
+it(`Factory Contains Schema`, () => {
+  const builder = SimpleTypeFactory.Builder();
+  expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
+  const fn = jest.fn();
+  SimpleTypeFactory.Getter(builder.Get().unwrap()).Apply(fn);
+  expect(fn).toBeCalledTimes(30);
 });
 
 it(`SimpleType-Builder Object-Clone`, () => {

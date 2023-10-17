@@ -1,26 +1,31 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Result } from "./result";
 
 export interface Payload {
   readonly Type: string;
-  readonly Data: Uint8Array;
+  readonly Data: unknown;
 }
 
-export type WuestenEncoder<T> = (payload: T) => Result<Uint8Array>;
+export type WuestenEncoder = (payload: unknown) => Result<unknown>;
+
 const txtEncoder = new TextEncoder();
-export function WuesteJsonEncoder<T>(payload: T): Result<Uint8Array> {
+export function WuesteJsonBytesEncoder(payload: unknown): Result<unknown> {
   return Result.Ok(txtEncoder.encode(JSON.stringify(payload)));
 }
 
-export type WuestenDecoder<T> = (payload: Uint8Array) => Result<T>;
+export type WuestenDecoder = (payload: unknown) => Result<unknown>;
 const txtDecoder = new TextDecoder();
-export function WuesteJsonDecoder<T>(payload: Uint8Array): Result<T> {
+export function WuesteJsonBytesDecoder(payload: unknown): Result<unknown> {
   try {
-    const str = txtDecoder.decode(payload);
+    const str = txtDecoder.decode(payload as Uint8Array);
     return Result.Ok(JSON.parse(str));
   } catch (err) {
     return Result.Err(err as Error);
   }
 }
+
+export const WuestenJSONPassThroughEncoder = (m: unknown) => Result.Ok(m as unknown);
+export const WuestenJSONPassThroughDecoder = (m: unknown) => Result.Ok(m as unknown);
 
 export interface WuestenAttributeParameter<T> {
   readonly base: string;
@@ -339,22 +344,24 @@ export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undef
 //   readonly Title: string;
 // }
 
-export interface WuestenBuilder<T, I, O> extends WuestenAttribute<T, I> {
+export interface WuestenBuilder<T, I> extends WuestenAttribute<T, I> {
   Get(): Result<T>;
-  AsPayload(encoder?: WuestenEncoder<O>): Result<Payload>;
 }
 
 export interface WuestenFactory<T, I, O> {
-  Builder(param?: WuestenAttributeParameter<I>): WuestenBuilder<T, I, O>;
-  FromPayload(val: Payload, decoder?: WuestenDecoder<I>): Result<T>;
+  Builder(param?: WuestenAttributeParameter<I>): WuestenBuilder<T, I>;
+  FromPayload(val: Payload, decoder?: WuestenDecoder): Result<T>;
+  ToPayload(typ: T, encoder?: WuestenEncoder): Result<Payload>;
   ToObject(typ: T): O; // WuestenObject; keys are json notation
   Clone(typ: T): Result<T>;
+  Schema(): WuestenReflection;
+  Getter(typ: T, base: WuestenReflection[]): WuestenGetterBuilder;
 }
 
 export type WuestenObject = Record<string, unknown>;
 
 export type WuestenFNGetBuilder<T> = (b: T | undefined) => unknown;
-export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, WuestenObject, WuestenObject> {
+export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, WuestenObject> {
   readonly param: WuestenAttributeParameter<WuestenObject>;
   constructor(param?: WuestenAttributeParameter<WuestenObject>) {
     this.param = param || {
@@ -371,10 +378,6 @@ export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, Wuest
     throw new Error("WuestenObjectBuilder:Get Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  AsPayload(encoder?: WuestenEncoder<WuestenObject>): Result<Payload, Error> {
-    throw new Error("WuestenObjectBuilder:AsPayload Method not implemented.");
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   CoerceAttribute(val: unknown): Result<WuestenObject, Error> {
     throw new Error("WuestenObjectBuilder:CoerceAttribute Method not implemented.");
   }
@@ -387,14 +390,16 @@ export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, Wuest
 
 export class WuestenObjectFactoryImpl implements WuestenFactory<WuestenObject, WuestenObject, WuestenObject> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Builder(
-    param?: WuestenAttributeParameter<WuestenObject> | undefined,
-  ): WuestenBuilder<WuestenObject, WuestenObject, WuestenObject> {
+  Builder(param?: WuestenAttributeParameter<WuestenObject> | undefined): WuestenBuilder<WuestenObject, WuestenObject> {
     return new WuestenObjectBuilder(param);
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  FromPayload(val: Payload, decoder?: WuestenDecoder<WuestenObject> | undefined): Result<WuestenObject, Error> {
+  FromPayload(val: Payload, decoder?: WuestenDecoder): Result<WuestenObject, Error> {
     throw new Error("WuestenObjectFactoryImpl:FromPayload Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ToPayload(typ: WuestenObject, encoder?: WuestenEncoder): Result<Payload, Error> {
+    throw new Error("WuestenObjectFactoryImpl:ToPayload Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ToObject(typ: WuestenObject): WuestenObject {
@@ -404,6 +409,14 @@ export class WuestenObjectFactoryImpl implements WuestenFactory<WuestenObject, W
   Clone(typ: WuestenObject): Result<WuestenObject, Error> {
     throw new Error("WuestenObjectFactoryImpl:Clone Method not implemented.");
   }
+  Schema(): WuestenReflection {
+    throw new Error("WuestenObjectFactoryImpl:Schema not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Getter(typ: WuestenObject, base: WuestenReflection[]): WuestenGetterBuilder {
+    throw new Error("WuestenObjectFactoryImpl:Getter not implemented.");
+  }
+
   // FromPayload(val: Payload, decoder?: WuestenDecoder<WuestenObject> =  WuesteJsonDecoder<Partial<WuestenObject>|Partial<WuestenObject>|Partial<WuestenObject>>)): Result<WuestenObject, Error> {
   //     if (!(val.Type === "https://NestedType" || val.Type === "NestedType")) {
   //       return Result.Err(new Error(`WuestePayload Type mismatch:[https://NestedType,NestedType] != ${val.Type}`));

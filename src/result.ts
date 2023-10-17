@@ -46,6 +46,10 @@ export abstract class Result<T, E = Error> {
     }
     return new ResultError(t);
   }
+  static Is<T>(t: unknown): t is Result<T> {
+    return t instanceof ResultOK || t instanceof ResultError;
+  }
+
   abstract is_ok(): boolean;
   abstract is_err(): boolean;
   // abstract err(): E;

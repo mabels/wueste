@@ -490,11 +490,10 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 				wr.FormatLine("return %s", g.lang.Call(g.lang.PublicName(getObjectName(prop), "ToObject"), "obj"))
 			})
 
-			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteJsonDecoder")
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenJSONPassThroughDecoder")
 			wr.WriteBlock("",
 				g.lang.ReturnType(
-					g.lang.Call("FromPayload", g.lang.ReturnType("val", "WuestePayload"),
-						g.lang.Generics("decoder = WuesteJsonDecoder", partialType)),
+					g.lang.Call("FromPayload", g.lang.ReturnType("val", "WuestePayload"), "decoder = WuestenJSONPassThroughDecoder"),
 					g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop)))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					ids := []string{getObjectName(prop)}
@@ -520,7 +519,37 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 					wr.WriteLine(
 						g.lang.AssignDefault("const builder",
 							g.lang.New(g.lang.PublicName(getObjectName(prop), "Builder"))))
-					wr.WriteLine("return builder.Coerce(data.unwrap());")
+					wr.FormatLine("return builder.Coerce(data.unwrap() as %s);", partialType)
+				})
+
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenJSONPassThroughEncoder")
+			name := g.lang.PublicName(getObjectName(prop))
+			wr.WriteBlock("",
+				g.lang.ReturnType(
+					g.lang.Call("ToPayload", g.lang.ReturnType("val", g.lang.OrType(g.lang.Generics("WuesteResult", name), name)),
+						"encoder = WuestenJSONPassThroughEncoder"), g.lang.Generics("WuesteResult", "WuestePayload")),
+				func(wr *eg.ForIfWhileLangWriter) {
+					wr.FormatLine("let toEncode: %s;", name)
+					wr.WriteIf("(WuesteResult.Is(val))", func(wr *eg.ForIfWhileLangWriter) {
+						wr.WriteIf("(val.is_err())", func(wr *eg.ForIfWhileLangWriter) {
+							wr.FormatLine("return WuesteResult.Err(val.unwrap_err());")
+						})
+						wr.FormatLine("toEncode = val.unwrap();")
+					}, func(wr *eg.ForIfWhileLangWriter) {
+						wr.FormatLine("toEncode = val;")
+					})
+					wr.FormatLine("const data = encoder(%s.ToObject(toEncode))", g.lang.PublicName(getObjectName(prop), "Factory"))
+					wr.WriteBlock("if", "(data.is_err())", func(wr *eg.ForIfWhileLangWriter) {
+						wr.FormatLine("return WuesteResult.Err(data.unwrap_err());")
+					})
+					wr.WriteBlock("return", "WuesteResult.Ok", func(wr *eg.ForIfWhileLangWriter) {
+						id := prop.Id()
+						if id == "" {
+							id = prop.Title()
+						}
+						wr.FormatLine("Type: %s,", g.lang.Quote(id))
+						wr.FormatLine("Data: data.unwrap()")
+					}, "({", "});")
 				})
 
 			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result", "WuesteResult")
@@ -536,6 +565,16 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 								g.lang.CallDot("oth", g.lang.PublicName(pi.Name())))))
 				}
 				wr.WriteLine("return builder.Get();")
+			})
+
+			wr.WriteBlock("", g.lang.ReturnType(
+				g.lang.Call("Schema"), "WuestenReflection"), func(wr *eg.ForIfWhileLangWriter) {
+				wr.FormatLine("return %s;", g.lang.PublicName(getObjectName(prop), "Schema"))
+			})
+			wr.WriteBlock("", g.lang.ReturnType(
+				g.lang.Call("Getter", g.lang.ReturnType("typ", g.lang.PublicName(getObjectName(prop))),
+					g.lang.ReturnType("base", "WuestenReflection[] = []")), "WuestenGetterBuilder"), func(wr *eg.ForIfWhileLangWriter) {
+				wr.FormatLine("return %s", g.lang.Call(g.lang.PublicName(getObjectName(prop), "Getter"), "typ", "base"))
 			})
 
 		})
@@ -1155,7 +1194,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttr")
 	g.lang.Class(g.bodyWriter, "export ", g.lang.Implements(
 		g.lang.Extends(className, g.lang.Generics("WuestenAttr", genericType...)),
-		g.lang.Generics("WuestenBuilder", genericType[0], genericType[1], g.lang.PublicName(getObjectName(prop), "Object"))), prop,
+		g.lang.Generics("WuestenBuilder", genericType[0], genericType[1])), prop,
 		func(pi eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {
 			paramTyp := g.lang.Type(g.lang.AsType(pi.Property(), WithAddCoerce()), false)
 			fnGetBuilderType := paramTyp
@@ -1264,31 +1303,6 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 				wr.WriteLine(g.lang.Return(g.lang.Call("this._attr.Get", "")))
 			})
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "Payload", "WuestePayload")
-			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteJsonEncoder")
-			wr.WriteBlock("",
-				g.lang.ReturnType(
-					g.lang.Call("AsPayload",
-						g.lang.Generics("encoder = WuesteJsonEncoder", g.lang.PublicName(getObjectName(prop), "Object"))),
-					g.lang.Generics("WuesteResult", "WuestePayload")),
-				func(wr *eg.ForIfWhileLangWriter) {
-					wr.FormatLine("const val = this.Get();")
-					wr.WriteBlock("if", "(val.is_err())", func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return WuesteResult.Err(val.unwrap_err());")
-					})
-					wr.FormatLine("const data = encoder(%s.ToObject(val.unwrap()))", g.lang.PublicName(getObjectName(prop), "Factory"))
-					wr.WriteBlock("if", "(data.is_err())", func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return WuesteResult.Err(data.unwrap_err());")
-					})
-					wr.WriteBlock("return", "WuesteResult.Ok", func(wr *eg.ForIfWhileLangWriter) {
-						id := prop.Id()
-						if id == "" {
-							id = prop.Title()
-						}
-						wr.FormatLine("Type: %s,", g.lang.Quote(id))
-						wr.FormatLine("Data: data.unwrap()")
-					}, "({", "});")
-				})
-
 		})
 
 }
