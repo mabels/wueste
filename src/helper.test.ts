@@ -1,4 +1,4 @@
-import { fromEnv, toHash } from "./helper";
+import { fromEnv, walk, toHash } from "./helper";
 import { helperTest, helperTestFactory, helperTestGetter } from "./generated/wasm/helpertest";
 import { WuestenRetVal } from "./wueste";
 import { helperTest$helperTestSubBuilder, helperTest$helperTestSub$arrayBuilder } from "./generated/wasm/helpertest$helpertestsub";
@@ -27,6 +27,75 @@ const ref: helperTest = {
 };
 
 describe("helper", () => {
+  it("sanitize json dict", () => {
+    const strategy = (a: unknown) => {
+      if (typeof a === "number") {
+        // floats
+        if (a % 1) {
+          return "" + a;
+        }
+        if (a > 0x7fffffff) {
+          return "" + a;
+        }
+      } else if (typeof a === "bigint") {
+        return a.toString();
+      }
+      return a;
+    };
+    const param = [
+      1,
+      0x7fffffff,
+      0x80000000,
+      BigInt("11111111111111111111111111111111111111111"),
+      0.78,
+      {
+        a: 1,
+        b: BigInt("11111111111111111111111111111111111111111"),
+        c: 0.78,
+        d: { a: 1, b: BigInt("11111111111111111111111111111111111111111"), c: 0.78 },
+        e: [
+          1,
+          BigInt("11111111111111111111111111111111111111111"),
+          0.78,
+          {
+            a: 1,
+            b: BigInt("11111111111111111111111111111111111111111"),
+            c: 0.78,
+            d: { a: 1, b: BigInt("11111111111111111111111111111111111111111"), c: 0.78 },
+          },
+        ],
+      },
+    ];
+    const result = walk(param, strategy) as ArrayLike<unknown>;
+    // expect(param[4]).toBe(BigInt("11111111111111111111111111111111111111111"));
+    param.push(12);
+    expect(result.length).toEqual(param.length - 1);
+    expect(result).toEqual([
+      1,
+      2147483647,
+      "2147483648",
+      "11111111111111111111111111111111111111111",
+      "0.78",
+      {
+        a: 1,
+        b: "11111111111111111111111111111111111111111",
+        c: "0.78",
+        d: { a: 1, b: "11111111111111111111111111111111111111111", c: "0.78" },
+        e: [
+          1,
+          "11111111111111111111111111111111111111111",
+          "0.78",
+          {
+            a: 1,
+            b: "11111111111111111111111111111111111111111",
+            c: "0.78",
+            d: { a: 1, b: "11111111111111111111111111111111111111111", c: "0.78" },
+          },
+        ],
+      },
+    ]);
+    // expect(result).toEqual(param);
+  });
   it("toHash Exclude String", () => {
     const hash = toHash(helperTestGetter(ref), ["helperTest.sub.helperTestSub.bool"]);
     // echo -n 'testtest1test2a14.200000000000000e+1k12023-03-30T00:00:00.000Z1.100000000000000e+04.200000000000000e+1himurks' | openssl sha1 -hmac ""
