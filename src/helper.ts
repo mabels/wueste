@@ -43,6 +43,24 @@ function asDottedPath(path: WuestenReflection[]): string {
     .join(".");
 }
 
+export function walk<T>(a: T, strategy: (x: unknown) => unknown): unknown {
+  if (Array.isArray(a)) {
+    const x = [...a];
+    for (let i = 0; i < a.length; ++i) {
+      x[i] = walk(a[i], strategy); // (sanitize(a[i], strategy, a[i]));
+    }
+    return x;
+  }
+  if (typeof a === "object" && a !== null) {
+    const y: Record<string, unknown> = { ...a } as Record<string, unknown>;
+    for (const k of Object.keys(a)) {
+      y[k] = walk((a as Record<string, unknown>)[k] as unknown, strategy);
+    }
+    return y;
+  }
+  return strategy(a);
+}
+
 const enc = new TextEncoder();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] = []): Uint8Array {
