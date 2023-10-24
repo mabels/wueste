@@ -1,6 +1,49 @@
-export class ResultOK<T> implements Result<T, Error> {
+export class Result<T, E = Error> {
+  static Ok<T>(t: T): Result<T, Error> {
+    return new ResultOK(t);
+  }
+  static Err<T extends Error = Error>(t: T | string): Result<never, T> {
+    if (typeof t === "string") {
+      return new ResultError(new Error(t) as T);
+    }
+    return new ResultError(t);
+  }
+  static Is<T>(t: unknown): t is Result<T> {
+    return t instanceof ResultOK || t instanceof ResultError;
+  }
+
+  isOk(): boolean {
+    return this.is_ok();
+  }
+  isErr(): boolean {
+    return this.is_ok();
+  }
+
+  Ok(): T {
+    return this.unwrap();
+  }
+  Err(): E {
+    return this.unwrap_err();
+  }
+
+  is_ok(): boolean {
+    throw new Error("Not implemented");
+  }
+  is_err(): boolean {
+    throw new Error("Not implemented");
+  }
+  unwrap(): T {
+    throw new Error("Not implemented");
+  }
+  unwrap_err(): E {
+    throw new Error("Not implemented");
+  }
+}
+
+export class ResultOK<T> extends Result<T, Error> {
   private _t: T;
   constructor(t: T) {
+    super();
     this._t = t;
   }
   is_ok(): boolean {
@@ -17,9 +60,10 @@ export class ResultOK<T> implements Result<T, Error> {
   }
 }
 
-export class ResultError<T extends Error> implements Result<never, T> {
+export class ResultError<T extends Error> extends Result<never, T> {
   private _error: T;
   constructor(t: T) {
+    super();
     this._error = t;
   }
   is_ok(): boolean {
@@ -36,24 +80,6 @@ export class ResultError<T extends Error> implements Result<never, T> {
   }
 }
 
-export abstract class Result<T, E = Error> {
-  static Ok<T>(t: T): Result<T, Error> {
-    return new ResultOK(t);
-  }
-  static Err<T extends Error = Error>(t: T | string): Result<never, T> {
-    if (typeof t === "string") {
-      return new ResultError(new Error(t) as T);
-    }
-    return new ResultError(t);
-  }
-  static Is<T>(t: unknown): t is Result<T> {
-    return t instanceof ResultOK || t instanceof ResultError;
-  }
-
-  abstract is_ok(): boolean;
-  abstract is_err(): boolean;
-  // abstract err(): E;
-  // abstract unwrap(): T;
-  abstract unwrap(): T;
-  abstract unwrap_err(): E;
+export function IsResult<T>(t: unknown): t is Result<T> {
+  return t instanceof ResultOK || t instanceof ResultError;
 }
