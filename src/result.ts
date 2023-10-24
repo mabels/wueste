@@ -9,14 +9,14 @@ export class Result<T, E = Error> {
     return new ResultError(t);
   }
   static Is<T>(t: unknown): t is Result<T> {
-    return t instanceof ResultOK || t instanceof ResultError;
+    return t instanceof Result;
   }
 
   isOk(): boolean {
     return this.is_ok();
   }
   isErr(): boolean {
-    return this.is_ok();
+    return this.is_err();
   }
 
   Ok(): T {
@@ -78,8 +78,4 @@ export class ResultError<T extends Error> extends Result<never, T> {
   unwrap_err(): T {
     return this._error;
   }
-}
-
-export function IsResult<T>(t: unknown): t is Result<T> {
-  return t instanceof ResultOK || t instanceof ResultError;
 }
