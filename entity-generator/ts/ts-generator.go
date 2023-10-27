@@ -873,29 +873,33 @@ func getItemType(pa eg.PropertyArray) eg.Property {
 }
 
 func (g *tsGenerator) generateArrayCoerce(level int, rootArray, returnType string, prop eg.PropertyArray, wr *eg.ForIfWhileLangWriter) {
-	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteIterable")
+	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteToIterator")
+	resIter := fmt.Sprintf("r%d", level)
 	wr.FormatLine(g.lang.AssignDefault(
-		g.lang.Const(fmt.Sprintf("a%d", level)),
-		g.lang.Call(g.lang.Generics("WuesteIterable", g.lang.AsType(prop.Items())), rootArray)))
-	wr.WriteIf(fmt.Sprintf("(!a%d)", level), func(wr *eg.ForIfWhileLangWriter) {
-		wr.FormatLine("return WuesteResult.Err(\"it's not iterable on level %d\")", level)
+		g.lang.Const(resIter),
+		g.lang.Call(g.lang.Generics("WuesteToIterator", g.lang.AsType(prop.Items())), rootArray)))
+	wr.WriteIf(g.lang.RoundBrackets(g.lang.CallDot(resIter, g.lang.Call("is_err"))), func(wr *eg.ForIfWhileLangWriter) {
+		wr.FormatLine("return WuesteResult.Err(`it's not iterable on level %d:${%s}`)", level, g.lang.CallDot(resIter, g.lang.Call("unwrap_err")))
 	})
+	resultFmt := "s%d"
+	result := fmt.Sprintf(resultFmt, level)
 	wr.WriteLine(
 		g.lang.AssignDefault(
 			g.lang.Const(
-				g.lang.ReturnType(fmt.Sprintf("r%d", level), g.lang.AsType(prop))),
+				g.lang.ReturnType(result, g.lang.AsType(prop))),
 			"[]"))
-	// wr.WriteLine(
-	// 	g.lang.AssignDefault(
-	// 		g.lang.Let(fmt.Sprintf("c%d", level)), "0"))
-	root := fmt.Sprintf("i%d", level)
+	iter := fmt.Sprintf("t%d", level)
+	inc := fmt.Sprintf("i%d", level)
+	wr.FormatLine("const %s = %s.unwrap()", iter, resIter)
+	wr.FormatLine("let %s = %s.next()", inc, iter)
 	wr.WriteBlock("for",
 		g.lang.RoundBrackets(
-			g.lang.Const(root)+" of "+fmt.Sprintf("a%d", level)), func(wr *eg.ForIfWhileLangWriter) {
+			"; !"+g.lang.CallDot(inc, "done")+"; "+inc+" = "+g.lang.CallDot(iter, g.lang.Call("next"))),
+		func(wr *eg.ForIfWhileLangWriter) {
 			p, ok := prop.Items().(eg.PropertyArray)
 			if ok {
-				g.generateArrayCoerce(level+1, root, returnType, p, wr)
-				wr.WriteLine(g.lang.Call(fmt.Sprintf("r%d.push", level), fmt.Sprintf("r%d", level+1)))
+				g.generateArrayCoerce(level+1, g.lang.CallDot(inc, "value"), returnType, p, wr)
+				wr.WriteLine(g.lang.CallDot(result, g.lang.Call("push", fmt.Sprintf(resultFmt, level+1))))
 			} else {
 				// param := []string{}
 				// for i := 0; i <= level; i++ {
@@ -903,14 +907,13 @@ func (g *tsGenerator) generateArrayCoerce(level int, rootArray, returnType strin
 				// }
 				// wr.WriteLine(g.lang.Call("itemAttr.SetNameSuffix", strings.Join(param, ", ")))
 				wr.WriteLine(g.lang.AssignDefault(
-					g.lang.Const("attrRes"), g.lang.Call("itemAttr.Coerce", root)))
+					g.lang.Const("attrRes"), g.lang.Call("itemAttr.Coerce", g.lang.CallDot(inc, "value"))))
 				wr.WriteIf(g.lang.RoundBrackets("attrRes.is_err()"), func(wr *eg.ForIfWhileLangWriter) {
 					wr.WriteLine(g.lang.Return(
 						g.lang.Generics("attrRes as unknown as WuesteResult", returnType)))
 				})
-				wr.WriteLine(g.lang.Call(fmt.Sprintf("r%d.push", level), g.lang.Call("attrRes.unwrap")))
+				wr.WriteLine(g.lang.CallDot(result, g.lang.Call("push", g.lang.Call("attrRes.unwrap"))))
 			}
-			// wr.FormatLine("c%d++", level)
 		})
 }
 
@@ -952,9 +955,9 @@ func (g *tsGenerator) generateLocalArrays(prop eg.PropertyObject, pa eg.Property
 					attr := g.genWuesteBuilderAttribute("ARRAY", pi, func() string { return "param" })
 					wr.WriteLine(g.lang.AssignDefault(g.lang.Const("itemAttr"), attr))
 
-					wr.WriteBlock("", "super({jsonname: param.jsonname, varname: param.varname, base: param.base}, {coerce: (t0: unknown) => ", func(wr *eg.ForIfWhileLangWriter) {
-						g.generateArrayCoerce(0, "t0", g.lang.AsType(pa), pa, wr)
-						wr.WriteLine(g.lang.Return(g.lang.Call("WuesteResult.Ok", "r0")))
+					wr.WriteBlock("", "super({jsonname: param.jsonname, varname: param.varname, base: param.base}, {coerce: (c0: unknown) => ", func(wr *eg.ForIfWhileLangWriter) {
+						g.generateArrayCoerce(0, "c0", g.lang.AsType(pa), pa, wr)
+						wr.WriteLine(g.lang.Return(g.lang.Call("WuesteResult.Ok", "s0")))
 					}, " {", "}})")
 				})
 		})

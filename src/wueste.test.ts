@@ -3,7 +3,6 @@ import {
   WuestenAttributeParameter,
   WuestenFactory,
   wuesten,
-  WuesteIterable,
   WuestenBuilder,
   Payload,
   WuestenDecoder,
@@ -11,33 +10,89 @@ import {
   WuestenReflection,
   WuestenRecordGetter,
   WuestenGetterBuilder,
+  WuesteToIterator,
 } from "./wueste";
 
-it("WuesteIterate", () => {
-  expect(WuesteIterable(3)).toBeUndefined();
-  expect(WuesteIterable("m")).toBeUndefined();
-  [
-    WuesteIterable({ a1: 0, a2: 1, a3: 2 }),
-    WuesteIterable([0, 1, 2]),
-    WuesteIterable(function* () {
-      yield 0;
-      yield 1;
-      yield 2;
-    }),
-    // WuesteIterable(async function* () {
-    //     yield 0;
-    //     yield 1;
-    //     yield 2;
-    // }),
-  ].forEach((iterable) => {
-    expect(iterable).toBeDefined();
-    let i = 0;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    for (const value of iterable!) {
-      expect(value).toBe(i++);
-    }
-    expect(i).toBe(3);
+it("array coerce from array", () => {
+  const ri = WuesteToIterator<number>([1, 2, 3]);
+  expect(ri.is_ok()).toBeTruthy();
+  let idx = 0;
+  let i = ri.Ok().next();
+  for (; !i.done; i = ri.Ok().next()) {
+    expect(i.idx).toBe(idx);
+    expect(i.idx).toBe(i.value - 1);
+    idx++;
+  }
+  expect(i.idx).toBe(3);
+  expect(idx).toBe(3);
+});
+
+it("array coerce from empty array", () => {
+  const ri = WuesteToIterator<number>([]);
+  expect(ri.is_ok()).toBeTruthy();
+  let idx = 0;
+  let i = ri.Ok().next();
+  for (; !i.done; i = ri.Ok().next()) {
+    idx++;
+  }
+  expect(i.idx).toBe(0);
+  expect(idx).toBe(0);
+});
+
+it("array coerce from object", () => {
+  const ri = WuesteToIterator<number>({ a: 1, b: 2, c: 3 });
+  expect(ri.is_ok()).toBeTruthy();
+  let idx = 0;
+  let i = ri.Ok().next();
+  for (; !i.done; i = ri.Ok().next()) {
+    expect(i.idx).toBe(idx);
+    expect(i.idx).toBe(i.value - 1);
+    idx++;
+  }
+  expect(i.idx).toBe(3);
+  expect(idx).toBe(3);
+});
+
+it("array coerce from empty object", () => {
+  const ri = WuesteToIterator<number>([]);
+  expect(ri.is_ok()).toBeTruthy();
+  let idx = 0;
+  let i = ri.Ok().next();
+  for (; !i.done; i = ri.Ok().next()) {
+    idx++;
+  }
+  expect(i.idx).toBe(0);
+  expect(idx).toBe(0);
+});
+
+it("array coerce from generator", () => {
+  const ri = WuesteToIterator<number>(function* () {
+    yield 1;
+    yield 2;
+    yield 3;
   });
+  expect(ri.is_ok()).toBeTruthy();
+  let idx = 0;
+  let i = ri.Ok().next();
+  for (; !i.done; i = ri.Ok().next()) {
+    expect(i.idx).toBe(idx);
+    expect(i.idx).toBe(i.value - 1);
+    idx++;
+  }
+  expect(i.idx).toBe(3);
+  expect(idx).toBe(3);
+});
+
+it("array coerce from generator array", () => {
+  const ri = WuesteToIterator<number>(function* () {});
+  expect(ri.is_ok()).toBeTruthy();
+  let idx = 0;
+  let i = ri.Ok().next();
+  for (; !i.done; i = ri.Ok().next()) {
+    idx++;
+  }
+  expect(i.idx).toBe(0);
+  expect(idx).toBe(0);
 });
 
 describe("string coerce", () => {

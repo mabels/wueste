@@ -542,70 +542,64 @@ function numberCoerce(parse: (i: unknown) => number): (value: unknown) => Result
   };
 }
 
-export function WuesteIterable<T>(obj: unknown): IterableIterator<T> | undefined {
+export interface WuesteIteratorNext<T> {
+  readonly done?: boolean;
+  readonly idx: number;
+  readonly value: T;
+}
+export interface WuesteIterator<T> {
+  next(): WuesteIteratorNext<T>;
+}
+
+export class WuesteIteratorArray<T> implements WuesteIterator<T> {
+  readonly _array: ArrayLike<T>;
+  _idx = 0;
+  constructor(_array: ArrayLike<T>) {
+    this._array = _array;
+  }
+
+  next(): WuesteIteratorNext<T> {
+    if (this._idx < this._array.length) {
+      const idx = this._idx;
+      this._idx++;
+      return { value: this._array[idx], idx };
+    }
+    return { done: true, idx: this._idx, value: undefined as unknown as T };
+  }
+}
+
+export class WuesteIteratorGenerator<T> implements WuesteIterator<T> {
+  readonly _iter: IterableIterator<T>;
+  _idx = 0;
+  constructor(_iter: unknown) {
+    this._iter = _iter as IterableIterator<T>;
+  }
+
+  next(): WuesteIteratorNext<T> {
+    const res = this._iter.next();
+    if (!res.done) {
+      const idx = this._idx;
+      this._idx++;
+      return { value: res.value, idx };
+    }
+    return { done: true, idx: this._idx, value: undefined as unknown as T };
+  }
+}
+
+export function WuesteToIterator<T>(obj: unknown): Result<WuesteIterator<T>> {
   if (Array.isArray(obj)) {
-    const range = {
-      [Symbol.iterator]() {
-        // (1)
-        return {
-          current: 0,
-          next() {
-            // (2)
-            const aobj = obj as ArrayLike<T>;
-            if (this.current < aobj.length) {
-              return { done: false, value: aobj[this.current++] };
-            } else {
-              return { done: true };
-            }
-          },
-        };
-      },
-    };
-    return range as unknown as IterableIterator<T>;
+    return Result.Ok(new WuesteIteratorArray(obj));
   }
   if (typeof obj === "function") {
     obj = obj();
   }
-  if (typeof obj === "object") {
+  if (typeof obj === "object" && obj !== null) {
     if (Symbol.iterator in (obj as { [Symbol.iterator]: unknown })) {
-      // const iter = (obj as unknown as Iterable<unknown>)[Symbol.iterator]()
-      // const range = {
-      //     [Symbol.iterator]() { // (1)
-      //         return {
-      //             current: 0,
-      //             next() { // (2)
-      //                 return iter.next()
-      //             }
-      //         };
-      //     }
-      // };
-      return obj as unknown as IterableIterator<T>;
+      return Result.Ok(new WuesteIteratorGenerator(obj));
     }
-    // if (Symbol.asyncIterator in (obj as { [Symbol.asyncIterator]: unknown })) {
-    //     return obj as unknown as AsyncIterableIterator<unknown>
-    // }
-    if (obj !== null) {
-      const vobj = Object.values(obj);
-      const range = {
-        [Symbol.iterator]() {
-          // (1)
-          return {
-            current: 0,
-            next() {
-              // (2)
-              if (this.current < vobj.length) {
-                return { done: false, value: vobj[this.current++] };
-              } else {
-                return { done: true };
-              }
-            },
-          };
-        },
-      };
-      return range as unknown as IterableIterator<T>;
-    }
+    return Result.Ok(new WuesteIteratorArray(Object.values(obj)));
   }
-  return undefined;
+  return Result.Err("not iterable");
 }
 
 export type WuesteCoerceTypeDate = Date | string;

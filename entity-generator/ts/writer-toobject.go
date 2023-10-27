@@ -25,8 +25,9 @@ func (g *tsGenerator) writeArrayToObject(wr *eg.ForIfWhileLangWriter, prop eg.Pr
 					g.lang.ReturnType(fmt.Sprintf("o%d", l), g.lang.AsType(pa))),
 				" []"))
 		wr.WriteBlock("for",
-			fmt.Sprintf("(const v%d of v%d)", l+1, l),
+			fmt.Sprintf("(let i%d = 0; i%d < v%d.length; i%d++)", l+1, l+1, l, l+1),
 			func(wr *eg.ForIfWhileLangWriter) {
+				wr.FormatLine("const v%d = v%d[i%d]", l+1, l, l+1)
 				g.writeArrayToObject(wr, prop.(eg.PropertyArray).Items(), l+1)
 				wr.FormatLine(
 					g.lang.Call(
