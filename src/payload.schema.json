@@ -1,0 +1,14 @@
+{
+  "$id": "Payload",
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "Type": {
+      "type": "string"
+    },
+    "Data": {
+      "type": "object"
+    }
+  },
+  "required": ["Type", "Data"]
+}

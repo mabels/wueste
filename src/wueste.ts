@@ -1,10 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Payload } from "./payload";
 import { Result } from "./result";
 
-export interface Payload {
-  readonly Type: string;
-  readonly Data: unknown;
-}
+export type WuestePayload = Payload;
 
 export type WuestenEncoder = (payload: unknown) => Result<unknown>;
 

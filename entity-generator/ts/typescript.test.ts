@@ -145,7 +145,7 @@ it(`SimpleType-Builder Object-JSON-Object`, () => {
   const payload = SimpleTypeFactory.ToPayload(builder.Get(), WuesteJsonBytesEncoder).unwrap();
   expect(payload.Type).toBe("https://SimpleType");
   const fromJson = SimpleTypeFactory.Builder();
-  fromJson.Coerce(JSON.parse(new TextDecoder().decode(payload.Data as Uint8Array)));
+  fromJson.Coerce(JSON.parse(new TextDecoder().decode(payload.Data as unknown as Uint8Array)));
   expect(fromJson.Get().unwrap()).toEqual(builder.Get().unwrap());
   expect(fromJson.Get().unwrap().float64).toEqual(42.43);
 });

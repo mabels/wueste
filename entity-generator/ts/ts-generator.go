@@ -548,7 +548,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 							id = prop.Title()
 						}
 						wr.FormatLine("Type: %s,", g.lang.Quote(id))
-						wr.FormatLine("Data: data.unwrap()")
+						wr.FormatLine("Data: data.unwrap() as unknown as Record<string, unknown>")
 					}, "({", "});")
 				})
 
@@ -1305,7 +1305,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 				g.lang.Call("Get", ""), g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop)))), func(wr *eg.ForIfWhileLangWriter) {
 				wr.WriteLine(g.lang.Return(g.lang.Call("this._attr.Get", "")))
 			})
-			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "Payload", "WuestePayload")
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestePayload")
 		})
 
 }

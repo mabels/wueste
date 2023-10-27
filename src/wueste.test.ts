@@ -1,10 +1,10 @@
 import { Result } from "./result";
 import {
   WuestenAttributeParameter,
+  WuestePayload,
   WuestenFactory,
   wuesten,
   WuestenBuilder,
-  Payload,
   WuestenDecoder,
   WuestenEncoder,
   WuestenReflection,
@@ -463,11 +463,11 @@ class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
     throw new Error("Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  FromPayload(val: Payload, decoder: WuestenDecoder): Result<Entity> {
+  FromPayload(val: WuestePayload, decoder: WuestenDecoder): Result<Entity> {
     throw new Error("Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  ToPayload(typ: Entity, encoder?: WuestenEncoder): Result<Payload, Error> {
+  ToPayload(typ: Entity, encoder?: WuestenEncoder): Result<WuestePayload, Error> {
     throw new Error("Method not implemented.");
   }
 

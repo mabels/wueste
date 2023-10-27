@@ -1,6 +1,7 @@
 **/node_modules/
 **/src/generated/
 **/pubdir/
+**/smoke/
 **/dist/
 **/package-lock.json
 **/pnpm-lock.yaml
