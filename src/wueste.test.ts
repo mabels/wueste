@@ -9,8 +9,9 @@ import {
   WuestenEncoder,
   WuestenReflection,
   WuestenRecordGetter,
-  WuestenGetterBuilder,
+  WuestenApplyBuilder,
   WuesteToIterator,
+  WuestenApplyOption,
 } from "./wueste";
 
 it("array coerce from array", () => {
@@ -479,7 +480,7 @@ class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
     throw new Error("Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Getter(typ: Entity, base: WuestenReflection[]): WuestenGetterBuilder {
+  Getter(typ: Entity, base: WuestenApplyOption): WuestenApplyBuilder {
     throw new Error("Method not implemented.");
   }
   // Schema(): WuestenSchema {

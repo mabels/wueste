@@ -90,11 +90,11 @@ export function WuestenRetVal(val: unknown): WuestenRetValType {
   return new WuestenRetValType(val);
 }
 
-export type WuestenGetterFn = (level: WuestenReflection[], value: unknown) => void;
+export type WuestenApplyFn = (level: WuestenReflection[], value: unknown) => void;
 
 export function WuestenRecordGetter(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  fn: WuestenGetterFn,
+  fn: WuestenApplyFn,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   level: WuestenReflection[],
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -140,14 +140,19 @@ export function WuestenRecordGetter(
   }
 }
 
-export class WuestenGetterBuilder {
-  readonly _getterAction: (wgf: WuestenGetterFn) => void;
-  constructor(fn: (wgf: WuestenGetterFn) => void) {
-    this._getterAction = fn;
+export class WuestenApplyBuilder {
+  readonly _applyAction: (wgf: WuestenApplyFn) => void;
+  constructor(fn: (wgf: WuestenApplyFn) => void) {
+    this._applyAction = fn;
   }
-  Apply(wgf: WuestenGetterFn) {
-    this._getterAction(wgf);
+  Apply(wgf: WuestenApplyFn) {
+    this._applyAction(wgf);
   }
+}
+
+export interface WuestenApplyOption {
+  readonly full?: boolean;
+  readonly base: WuestenReflection[];
 }
 
 export interface WuestenGeneratorFunctions<G, I> {
@@ -353,7 +358,7 @@ export interface WuestenFactory<T, I, O> {
   ToObject(typ: T): O; // WuestenObject; keys are json notation
   Clone(typ: T): Result<T>;
   Schema(): WuestenReflection;
-  Getter(typ: T, base: WuestenReflection[]): WuestenGetterBuilder;
+  Getter(typ: T, opt: WuestenApplyOption): WuestenApplyBuilder;
 }
 
 export type WuestenObject = Record<string, unknown>;
@@ -411,7 +416,7 @@ export class WuestenObjectFactoryImpl implements WuestenFactory<WuestenObject, W
     throw new Error("WuestenObjectFactoryImpl:Schema not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Getter(typ: WuestenObject, base: WuestenReflection[]): WuestenGetterBuilder {
+  Getter(typ: WuestenObject, base: WuestenApplyOption): WuestenApplyBuilder {
     throw new Error("WuestenObjectFactoryImpl:Getter not implemented.");
   }
 

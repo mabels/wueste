@@ -1,4 +1,4 @@
-import { fromEnv, walk, toHash } from "./helper";
+import { walk, toHash, asENVName } from "./helper";
 import { helperTest, helperTestFactory, helperTestGetter } from "./generated/wasm/helpertest";
 import { WuestenRetVal } from "./wueste";
 import { helperTest$helperTestSubBuilder, helperTest$helperTestSub$arrayBuilder } from "./generated/wasm/helpertest$helpertestsub";
@@ -157,20 +157,31 @@ describe("helper", () => {
     ]);
   });
 
-  it.skip("from Environment", () => {
-    const builder = helperTestFactory.Builder();
-    const env = {
+  it("from Environment", () => {
+    // const builder = helperTestFactory.Builder();
+    const env: Record<string, string> = {
       HELPERTEST_TEST: "HELLO",
-      HELPERTEST_SUB_BOOL: "true",
-      HELPERTEST_SUB_NUM: "1.1",
-      HELPERTEST_SUB_INT: "42",
-      HELPERTEST_SUB_STR: "HI",
-      HELPERTEST_SUB_OPT_BOOL: "false",
-      HELPERTEST_SUB_OPT_NUM: "3.3",
-      HELPERTEST_SUB_OPT_INT: "12",
-      HELPERTEST_SUB_OPT_STR: "BYE",
+      HELPERTEST_SUB_HELPERTESTSUB_BOOL: "true",
+      HELPERTEST_SUB_HELPERTESTSUB_NUM: "1.1",
+      HELPERTEST_SUB_HELPERTESTSUB_INT: "42",
+      HELPERTEST_SUB_HELPERTESTSUB_STR: "HI",
+      HELPERTEST_SUB_HELPERTESTSUB_OPT_BOOL: "false",
+      HELPERTEST_SUB_HELPERTESTSUB_OPT_NUM: "3.3",
+      HELPERTEST_SUB_HELPERTESTSUB_OPT_INT: "12",
+      HELPERTEST_SUB_HELPERTESTSUB_OPT_STR: "BYE",
     };
-    const result = fromEnv(builder, env).Get();
+    // const result = fromEnv(builder, env).Get();
+
+    const out: helperTest = {} as helperTest;
+    helperTestGetter(out, {full:true, base:[]}).Apply((path) => {
+      const envKey = asENVName(path);
+      console.log(asENVName(path), '=', env[envKey]);
+      if (env[envKey] !== undefined) {
+        return WuestenRetVal(env[envKey]);
+      }
+    })
+    const result = helperTestFactory.Builder().Coerce(out);
+
     expect(result.is_ok()).toBeTruthy();
     expect(helperTestFactory.ToObject(result.unwrap())).toEqual({
       test: "HELLO",

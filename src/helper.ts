@@ -1,4 +1,4 @@
-import { WuestenAttr, WuestenGetterBuilder, WuestenReflection } from "./wueste";
+import { WuestenAttr, WuestenApplyBuilder, WuestenReflection } from "./wueste";
 
 import { hmac } from "@noble/hashes/hmac";
 import { sha1 } from "@noble/hashes/sha1";
@@ -20,9 +20,16 @@ export function fromEnv<T, P>(builder: WuestenAttr<T, P>, env: Record<string, st
   return builder;
 }
 
-function asDottedPath(path: WuestenReflection[]): string {
-  return path
-    .map((r) => {
+export function asDottedPath(path: WuestenReflection[]): string {
+  return asNamedPath(path).join(".");
+}
+
+export function asENVName(path: WuestenReflection[]): string {
+  return asNamedPath(path).join("_").toUpperCase().replace(/[^A-Z0-9]/g, "_");
+}
+
+export function asNamedPath(path: WuestenReflection[]): string[] {
+  return path.map((r) => {
       switch (r.type) {
         case "object":
           return r.title || r.id || "_";
@@ -39,8 +46,7 @@ function asDottedPath(path: WuestenReflection[]): string {
           throw new Error("invalid type");
       }
     })
-    .filter((i) => i)
-    .join(".");
+    .filter((i) => i) as string[];
 }
 
 export function walk<T>(a: T, strategy: (x: unknown) => unknown): unknown {
@@ -63,7 +69,7 @@ export function walk<T>(a: T, strategy: (x: unknown) => unknown): unknown {
 
 const enc = new TextEncoder();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] = []): Uint8Array {
+export function toHash(ref: WuestenApplyBuilder, exclude: (string | RegExp)[] = []): Uint8Array {
   const mac = hmac.create(sha1, "");
   ref.Apply((path, ref) => {
     const dotted = asDottedPath(path);

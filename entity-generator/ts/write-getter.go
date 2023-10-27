@@ -45,16 +45,20 @@ func (v *vname) newVar() string {
 
 func (g *tsGenerator) generateReflectionGetter(prop eg.Property, baseName string) {
 	// g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenGetterFn").activated = true
-	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenGetterBuilder")
+	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenApplyBuilder")
+	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenApplyOption")
+	// g.bodyWriter.WriteLine("// eslint-disable-next-line @typescript-eslint/no-unused-vars")
 	g.bodyWriter.WriteBlock("export function ",
 		g.lang.ReturnType(
 			g.lang.Call(
 				g.lang.PublicName(baseName, "Getter"),
-				g.lang.ReturnType("v", g.lang.AsTypeNullable(prop /*WithOptional(pi.Optional())*/)),
-				g.lang.ReturnType("base", "WuestenReflection[] = []")),
-			"WuestenGetterBuilder"),
+				g.lang.OrType(
+					g.lang.ReturnType("v", g.lang.AsTypeNullable(prop /*WithOptional(pi.Optional())*/)),
+					"undefined"),
+				g.lang.AssignDefault(g.lang.ReturnType("apo", "WuestenApplyOption"), "{ base: []}")),
+			"WuestenApplyBuilder"),
 		func(wr *eg.ForIfWhileLangWriter) {
-			wr.WriteBlock("return new WuestenGetterBuilder((fn) => ", "", func(wr *eg.ForIfWhileLangWriter) {
+			wr.WriteBlock("return new WuestenApplyBuilder((fn) => ", "", func(wr *eg.ForIfWhileLangWriter) {
 				g.writeReflectionGetter(wr, baseName, vname{
 					init: "v",
 				}, prop, []eg.Property{prop})
@@ -168,9 +172,9 @@ func (g *tsGenerator) toPropLevel(baseName string, ps []eg.Property) string {
 	panic("not implemented")
 }
 
-func (g *tsGenerator) writeLevel(wr *eg.ForIfWhileLangWriter, baseName string, level []eg.Property) {
-	wr.WriteBlock("", "", func(wr *eg.ForIfWhileLangWriter) {
-		wr.WriteLine(g.lang.Comma("...base"))
+func (g *tsGenerator) writeLevel(wr *eg.ForIfWhileLangWriter, prefix string, baseName string, level []eg.Property) {
+	wr.WriteBlock(prefix, "", func(wr *eg.ForIfWhileLangWriter) {
+		wr.WriteLine(g.lang.Comma("...apo.base"))
 		for i, _ := range level {
 			wr.WriteLine(g.lang.Comma(g.toPropLevel(baseName, level[:i+1])))
 		}
@@ -215,7 +219,10 @@ func (g *tsGenerator) writeReflectionGetter(wr *eg.ForIfWhileLangWriter, baseNam
 					func(wr *eg.ForIfWhileLangWriter) {
 						wr.WriteLine(
 							g.lang.Comma(g.lang.CallDot(vname.contextVar(), g.getLastPath(level))))
-						g.writeLevel(wr, baseName, level)
+						wr.WriteBlock("", "", func(wr *eg.ForIfWhileLangWriter) {
+							wr.WriteLine("...apo,")
+							g.writeLevel(wr, "base: ", baseName, level)
+						})
 					}, "(", ").Apply(fn)")
 
 			} else {
@@ -231,8 +238,10 @@ func (g *tsGenerator) writeReflectionGetter(wr *eg.ForIfWhileLangWriter, baseNam
 				// 					g.lang.CallDot(vname.contextVar(), g.getLastPath(level)), "base"), "Apply"), "fn"))
 				// 	return
 				// }
-				wr.FormatLine("const %s = %s", nextWithVar,
-					g.lang.CallDot(vname.contextVar(), g.getLastName(level)))
+				//     const v0 = apo.full && !v ? {} as SimpleType$Payload : v
+				srcVar := g.lang.CallDot(vname.contextVar(), g.getLastName(level))
+				wr.FormatLine("const %s = (apo.full && !%s ? {} : %v) as %s // stuff", nextWithVar,
+					srcVar, srcVar, g.lang.AsTypeNullable(prop /*WithOptional(pi.Optional())*/))
 				g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenReflectionObject")
 				for i, pi := range po.Items() {
 					pc := eg.NewPropertyObjectItem(pi.Name(), rusty.Ok(pi.Property()), i, pi.Optional()).Ok()
@@ -245,7 +254,7 @@ func (g *tsGenerator) writeReflectionGetter(wr *eg.ForIfWhileLangWriter, baseNam
 		} else {
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenRecordGetter")
 			wr.WriteBlock("WuestenRecordGetter(", "fn, ", func(wr *eg.ForIfWhileLangWriter) {
-				g.writeLevel(wr, baseName, level)
+				g.writeLevel(wr, "", baseName, level)
 			}, "", fmt.Sprintf(", %s)", g.lang.CallDot(vname.contextVar(), g.getLastPath(level))))
 		}
 
@@ -258,19 +267,27 @@ func (g *tsGenerator) writeReflectionGetter(wr *eg.ForIfWhileLangWriter, baseNam
 			// if len(level) > 1 {
 			// my := level[len(level)-2]
 			g.includes.AddProperty(getterName, prop)
-			wr.FormatLine("// Array %s --- %s --- %v", getterName, getObjectName(prop), prop.Meta().Parent().Value().Type())
+			// wr.FormatLine("// Array %s --- %s --- %v", getterName, getObjectName(prop), prop.Meta().Parent().Value().Type())
 			wr.WriteBlock(
 				getterName,
 				"",
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.WriteLine(
 						g.lang.Comma(g.lang.CallDot(vname.contextVar(), g.getLastPath(level))))
-					g.writeLevel(wr, baseName, level)
+					// g.writeLevel(wr, "", baseName, level)
+					wr.WriteBlock("", "", func(wr *eg.ForIfWhileLangWriter) {
+						wr.WriteLine("...apo,")
+						g.writeLevel(wr, "base: ", baseName, level)
+					})
+
 				}, "(", ").Apply(fn)")
 			return
 		}
 		nextWithVar := vname.newVar()
-		wr.FormatLine("const %s = %s", nextWithVar, g.lang.CallDot(vname.contextVar(), g.getLastPath(level)))
+		srcVar := g.lang.CallDot(vname.contextVar(), g.getLastPath(level))
+		// wr.FormatLine("const %s = %s", nextWithVar, )
+		wr.FormatLine("const %s = (apo.full && !%s ? [] : %v) as %s // stuff", nextWithVar,
+			srcVar, srcVar, g.lang.AsTypeNullable(prop /*WithOptional(pi.Optional())*/))
 		forLine := fmt.Sprintf("for (let i%s = 0; i%s < %s.length; i%s++)", nextWithVar, nextWithVar, nextWithVar, nextWithVar)
 		wr.WriteBlock(forLine, "", func(wr *eg.ForIfWhileLangWriter) {
 			idx := fmt.Sprintf("[i%s]", nextWithVar)
@@ -281,7 +298,7 @@ func (g *tsGenerator) writeReflectionGetter(wr *eg.ForIfWhileLangWriter, baseNam
 		// })
 	case eg.STRING, eg.INTEGER, eg.NUMBER, eg.BOOLEAN:
 		wr.WriteBlock("", "fn(", func(wr *eg.ForIfWhileLangWriter) {
-			g.writeLevel(wr, baseName, level)
+			g.writeLevel(wr, "", baseName, level)
 		}, "", fmt.Sprintf(", %s)", g.lang.CallDot(vname.contextVar(), g.getLastPath(level))))
 	default:
 		panic("not implemented")
@@ -291,7 +308,7 @@ func (g *tsGenerator) writeReflectionGetter(wr *eg.ForIfWhileLangWriter, baseNam
 
 func wrapOptional(opt bool, varName string, wr *eg.ForIfWhileLangWriter, fn func(wr *eg.ForIfWhileLangWriter)) {
 	if opt {
-		wr.WriteBlock("if (", fmt.Sprintf("typeof %s !== 'undefined')", varName), fn)
+		wr.WriteBlock("if (apo.full || ", fmt.Sprintf("typeof %s !== 'undefined')", varName), fn)
 	} else {
 		fn(wr)
 	}
