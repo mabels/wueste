@@ -2,6 +2,7 @@
 **/src/generated/
 **/pubdir/
 **/smoke/
+!**/smoke/smoke.ts
 **/dist/
 **/package-lock.json
 **/pnpm-lock.yaml

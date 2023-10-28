@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Payload } from "./payload";
 import { Result } from "./result";
+import { Payload } from "./payload";
 
 export type WuestePayload = Payload;
 

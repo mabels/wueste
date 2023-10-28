@@ -1,7 +1,8 @@
 import { Result } from "wueste/result";
 
-import { SimpleTypeFactory } from "../src/generated/go/simpletype";
-import { WuestenRetVal } from "../src/wueste";
+import { SimpleTypeFactory } from "./generated/simpletype";
+import { PayloadFactory } from "wueste/payload";
+import { WuestenRetVal, WuestePayload } from "wueste/wueste";
 
 const test = Result.Ok(42);
 if (test.is_err()) {
@@ -22,6 +23,16 @@ builder.sub((sub) => {
     return WuestenRetVal({});
   });
 });
-const payload = SimpleTypeFactory.ToPayload(builder.Get());
 
-console.log(`Ready for production: ${payload.Ok().Type}`);
+const payload: Result<WuestePayload> = PayloadFactory.Builder().Coerce({
+  Type: "SimpleType",
+  Data: builder.Get().unwrap() as unknown as Record<string, unknown>,
+});
+
+const payload2 = SimpleTypeFactory.FromPayload(payload.unwrap());
+
+if (payload2.Ok().float64 != 1.1) {
+  throw new Error("float64 mismatch");
+}
+
+console.log(`Ready for production: ${payload.Ok().Type}=>${payload2.Ok().float64}`);
