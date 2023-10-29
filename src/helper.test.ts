@@ -187,3 +187,170 @@ describe("helper", () => {
     });
   });
 });
+
+it("walk simple number", () => {
+  expect(
+    walk(4, (x) => {
+      return (x as number) + 1;
+    }),
+  ).toEqual(5);
+});
+
+it("walk simple string", () => {
+  expect(
+    walk("str", (x) => {
+      return "test" + x;
+    }),
+  ).toEqual("teststr");
+});
+
+it("walk simple bool", () => {
+  expect(
+    walk(false, (x) => {
+      return !x;
+    }),
+  ).toEqual(true);
+});
+
+it("walk simple array", () => {
+  expect(
+    walk([4, "str", false], (x) => {
+      if (typeof x === "number") {
+        return x + 1;
+      }
+      if (typeof x === "string") {
+        return "test" + x;
+      }
+      if (typeof x === "boolean") {
+        return !x;
+      }
+      return x;
+    }),
+  ).toEqual([5, "teststr", true]);
+});
+
+it("walk simple object", () => {
+  expect(
+    walk({ x: 4, y: "str", z: false }, (x) => {
+      if (typeof x === "number") {
+        return x + 1;
+      }
+      if (typeof x === "string") {
+        return "test" + x;
+      }
+      if (typeof x === "boolean") {
+        return !x;
+      }
+      return x;
+    }),
+  ).toEqual({ x: 5, y: "teststr", z: true });
+});
+
+it("walk literal -> obj", () => {
+  expect(
+    walk(4, (x) => {
+      if (x === 4) {
+        return { x: 5, y: "teststr", z: true };
+      }
+      if (typeof x === "number") {
+        return x + 1;
+      }
+      if (typeof x === "string") {
+        return "test" + x;
+      }
+      if (typeof x === "boolean") {
+        return !x;
+      }
+      return x;
+    }),
+  ).toEqual({
+    x: 6,
+    y: "testteststr",
+    z: false,
+  });
+});
+
+it("walk literal -> array", () => {
+  expect(
+    walk(4, (x) => {
+      if (x === 4) {
+        return [5, "teststr", true];
+      }
+      if (typeof x === "number") {
+        return x + 1;
+      }
+      if (typeof x === "string") {
+        return "test" + x;
+      }
+      if (typeof x === "boolean") {
+        return !x;
+      }
+      return x;
+    }),
+  ).toEqual([6, "testteststr", false]);
+});
+
+it("walk array", () => {
+  expect(
+    walk([0, 1], (x) => {
+      if (typeof x === "number") {
+        return { x: "" + x + 4 };
+      }
+      return x;
+    }),
+  ).toEqual([{ x: "04" }, { x: "14" }]);
+});
+
+it("walk object", () => {
+  expect(
+    walk({ x: 0, y: 1 }, (x) => {
+      if (typeof x === "number") {
+        return { x: "" + x + 4 };
+      }
+      return x;
+    }),
+  ).toEqual({ x: { x: "04" }, y: { x: "14" } });
+});
+
+it("walk object-null", () => {
+  expect(
+    walk(null, (x) => {
+      return x;
+    }),
+  ).toEqual(null);
+});
+
+it("walk object-null", () => {
+  expect(
+    walk({ x: { y: null } }, (x) => {
+      return x;
+    }),
+  ).toEqual({ x: { y: null } });
+});
+
+it("walk replace with null", () => {
+  expect(
+    walk({ x: { y: null } }, (x) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (typeof x === "object" && x !== null && typeof (x as any).y === "object") {
+        return null;
+      }
+      return x;
+    }),
+  ).toEqual({ x: null });
+});
+
+it("walk object replace array", () => {
+  expect(
+    walk({ x: { y: 7 } }, (x) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (typeof x === "object" && x !== null && (x as any).y) {
+        return [7, 8];
+      }
+      if (7 === x) {
+        return 8;
+      }
+      return x;
+    }),
+  ).toEqual({ x: [8, 8] });
+});

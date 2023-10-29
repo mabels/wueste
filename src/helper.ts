@@ -43,22 +43,37 @@ function asDottedPath(path: WuestenReflection[]): string {
     .join(".");
 }
 
-export function walk<T>(a: T, strategy: (x: unknown) => unknown): unknown {
+export function walk<T>(a: T, strategy: (x: unknown) => unknown | Promise<unknown>): unknown {
   if (Array.isArray(a)) {
-    const x = [...a];
-    for (let i = 0; i < a.length; ++i) {
-      x[i] = walk(a[i], strategy); // (sanitize(a[i], strategy, a[i]));
+    const b = strategy(a);
+    if (!Array.isArray(b)) {
+      return walk(b, strategy);
+    }
+    const x = [...b];
+    for (let i = 0; i < b.length; ++i) {
+      x[i] = walk(b[i], strategy); // (sanitize(a[i], strategy, a[i]));
     }
     return x;
   }
   if (typeof a === "object" && a !== null) {
-    const y: Record<string, unknown> = { ...a } as Record<string, unknown>;
-    for (const k of Object.keys(a)) {
-      y[k] = walk((a as Record<string, unknown>)[k] as unknown, strategy);
+    const b = strategy(a);
+    if (Array.isArray(b) || !(typeof b === "object" && b !== null)) {
+      return walk(b, strategy);
+    }
+    if (b === null) {
+      return null;
+    }
+    const y: Record<string, unknown> = { ...b } as Record<string, unknown>;
+    for (const k of Object.keys(b)) {
+      y[k] = walk((b as Record<string, unknown>)[k] as unknown, strategy);
     }
     return y;
   }
-  return strategy(a);
+  const b = strategy(a);
+  if (typeof b !== typeof a) {
+    return walk(b, strategy);
+  }
+  return b;
 }
 
 const enc = new TextEncoder();
