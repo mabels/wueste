@@ -10,7 +10,7 @@ type PropertyNumber interface {
 	Ref() rusty.Optional[string]
 	Description() rusty.Optional[string]
 	Format() rusty.Optional[string]
-	Default() rusty.Optional[float64] // match Type
+	Default() rusty.Optional[any] // match Type
 	// Enum() []float64
 	Maximum() rusty.Optional[float64]
 	Minimum() rusty.Optional[float64]
@@ -28,7 +28,7 @@ type PropertyNumberBuilder struct {
 	Type        Type
 	Description rusty.Optional[string]
 	Format      rusty.Optional[string]
-	Default     rusty.Optional[float64]
+	Default     rusty.Optional[any]
 	// Enum        []float64
 	Maximum rusty.Optional[float64]
 	Minimum rusty.Optional[float64]
@@ -46,7 +46,7 @@ func (b *PropertyNumberBuilder) FromJson(js JSONDict) *PropertyNumberBuilder {
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.Format = getFromAttributeOptionalString(js, "format")
-	b.Default = getFromAttributeOptionalFloat64(js, "default")
+	b.Default = getFromAttributeOptionalAny(js, "default")
 	b.Maximum = getFromAttributeOptionalFloat64(js, "maximum")
 	b.Minimum = getFromAttributeOptionalFloat64(js, "minimum")
 	return b
@@ -58,7 +58,7 @@ func PropertyNumberToJson(b PropertyNumber) JSONDict {
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "format", b.Format())
 	JSONsetOptionalString(jsp, "description", b.Description())
-	JSONsetOptionalFloat64(jsp, "default", b.Default())
+	JSONsetOptionalAny(jsp, "default", b.Default())
 	JSONsetOptionalFloat64(jsp, "maximum", b.Maximum())
 	JSONsetOptionalFloat64(jsp, "minimum", b.Minimum())
 	return jsp
@@ -112,13 +112,8 @@ func (p *propertyNumber) Format() rusty.Optional[string] {
 	return p.param.Format
 }
 
-func (p *propertyNumber) Default() rusty.Optional[float64] {
-	if p.param.Default.IsSome() {
-		// lit := wueste.NumberLiteral()
-		return rusty.Some[float64](p.param.Default.Value())
-
-	}
-	return rusty.None[float64]()
+func (p *propertyNumber) Default() rusty.Optional[any] {
+	return p.param.Default
 }
 
 func (p *propertyNumber) Type() Type {

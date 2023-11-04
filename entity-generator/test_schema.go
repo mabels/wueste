@@ -118,6 +118,41 @@ func UnnamedNestedObject() JSonFile {
 }`)
 }
 
+func DynamicDefault() JSonFile {
+	return json2JSonFile(`{
+	"filename":    "dynamic-default.schema.json",
+	"jsonProperty": {
+		"$schema": "http://json-schema.org/draft-07/schema#",
+		"$id": "DynamicDefault",
+		"title": "DynamicDefault",
+		"type": "object",
+		"properties": {
+			"x-string": {
+				"type": "string",
+				"default": "whatever",
+				"format": "file://../../next-id.ts#nextId"
+			},
+			"x-number": {
+				"type": "number",
+				"default": "16.7",
+				"format": "file://../../next-id.ts#nextId"
+			},
+			"x-integer": {
+				"type": "integer",
+				"default": "14.5",
+				"format": "file://../../next-id.ts#nextId"
+			},
+			"x-boolean": {
+				"type": "boolean",
+				"default": "on",
+				"format": "file://../../next-id.ts#nextId"
+			}
+		},
+		"required": ["x-string", "x-number", "x-integer", "x-boolean"]
+	}
+}`)
+}
+
 func JSONUnnamedNestedObject() []byte {
 	out, _ := json.MarshalIndent(UnnamedNestedObject, "", "  ")
 	return out
@@ -760,6 +795,13 @@ func WriteTestSchema(cfg *GeneratorConfig) string {
 	jsonSchema = Sub3Schema().JSONProperty
 	bytes, _ = json.MarshalIndent(jsonSchema, "", "  ")
 	schemaFile = path.Join(cfg.OutputDir, "wurst/sub3.schema.json")
+	os.MkdirAll(path.Dir(schemaFile), 0755)
+	os.WriteFile(schemaFile, bytes, 0644)
+	fmt.Println("Wrote schema to -> ", schemaFile)
+
+	jsonSchema = DynamicDefault().JSONProperty
+	bytes, _ = json.MarshalIndent(jsonSchema, "", "  ")
+	schemaFile = path.Join(cfg.OutputDir, "dynamic-default.schema.json")
 	os.MkdirAll(path.Dir(schemaFile), 0755)
 	os.WriteFile(schemaFile, bytes, 0644)
 	fmt.Println("Wrote schema to -> ", schemaFile)

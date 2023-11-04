@@ -3,7 +3,14 @@
 import { NestedTypeFactory, NestedTypeGetter } from "../../src/generated/go/nestedtype";
 import { NestedType$Payload, NestedType$PayloadFactory } from "../../src/generated/go/nestedtype$payload";
 import { SimpleTypeFactory, SimpleTypeObject, SimpleTypeParam } from "../../src/generated/go/simpletype";
-import { WuesteJsonBytesDecoder, WuesteJsonBytesEncoder, WuestenReflectionObject } from "../../src/wueste";
+import { DynamicDefaultFactory } from "../../src/generated/go/dynamicdefault";
+import {
+  WuesteJsonBytesDecoder,
+  WuesteJsonBytesEncoder,
+  WuestenReflectionLiteral,
+  WuestenReflectionObject,
+  WuestenTypeRegistry,
+} from "../../src/wueste";
 
 const simpleTypeParam: SimpleTypeParam = {
   bool: true,
@@ -86,7 +93,7 @@ it("SimpleType-BuilderSet", () => {
     createdAt: now,
     default_bool: true,
     default_createdAt: new Date("2023-12-31T23:59:59.000Z"),
-    default_float64: 5000,
+    default_float64: 4711.4,
     default_int64: 64,
     default_string: "hallo",
     float64: 42.42,
@@ -96,7 +103,7 @@ it("SimpleType-BuilderSet", () => {
     optional_createdAt: undefined,
     optional_default_bool: true,
     optional_default_createdAt: new Date("2023-12-31T23:59:59.000Z"),
-    optional_default_float32: 50,
+    optional_default_float32: 49.2,
     optional_default_int32: 32,
     optional_default_string: "hallo",
     optional_float32: undefined,
@@ -165,7 +172,7 @@ it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   // const fromPayload = SimpleTypeFactory.Builder();
   (payload as { Type: string }).Type = "Kaput";
   expect(SimpleTypeFactory.FromPayload(payload).unwrap_err().message).toEqual(
-    "WuestePayload Type mismatch:[SimpleType,https://SimpleType,SimpleType] != Kaput",
+    "WuestePayload Type mismatch:[https://SimpleType,SimpleType] != Kaput",
   );
 });
 
@@ -310,7 +317,7 @@ it("SimpleType-BuilderCoerce", () => {
     createdAt: now,
     default_bool: true,
     default_createdAt: new Date("2023-12-31T23:59:59.000Z"),
-    default_float64: 5000,
+    default_float64: 4711.4,
     default_int64: 64,
     default_string: "hallo",
     float64: 42.42,
@@ -329,7 +336,7 @@ it("SimpleType-BuilderCoerce", () => {
     optional_createdAt: now,
     optional_default_bool: true,
     optional_default_createdAt: new Date("2023-12-31T23:59:59.000Z"),
-    optional_default_float32: 50,
+    optional_default_float32: 49.2,
     optional_default_int32: 32,
     optional_default_string: "hallo",
     optional_float32: 32.32,
@@ -397,8 +404,8 @@ it("Nested-Getter", () => {
     new Date("2023-12-31T23:59:59.000Z"),
     new Date("2023-12-31T23:59:59.000Z"),
     48.9,
-    5000,
-    50,
+    4711.4,
+    49.2,
     49,
     64,
     32,
@@ -628,4 +635,35 @@ it(`Payload OpenObject`, () => {
   const ref = NestedType$PayloadFactory.ToObject(obj);
 
   expect(ref).toEqual(json);
+});
+
+it("dynmic scheme has format", () => {
+  const my = DynamicDefaultFactory.Schema() as WuestenReflectionObject;
+  expect((my.properties![0].property as WuestenReflectionLiteral).format).toEqual("file://../../next-id.ts#nextId");
+});
+
+it("dynamic - formatter - super", () => {
+  WuestenTypeRegistry.AddFormat("file://../../next-id.ts#nextId", () => {
+    return "1234";
+  });
+  const rdd = DynamicDefaultFactory.Builder().Get();
+  expect(rdd.unwrap()).toEqual({
+    x_string: "1234",
+    x_number: 1234,
+    x_integer: 1234,
+    x_boolean: true,
+  });
+});
+
+it("dynamic - formatter - factory", () => {
+  DynamicDefaultFactory.AddFormat("file://../../next-id.ts#nextId", () => {
+    return "1234";
+  });
+  const rdd = DynamicDefaultFactory.Builder().Get();
+  expect(rdd.unwrap()).toEqual({
+    x_string: "1234",
+    x_number: 1234,
+    x_integer: 1234,
+    x_boolean: true,
+  });
 });

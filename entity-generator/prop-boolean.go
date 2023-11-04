@@ -8,7 +8,8 @@ type PropertyBoolean interface {
 	Id() string
 	Type() Type
 	Description() rusty.Optional[string]
-	Default() rusty.Optional[bool] // match Type
+	Default() rusty.Optional[any] // match Type
+	Format() rusty.Optional[string]
 	Ref() rusty.Optional[string]
 	Meta() PropertyMeta
 }
@@ -16,8 +17,9 @@ type PropertyBoolean interface {
 type PropertyBooleanBuilder struct {
 	Id          string
 	Type        Type
+	Format      rusty.Optional[string]
 	Description rusty.Optional[string]
-	Default     rusty.Optional[bool]
+	Default     rusty.Optional[any]
 	Ref         rusty.Optional[string]
 }
 
@@ -29,7 +31,8 @@ func (b *PropertyBooleanBuilder) FromJson(js JSONDict) *PropertyBooleanBuilder {
 	b.Type = "boolean"
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
-	b.Default = getFromAttributeOptionalBoolean(js, "default")
+	b.Default = getFromAttributeOptionalAny(js, "default")
+	b.Format = getFromAttributeOptionalString(js, "format")
 	return b
 }
 
@@ -38,7 +41,8 @@ func PropertyBooleanToJson(b PropertyBoolean) JSONDict {
 	JSONsetId(jsp, b)
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "description", b.Description())
-	JSONsetOptionalBoolean(jsp, "default", b.Default())
+	JSONsetOptionalAny(jsp, "default", b.Default())
+	JSONsetOptionalString(jsp, "format", b.Format())
 	return jsp
 }
 
@@ -73,6 +77,10 @@ func (p *propertyBoolean) Description() rusty.Optional[string] {
 	return p.param.Description
 }
 
+func (p *propertyBoolean) Format() rusty.Optional[string] {
+	return p.param.Format
+}
+
 // func (p *propertyBoolean) Runtime() *PropertyRuntime {
 // 	return &p.param.Runtime
 // }
@@ -96,13 +104,14 @@ func (p *propertyBoolean) Description() rusty.Optional[string] {
 // 	p.param.Optional = true
 // }
 
-func (p *propertyBoolean) Default() rusty.Optional[bool] {
-	if p.param.Default.IsSome() {
-		// lit := wueste.BoolLiteral(*p.param.Default.Value())
-		return rusty.Some[bool](p.param.Default.Value())
+func (p *propertyBoolean) Default() rusty.Optional[any] {
+	return p.param.Default
+	// if p.param.Default.IsSome() {
+	// 	// lit := wueste.BoolLiteral(*p.param.Default.Value())
+	// 	return rusty.Some[bool](p.param.Default.Value())
 
-	}
-	return rusty.None[bool]()
+	// }
+	// return rusty.None[bool]()
 }
 
 func (p *propertyBoolean) Type() Type {

@@ -17,7 +17,7 @@ type PropertyString interface {
 	Id() string
 	Type() string
 	Description() rusty.Optional[string]
-	Default() rusty.Optional[string] // match Type
+	Default() rusty.Optional[any] // match Type
 	Format() rusty.Optional[StringFormat]
 	Ref() rusty.Optional[string]
 	Meta() PropertyMeta
@@ -36,7 +36,7 @@ type PropertyStringBuilder struct {
 	Id          string
 	Type        Type
 	Description rusty.Optional[string]
-	Default     rusty.Optional[string]
+	Default     rusty.Optional[any]
 	Ref         rusty.Optional[string]
 	// Enum      []string
 	// MinLength rusty.Optional[int]
@@ -64,7 +64,7 @@ func (b *PropertyStringBuilder) FromJson(js JSONDict) *PropertyStringBuilder {
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.Format = getFromAttributeOptionalString(js, "format")
-	b.Default = getFromAttributeOptionalString(js, "default")
+	b.Default = getFromAttributeOptionalAny(js, "default")
 	return b
 }
 
@@ -74,7 +74,7 @@ func PropertyStringToJson(b PropertyString) JSONDict {
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "description", b.Description())
 	JSONsetOptionalString(jsp, "format", b.Format())
-	JSONsetOptionalString(jsp, "default", b.Default())
+	JSONsetOptionalAny(jsp, "default", b.Default())
 	return jsp
 }
 
@@ -129,13 +129,8 @@ func (p *propertyString) Type() Type {
 	return STRING
 }
 
-func (p *propertyString) Default() rusty.Optional[string] {
-	if !p.param.Default.IsNone() {
-		// lit := wueste.StringLiteral(*p.param.Default.Value())
-		return rusty.Some[string](p.param.Default.Value())
-
-	}
-	return rusty.None[string]()
+func (p *propertyString) Default() rusty.Optional[any] {
+	return p.param.Default
 }
 
 // func (p *propertyString) MinLength() rusty.Optional[int] {

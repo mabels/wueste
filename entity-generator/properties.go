@@ -72,6 +72,12 @@ func JSONsetOptionalString(js JSONDict, key string, value rusty.Optional[string]
 	}
 }
 
+func JSONsetOptionalAny(js JSONDict, key string, value rusty.Optional[any]) {
+	if !value.IsNone() {
+		js.Set(key, value.Value())
+	}
+}
+
 func JSONsetOptionalBoolean(js JSONDict, key string, value rusty.Optional[bool]) {
 	if !value.IsNone() {
 		js.Set(key, value.Value())

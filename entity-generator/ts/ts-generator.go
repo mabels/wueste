@@ -3,6 +3,7 @@ package ts
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -12,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	eg "github.com/mabels/wueste/entity-generator"
 	"github.com/mabels/wueste/entity-generator/rusty"
-	"github.com/mabels/wueste/entity-generator/wueste"
 )
 
 var keyWords = map[string]bool{
@@ -169,6 +169,15 @@ func (l *tsLang) AsTypeHelper(p eg.Property, withs ...withResult) string {
 			case eg.DATE, eg.TIME:
 				panic("not implemented")
 			default:
+				if strings.HasPrefix(p.Format().Value(), "#") {
+					return l.addCoerceType("string", withs...)
+				}
+				dynUrl, err := url.Parse(p.Format().Value())
+				if err == nil {
+					if dynUrl.Scheme == "file" {
+						return l.addCoerceType("string", withs...)
+					}
+				}
 				panic("not implemented")
 			}
 		}
@@ -267,8 +276,8 @@ func (l *tsLang) AssignDefault(line string, retType string) string {
 	return line + " = " + retType
 }
 
-func (l *tsLang) New(line string, retType ...string) string {
-	return "new " + l.Call(line, retType...)
+func (l *tsLang) New(line string, args ...string) string {
+	return "new " + l.Call(line, args...)
 }
 
 func (l *tsLang) Return(line string) string {
@@ -467,22 +476,67 @@ func (g *tsGenerator) generateJSONDict(prop eg.PropertyObject) {
 
 func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenFactory")
+	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenFactoryParam")
+	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenNames")
+
+	names := g.lang.PrivateName(getObjectName(prop), "Names")
+	g.bodyWriter.WriteBlock(
+		g.lang.Const(
+			g.lang.ReturnType(names, "WuestenNames")), " = ",
+		func(wr *eg.ForIfWhileLangWriter) {
+			wr.WriteBlock(g.lang.Call("", "id", "title", "varname"), "=>", func(wr *eg.ForIfWhileLangWriter) {
+				wr.WriteBlock("return", "", func(wr *eg.ForIfWhileLangWriter) {
+					wr.FormatLine("id, title, names: [id, title], varname")
+				})
+			})
+		}, "(", g.lang.Call(")",
+			g.lang.Quote(prop.Id()),
+			g.lang.Quote(prop.Title()),
+			g.lang.Quote(g.lang.PublicName(getObjectName(prop)))))
+	g.bodyWriter.WriteLine()
 
 	// export function  NewSimpleTypeFactory(): WuestenFactory<SimpleTypeBuilder, SimpleType>
-	className := g.lang.PrivateName(getObjectName(prop), "Factory")
-	partialType := g.lang.PublicName(getObjectName(prop), "CoerceType")
+	className := g.lang.PublicName(getObjectName(prop), "FactoryImpl")
+	partialType := g.lang.OrType(
+		g.lang.PublicName(getObjectName(prop), "Object"),
+		g.lang.PublicName(getObjectName(prop), "CoerceType"))
+	fullType := g.lang.PublicName(getObjectName(prop))
 	// g.lang.OrType(
 	// 	g.lang.Generics("Partial", g.lang.PublicName(getObjectName(prop))),
 	// 	g.lang.Generics("Partial", g.lang.PublicName(getObjectName(prop), "Param")),
 	// 	g.lang.Generics("Partial", g.lang.PublicName(getObjectName(prop), "Object")))
-	g.lang.Class(g.bodyWriter, "", g.lang.Implements(className,
-		g.lang.Generics("WuestenFactory", g.lang.PublicName(getObjectName(prop)), partialType,
+	g.lang.Class(g.bodyWriter, "export ", g.lang.Extends(className,
+		g.lang.Generics("WuestenFactory", fullType, partialType,
 			g.lang.PublicName(getObjectName(prop), "Object"))), prop,
 		func(prop eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {
 		}, func(wr *eg.ForIfWhileLangWriter) {
-			wr.WriteBlock("Builder():", g.lang.PublicName(getObjectName(prop), "Builder"), func(wr *eg.ForIfWhileLangWriter) {
-				wr.FormatLine("return new %s()", g.lang.PublicName(getObjectName(prop), "Builder"))
+			fpArg := g.lang.ReturnType("params?", g.lang.Generics("WuestenFactoryParam", fullType, partialType))
+			// wr.WriteLine(g.lang.Readonly(g.lang.ReturnType("params", g.lang.Generics("WuestenAttributeParameter", fullType))))
+			wr.WriteBlock(g.lang.Call("constructor", fpArg), "", func(wr *eg.ForIfWhileLangWriter) {
+				wr.WriteBlock("super", "", func(wr *eg.ForIfWhileLangWriter) {
+					wr.WriteLine(g.lang.Comma(g.lang.ReturnType("jsonname", g.lang.CallDot(names, "title"))))
+					wr.WriteLine(g.lang.Comma(g.lang.ReturnType("varname", g.lang.CallDot(names, "varname"))))
+					wr.WriteLine(g.lang.Comma(g.lang.ReturnType("base", g.lang.Quote(""))))
+					// wr.WriteLine(g.lang.Comma(g.lang.ReturnType("dynamic", "{}")))
+					// wr.WriteLine(g.lang.Comma(g.lang.ReturnType("encoder", "WuestenJSONPassThroughEncoder")))
+					// wr.WriteLine(g.lang.Comma(g.lang.ReturnType("decoder", "WuestenJSONPassThroughDecoder")))
+					wr.WriteLine("...params")
+				}, "({", "})")
 			})
+
+			wr.WriteBlock(
+				g.lang.ReturnType(
+					g.lang.Call("Names"), "WuestenNames"), "",
+				func(wr *eg.ForIfWhileLangWriter) {
+					wr.FormatLine("return %s", g.lang.PrivateName(getObjectName(prop), "Names"))
+				})
+
+			wr.WriteBlock(
+				g.lang.ReturnType(
+					g.lang.Call("Builder"), g.lang.PublicName(getObjectName(prop), "Builder")), "",
+				func(wr *eg.ForIfWhileLangWriter) {
+					wr.FormatLine("return new %s(this._params)", g.lang.PublicName(getObjectName(prop), "Builder"))
+				})
 			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result", "WuesteResult")
 			wr.WriteBlock("", g.lang.ReturnType(
 				g.lang.Call("ToObject", g.lang.ReturnType("obj", g.lang.PublicName(getObjectName(prop)))),
@@ -490,26 +544,29 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 				wr.FormatLine("return %s", g.lang.Call(g.lang.PublicName(getObjectName(prop), "ToObject"), "obj"))
 			})
 
-			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenJSONPassThroughDecoder")
 			wr.WriteBlock("",
 				g.lang.ReturnType(
-					g.lang.Call("FromPayload", g.lang.ReturnType("val", "WuestePayload"), "decoder = WuestenJSONPassThroughDecoder"),
+					g.lang.Call("FromPayload", g.lang.ReturnType("val", "WuestePayload"), "decoder = this._params.decoder"),
 					g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop)))),
 				func(wr *eg.ForIfWhileLangWriter) {
-					ids := []string{getObjectName(prop)}
-					if prop.Id() != "" {
-						ids = append(ids, prop.Id())
-					}
-					if prop.Title() != "" {
-						ids = append(ids, prop.Title())
-					}
-					conditions := []string{}
-					for _, id := range ids {
-						conditions = append(conditions, fmt.Sprintf("val.Type === %s", g.lang.Quote(id)))
-					}
-					wr.WriteBlock("if", fmt.Sprintf("(!(%s))", strings.Join(conditions, " || ")), func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return WuesteResult.Err(new Error(`WuestePayload Type mismatch:[%s] != ${val.Type}`));", strings.Join(ids, ","))
-					})
+					// ids := []string{getObjectName(prop)}
+					// if prop.Id() != "" {
+					// 	ids = append(ids, prop.Id())
+					// }
+					// if prop.Title() != "" {
+					// 	ids = append(ids, prop.Title())
+					// }
+					// conditions := []string{}
+					// for _, id := range ids {
+					// 	conditions = append(conditions, fmt.Sprintf("val.Type === %s", g.lang.Quote(id)))
+					// }
+					// !_SimpleTypeNames.names.includes(val.Type)
+					wr.WriteBlock("if",
+						fmt.Sprintf("(!%s.names.includes(val.Type))", g.lang.PrivateName(getObjectName(prop), "Names")),
+						func(wr *eg.ForIfWhileLangWriter) {
+							wr.FormatLine("return WuesteResult.Err(new Error(`WuestePayload Type mismatch:[${%s.names.join(',')}] != ${val.Type}`));",
+								g.lang.PrivateName(getObjectName(prop), "Names"))
+						})
 					// <Partial<SimpleTypeParam>>
 					wr.FormatLine("const data = %s", g.lang.Call("decoder", "val.Data"))
 					wr.WriteBlock("if", "(data.is_err())", func(wr *eg.ForIfWhileLangWriter) {
@@ -518,16 +575,15 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 
 					wr.WriteLine(
 						g.lang.AssignDefault("const builder",
-							g.lang.New(g.lang.PublicName(getObjectName(prop), "Builder"))))
+							g.lang.New(g.lang.PublicName(getObjectName(prop), "Builder"), "this._params")))
 					wr.FormatLine("return builder.Coerce(data.unwrap() as %s);", partialType)
 				})
 
-			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenJSONPassThroughEncoder")
 			name := g.lang.PublicName(getObjectName(prop))
 			wr.WriteBlock("",
 				g.lang.ReturnType(
 					g.lang.Call("ToPayload", g.lang.ReturnType("val", g.lang.OrType(g.lang.Generics("WuesteResult", name), name)),
-						"encoder = WuestenJSONPassThroughEncoder"), g.lang.Generics("WuesteResult", "WuestePayload")),
+						"encoder = this._params.encoder"), g.lang.Generics("WuesteResult", "WuestePayload")),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.FormatLine("let toEncode: %s;", name)
 					wr.WriteIf("(WuesteResult.Is(val))", func(wr *eg.ForIfWhileLangWriter) {
@@ -543,11 +599,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 						wr.FormatLine("return WuesteResult.Err(data.unwrap_err());")
 					})
 					wr.WriteBlock("return", "WuesteResult.Ok", func(wr *eg.ForIfWhileLangWriter) {
-						id := prop.Id()
-						if id == "" {
-							id = prop.Title()
-						}
-						wr.FormatLine("Type: %s,", g.lang.Quote(id))
+						wr.FormatLine("Type: %s,", g.lang.CallDot(g.lang.PrivateName(getObjectName(prop), "Names"), "id"))
 						wr.FormatLine("Data: data.unwrap() as unknown as Record<string, unknown>")
 					}, "({", "});")
 				})
@@ -556,7 +608,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 			wr.WriteBlock("", g.lang.ReturnType(
 				g.lang.Call("Clone", g.lang.ReturnType("oth", g.lang.PublicName(getObjectName(prop)))),
 				g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop)))), func(wr *eg.ForIfWhileLangWriter) {
-				wr.FormatLine("const builder = new %s();", g.lang.PublicName(getObjectName(prop), "Builder"))
+				wr.FormatLine("const builder = new %s(this._params);", g.lang.PublicName(getObjectName(prop), "Builder"))
 				for _, pi := range prop.Items() {
 					wr.WriteLine(
 						g.lang.Line(
@@ -579,11 +631,19 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 
 		})
 
+	// WuestenTypeRegistry.Register(n
+	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenTypeRegistry")
 	g.bodyWriter.WriteLine(
 		g.lang.AssignDefault(
 			g.lang.Export(g.lang.Const(g.lang.PublicName(getObjectName(prop), "Factory"))),
-			g.lang.New(g.lang.PrivateName(getObjectName(prop), "Factory"))))
+			g.lang.Call("WuestenTypeRegistry.Register",
+				g.lang.New(g.lang.PublicName(getObjectName(prop), "FactoryImpl"),
+					g.lang.Call("WuestenTypeRegistry.cloneAttributeBase")))))
 	g.bodyWriter.WriteLine()
+}
+
+type propFormat interface {
+	Format() rusty.Optional[string]
 }
 
 func (g *tsGenerator) writeSchema(wr *eg.ForIfWhileLangWriter, prop eg.Property, itemNames ...string) {
@@ -598,6 +658,10 @@ func (g *tsGenerator) writeSchema(wr *eg.ForIfWhileLangWriter, prop eg.Property,
 
 	switch prop.Type() {
 	case eg.STRING, eg.INTEGER, eg.NUMBER, eg.BOOLEAN:
+		po := prop.(propFormat)
+		if po.Format().IsSome() {
+			wr.WriteLine(g.lang.Comma(g.lang.ReturnType("format", g.lang.Quote(po.Format().Value()))))
+		}
 		// nimpl := "() => { throw new Error('not implemented') }"
 		// if len(itemNames) > 0 {
 		// 	nimpl = fmt.Sprintf("(val) => %s", g.lang.Call(g.lang.CallDot("my",
@@ -673,59 +737,58 @@ func (g *tsGenerator) writeSchema(wr *eg.ForIfWhileLangWriter, prop eg.Property,
 	}
 }
 
+type propDefault interface {
+	Default() rusty.Optional[any]
+}
+
 func getDefaultForProperty(prop eg.Property) *string {
-	{
-		p, ok := prop.(eg.PropertyString)
-		if ok {
-			if p.Default().IsSome() {
-				return wueste.StringLiteral(p.Default().Value()).String()
-			} else {
-				return nil
-			}
-		}
+	pDef, ok := prop.(propDefault)
+	if !ok {
+		return nil
 	}
-	{
-		p, ok := prop.(eg.PropertyBoolean)
-		if ok {
-			if p.Default().IsSome() {
-				return wueste.BoolLiteral(p.Default().Value()).String()
-			} else {
-				return nil
-			}
-		}
+	if pDef.Default().IsNone() {
+		return nil
 	}
-	{
-		p, ok := prop.(eg.PropertyNumber)
-		if ok {
-			if p.Default().IsSome() {
-				return wueste.NumberLiteral[float64](p.Default().Value()).String()
-			} else {
-				return nil
-			}
-		}
+	bStr, err := json.Marshal(pDef.Default().Value())
+	if err != nil {
+		panic(err)
 	}
-	{
-		p, ok := prop.(eg.PropertyInteger)
-		if ok {
-			if p.Default().IsSome() {
-				return wueste.IntegerLiteral[int](p.Default().Value()).String()
-			} else {
-				return nil
-			}
-		}
-	}
-	return nil
+	str := string(bStr)
+	return &str
 }
 
 func genDefaultWuestenAttribute[T string](lang tsLang, name string, prop eg.Property) string {
 	defStr := getDefaultForProperty(prop)
 	var param string
-	if defStr != nil {
-		param = fmt.Sprintf("{jsonname: %s, varname: %s, base: baseName, default: %s}", lang.Quote(name), lang.Quote(lang.PublicName(name)), *defStr)
-	} else {
-		param = fmt.Sprintf("{jsonname: %s, varname: %s, base: baseName}", lang.Quote(name), lang.Quote(lang.PublicName(name)))
+	format := ""
+	switch prop.Type() {
+	case eg.STRING:
+		ps := prop.(eg.PropertyString)
+		if ps.Format().IsSome() {
+			format = lang.ReturnType(",format", lang.Quote(ps.Format().Value()))
+		}
+	case eg.NUMBER:
+		ps := prop.(eg.PropertyNumber)
+		if ps.Format().IsSome() {
+			format = lang.ReturnType(",format", lang.Quote(ps.Format().Value()))
+		}
+	case eg.INTEGER:
+		ps := prop.(eg.PropertyInteger)
+		if ps.Format().IsSome() {
+			format = lang.ReturnType(",format", lang.Quote(ps.Format().Value()))
+		}
+	case eg.BOOLEAN:
+		ps := prop.(eg.PropertyBoolean)
+		if ps.Format().IsSome() {
+			format = lang.ReturnType(",format", lang.Quote(ps.Format().Value()))
+		}
 	}
-	return param
+	if defStr != nil {
+		param = fmt.Sprintf("{jsonname: %s, varname: %s, base: baseName, default: %s%s}", lang.Quote(name), lang.Quote(lang.PublicName(name)), *defStr, format)
+	} else {
+		param = fmt.Sprintf("{jsonname: %s, varname: %s, base: baseName%s}", lang.Quote(name), lang.Quote(lang.PublicName(name)), format)
+	}
+	return lang.Call("WuestenFactoryAttributeMerge", "this.param", param)
 }
 
 func reverse[S ~[]E, E any](s S) S {
@@ -768,6 +831,7 @@ func getObjectFileName(prop eg.Property) string {
 func (g *tsGenerator) genWuesteBuilderAttribute(name string, pi eg.PropertyItem, paramFns ...func() string) string {
 	prop := pi.Property()
 	paramFn := func() string {
+		g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenFactoryAttributeMerge")
 		return genDefaultWuestenAttribute(g.lang, name, prop)
 	}
 	if len(paramFns) > 0 {
@@ -932,12 +996,13 @@ func (g *tsGenerator) generateLocalArrays(prop eg.PropertyObject, pa eg.Property
 	// 		})
 	// 	})
 	className := g.lang.PublicName(baseName, "Builder")
+	attrType := []string{
+		g.lang.AsTypeNullable(pi.Property() /*WithOptional(pi.Optional())*/),
+		g.lang.AsTypeNullable(pi.Property(), WithAddCoerce() /*WithOptional(pi.Optional())*/),
+	}
 	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttr")
 	g.lang.Class(g.bodyWriter, "export ", g.lang.Extends(className,
-		g.lang.Generics("WuestenAttr",
-			// g.lang.AsType(pi.Property()),
-			g.lang.AsTypeNullable(pi.Property() /*WithOptional(pi.Optional())*/),
-			g.lang.AsTypeNullable(pi.Property(), WithAddCoerce() /*WithOptional(pi.Optional())*/))),
+		g.lang.Generics("WuestenAttr", attrType...)),
 		prop,
 		func(prop eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {},
 		func(wr *eg.ForIfWhileLangWriter) {
@@ -947,9 +1012,14 @@ func (g *tsGenerator) generateLocalArrays(prop eg.PropertyObject, pa eg.Property
 			}
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttributeParameter")
 
+			wr.WriteLine("// WuestenAttributeParameter jojo")
+			// boolean[][][][], WuesteCoerceTypeboolean[][][][]>
 			wr.WriteBlock("",
 				g.lang.Call("constructor",
-					g.lang.ReturnType("param", g.lang.Generics("WuestenAttributeParameter", g.lang.AsType(getItemType(pa)))),
+					g.lang.ReturnType("param", g.lang.Generics("WuestenAttributeParameter",
+						g.lang.AsType(getItemType(pa)),
+						g.lang.AsType(getItemType(pa), WithAddCoerce()),
+					)),
 				), func(wr *eg.ForIfWhileLangWriter) {
 					pi := eg.NewPropertyArrayItem("ARRAY", rusty.Ok(getItemType(pa)), false).Ok()
 					attr := g.genWuesteBuilderAttribute("ARRAY", pi, func() string { return "param" })
@@ -984,8 +1054,13 @@ func (g *tsGenerator) generateAttributesClass(prop eg.PropertyObject, resultsCla
 		func(pi eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {},
 		func(wr *eg.ForIfWhileLangWriter) {
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenAttributeParameter")
-			wr.WriteLine(g.lang.Readonly(g.lang.ReturnType("param",
-				g.lang.Generics("WuestenAttributeParameter", g.lang.PublicName(getObjectName(prop))))))
+			fpArgs := g.lang.ReturnType("param",
+				g.lang.Generics("WuestenAttributeParameter", g.lang.PublicName(getObjectName(prop)),
+					g.lang.OrType(
+						g.lang.PublicName(getObjectName(prop), "Object"),
+						g.lang.PublicName(getObjectName(prop), "CoerceType"),
+					)))
+			wr.WriteLine(g.lang.Readonly(fpArgs))
 			for _, pi := range prop.Items() {
 				// wr.FormatLine("readonly %s = %s;", g.lang.PrivateName(prop.Name()), g.genWuesteBuilderAttribute(prop.Name(), prop.Property()))
 				if pi.Property().Type() == eg.OBJECT && isNamedType(pi.Property()) {
@@ -1037,10 +1112,7 @@ func (g *tsGenerator) generateAttributesClass(prop eg.PropertyObject, resultsCla
 				}
 			}
 
-			wr.WriteBlock("", g.lang.Call("constructor",
-				g.lang.AssignDefault("param",
-					fmt.Sprintf("{jsonname: %s, varname: %s, base: \"\"}",
-						g.lang.Quote(getObjectName(prop)), g.lang.Quote(g.lang.PublicName(getObjectName(prop)))))), func(wr *eg.ForIfWhileLangWriter) {
+			wr.WriteBlock("", g.lang.Call("constructor", fpArgs), func(wr *eg.ForIfWhileLangWriter) {
 				// wr.WriteLine(
 				// 	g.lang.Call("super", "param", g.lang.CurlyBrackets(
 				// 		g.lang.ReturnType("coerce", g.lang.CallDot("(p) => "+attrsClassName,
@@ -1185,7 +1257,11 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 		g.lang.Generics("Partial", g.lang.PublicName(getObjectName(prop), "Param")),
 		g.lang.Generics("Partial", g.lang.PublicName(getObjectName(prop), "Object")))
 	coerceType := g.lang.PublicType(getObjectName(prop), "CoerceType")
-	genericType := []string{g.lang.PublicName(getObjectName(prop)), coerceType}
+	fullCoerceType := g.lang.OrType(
+		coerceType,
+		g.lang.PublicType(getObjectName(prop), "Object"),
+	)
+	genericType := []string{g.lang.PublicName(getObjectName(prop)), fullCoerceType}
 	g.bodyWriter.FormatLine("export type %s = %s", coerceType, partialType)
 
 	// type SX = (b: SimpleType$PayloadBuilder)=>void
@@ -1287,13 +1363,13 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 
 			wr.WriteLine(g.lang.Readonly(g.lang.ReturnType("_attr", attrsClassName)))
 			wr.WriteBlock("", g.lang.Call("constructor",
-				g.lang.AssignDefault("param",
-					fmt.Sprintf("{jsonname: %s, varname: %s, base: \"\"}",
-						g.lang.Quote(getObjectName(prop)), g.lang.Quote(g.lang.PublicName(getObjectName(prop)))))), func(wr *eg.ForIfWhileLangWriter) {
-				wr.WriteLine(g.lang.Const(g.lang.AssignDefault("attr", g.lang.New(attrsClassName, "param"))))
-				wr.WriteLine("super(param, {coerce: attr.Coerce});")
-				wr.WriteLine(g.lang.AssignDefault("this._attr", "attr"))
-			})
+				g.lang.ReturnType("param", g.lang.Generics("WuestenAttributeParameter",
+					g.lang.PublicName(getObjectName(prop)), fullCoerceType))),
+				func(wr *eg.ForIfWhileLangWriter) {
+					wr.WriteLine(g.lang.Const(g.lang.AssignDefault("attr", g.lang.New(attrsClassName, "param"))))
+					wr.WriteLine("super(param, {coerce: attr.Coerce});")
+					wr.WriteLine(g.lang.AssignDefault("this._attr", "attr"))
+				})
 
 			// wr.WriteBlock("", g.lang.ReturnType(
 			// 	g.lang.Call("Reflection", ""), "WuestenReflection"), func(wr *eg.ForIfWhileLangWriter) {

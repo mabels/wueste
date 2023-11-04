@@ -11,6 +11,10 @@ import {
   WuestenRecordGetter,
   WuestenGetterBuilder,
   WuesteToIterator,
+  WuestenFactoryParam,
+  WuestenFactoryAttributeMerge,
+  WuestenAttributeBase,
+  WuestenNames,
 } from "./wueste";
 
 it("array coerce from array", () => {
@@ -95,9 +99,18 @@ it("array coerce from generator array", () => {
   expect(idx).toBe(0);
 });
 
+function attrParam<I, T>(def?: WuestenFactoryParam<I, T>): WuestenAttributeBase<I, T> {
+  return WuestenFactoryAttributeMerge({
+    jsonname: "x",
+    varname: "X",
+    base: "base",
+    ...def,
+  });
+}
+
 describe("string coerce", () => {
   it("string attribute", () => {
-    const coerce = wuesten.AttributeString({ jsonname: "x", varname: "X", base: "base" });
+    const coerce = wuesten.AttributeString(attrParam());
     expect(coerce.Get().unwrap_err().message).toContain("Attribute[base.x] is required");
     expect(coerce.CoerceAttribute({}).unwrap_err().message).toContain("Attribute[base.x] not found");
     expect(coerce.CoerceAttribute({ x: 4 }).unwrap()).toBe("4");
@@ -106,7 +119,7 @@ describe("string coerce", () => {
     expect(coerce.Get().unwrap()).toBe("9");
   });
   it("string optional attribute", () => {
-    const coerce = wuesten.AttributeStringOptional({ jsonname: "x", varname: "X", base: "base" });
+    const coerce = wuesten.AttributeStringOptional(attrParam());
     expect(coerce.Get().is_ok()).toBeTruthy();
     expect(coerce.CoerceAttribute({}).is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -117,7 +130,7 @@ describe("string coerce", () => {
   });
 
   it("string no default", () => {
-    const coerce = wuesten.AttributeString({ jsonname: "x", varname: "X", base: "base" });
+    const coerce = wuesten.AttributeString(attrParam());
     expect(coerce.Get().is_err()).toBeTruthy();
     expect(coerce.Coerce({}).unwrap()).toBe("[object Object]");
     expect(coerce.Get().unwrap()).toBe("[object Object]");
@@ -135,12 +148,7 @@ describe("string coerce", () => {
   });
 
   it("string default", () => {
-    const coerce = wuesten.AttributeString({
-      jsonname: "x",
-      varname: "x",
-      default: "x",
-      base: "base",
-    });
+    const coerce = wuesten.AttributeString(attrParam({ default: "x" }));
     expect(coerce.Get().unwrap()).toBe("x");
     expect(coerce.Coerce("y").is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBe("y");
@@ -149,7 +157,7 @@ describe("string coerce", () => {
   });
 
   it("stringoptional no default", () => {
-    const coerce = wuesten.AttributeStringOptional({ jsonname: "x", varname: "x", base: "base" });
+    const coerce = wuesten.AttributeStringOptional(attrParam());
     expect(coerce.Get().unwrap()).toBeUndefined();
     expect(() => coerce.Coerce(null as unknown as string)).not.toThrowError();
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -173,12 +181,7 @@ describe("string coerce", () => {
   });
 
   it("stringoptional default", () => {
-    const coerce = wuesten.AttributeStringOptional({
-      jsonname: "x",
-      varname: "X",
-      default: "x",
-      base: "base",
-    });
+    const coerce = wuesten.AttributeStringOptional(attrParam({ default: "x" }));
     expect(coerce.Get().unwrap()).toBe("x");
     expect(coerce.Coerce("y").is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBe("y");
@@ -189,7 +192,7 @@ describe("string coerce", () => {
 
 describe("datetime coerce", () => {
   it("datetime no default", () => {
-    const coerce = wuesten.AttributeDateTime({ jsonname: "x", varname: "x", base: "base" });
+    const coerce = wuesten.AttributeDateTime(attrParam());
     expect(coerce.Get().unwrap_err().message).toContain("Attribute[base.x] is required");
     expect(coerce.Coerce({} as string).unwrap_err().message).toContain("Attribute[base.x] is not a Date");
     expect(coerce.Coerce(6.4 as unknown as string).is_ok()).toBeTruthy();
@@ -201,27 +204,17 @@ describe("datetime coerce", () => {
   });
 
   it("datetime default", () => {
-    const coerce = wuesten.AttributeDateTime({
-      jsonname: "x",
-      varname: "x",
-      base: "base",
-      default: "2023-01-01",
-    });
+    const coerce = wuesten.AttributeDateTime(attrParam<Date, string>({ default: "2023-01-01" }));
     expect(coerce.Get().unwrap()).toEqual(new Date("2023-01-01"));
   });
 
   it("datetime default", () => {
-    const coerce = wuesten.AttributeDateTime({
-      jsonname: "x",
-      varname: "x",
-      base: "base",
-      default: 6 as unknown as string,
-    });
+    const coerce = wuesten.AttributeDateTime(attrParam<Date, string>({ default: 6 as unknown as string }));
     expect(coerce.Get().unwrap()).toEqual(new Date(6));
   });
 
   it("datetimeoptional no default", () => {
-    const coerce = wuesten.AttributeDateTimeOptional({ jsonname: "x", varname: "x", base: "base" });
+    const coerce = wuesten.AttributeDateTimeOptional(attrParam());
     expect(coerce.Get().unwrap()).toBeUndefined();
     expect(coerce.Coerce(null as unknown as Date).is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -230,12 +223,7 @@ describe("datetime coerce", () => {
   });
 
   it("datetimeoptional default", () => {
-    const coerce = wuesten.AttributeDateTimeOptional({
-      jsonname: "x",
-      varname: "x",
-      default: new Date("2023-01-01"),
-      base: "base",
-    });
+    const coerce = wuesten.AttributeDateTimeOptional(attrParam<Date, string>({ default: "2023-01-01" }));
     expect(coerce.Get().unwrap()).toEqual(new Date("2023-01-01"));
     coerce.Coerce(undefined);
     expect(coerce.Get().unwrap()).toBeFalsy();
@@ -244,7 +232,7 @@ describe("datetime coerce", () => {
 
 describe("integer coerce", () => {
   it("integer no default", () => {
-    const coerce = wuesten.AttributeInteger({ jsonname: "x", varname: "x", base: "base" });
+    const coerce = wuesten.AttributeInteger(attrParam());
     expect(coerce.Get().unwrap_err().message).toContain("Attribute[base.x] is required");
     expect(coerce.Coerce({} as number).unwrap_err().message).toContain("Attribute[base.x] is not a number");
     expect(coerce.Coerce(6.4).is_ok()).toBeTruthy();
@@ -252,17 +240,12 @@ describe("integer coerce", () => {
   });
 
   it("integer default", () => {
-    const coerce = wuesten.AttributeInteger({
-      jsonname: "x",
-      varname: "x",
-      default: 7.2,
-      base: "base",
-    });
+    const coerce = wuesten.AttributeInteger(attrParam({ default: 7.2 }));
     expect(coerce.Get().unwrap()).toEqual(7);
   });
 
   it("integer no default", () => {
-    const coerce = wuesten.AttributeIntegerOptional({ jsonname: "x", varname: "x", base: "base" });
+    const coerce = wuesten.AttributeIntegerOptional(attrParam());
     expect(coerce.Get().unwrap()).toBeUndefined();
     expect(coerce.Coerce(null as unknown as number).is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -271,12 +254,7 @@ describe("integer coerce", () => {
   });
 
   it("integer default", () => {
-    const coerce = wuesten.AttributeIntegerOptional({
-      jsonname: "x",
-      varname: "x",
-      default: 7.2,
-      base: "base",
-    });
+    const coerce = wuesten.AttributeIntegerOptional(attrParam({ default: 7.2 }));
     expect(coerce.Get().unwrap()).toEqual(7);
     expect(coerce.Coerce(undefined).is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -285,7 +263,7 @@ describe("integer coerce", () => {
 
 describe("float coerce", () => {
   it("float no default", () => {
-    const coerce = wuesten.AttributeNumber({ jsonname: "x", varname: "x", base: "base" });
+    const coerce = wuesten.AttributeNumber(attrParam());
     expect(coerce.Get().unwrap_err().message).toContain("Attribute[base.x] is required");
     expect(coerce.Coerce({} as string).unwrap_err().message).toContain("Attribute[base.x] is not a number");
     expect(coerce.Coerce(6.4).is_ok()).toBeTruthy();
@@ -293,17 +271,12 @@ describe("float coerce", () => {
   });
 
   it("float default", () => {
-    const coerce = wuesten.AttributeNumber({
-      jsonname: "x",
-      varname: "x",
-      default: 7.2,
-      base: "base",
-    });
+    const coerce = wuesten.AttributeNumber(attrParam({ default: 7.2 }));
     expect(coerce.Get().unwrap()).toEqual(7.2);
   });
 
   it("float no default", () => {
-    const coerce = wuesten.AttributeNumberOptional({ jsonname: "x", varname: "x", base: "base" });
+    const coerce = wuesten.AttributeNumberOptional(attrParam());
     expect(coerce.Get().unwrap()).toBeUndefined();
     expect(coerce.Coerce(null as unknown as string).is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -312,12 +285,7 @@ describe("float coerce", () => {
   });
 
   it("float default", () => {
-    const coerce = wuesten.AttributeNumberOptional({
-      jsonname: "x",
-      varname: "x",
-      default: 7.2,
-      base: "base",
-    });
+    const coerce = wuesten.AttributeNumberOptional(attrParam({ default: 7.2 }));
     expect(coerce.Get().unwrap()).toEqual(7.2);
     coerce.Coerce(undefined);
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -326,7 +294,7 @@ describe("float coerce", () => {
 
 describe("bool coerce", () => {
   it("bool no default", () => {
-    const coerce = wuesten.AttributeBoolean({ jsonname: "x", varname: "x", base: "base" });
+    const coerce = wuesten.AttributeBoolean(attrParam());
     expect(coerce.Get().unwrap_err().message).toContain("Attribute[base.x] is required");
     expect(coerce.Coerce({} as number).unwrap_err().message).toContain("Attribute[base.x] is not a boolean");
     expect(coerce.Coerce(true).is_ok()).toBeTruthy();
@@ -342,17 +310,12 @@ describe("bool coerce", () => {
   });
 
   it("bool default", () => {
-    const coerce = wuesten.AttributeBoolean({
-      jsonname: "x",
-      varname: "x",
-      default: "true" as unknown as boolean,
-      base: "base",
-    });
+    const coerce = wuesten.AttributeBoolean(attrParam<boolean, string>({ default: "true" }));
     expect(coerce.Get().unwrap()).toEqual(true);
   });
 
   it("booloptional no default", () => {
-    const coerce = wuesten.AttributeBooleanOptional({ jsonname: "x", varname: "x", base: "base" });
+    const coerce = wuesten.AttributeBooleanOptional(attrParam());
     expect(coerce.Get().unwrap()).toBeUndefined();
     expect(coerce.Coerce(null as unknown as string).is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -365,12 +328,7 @@ describe("bool coerce", () => {
   });
 
   it("booloptional default", () => {
-    const coerce = wuesten.AttributeBooleanOptional({
-      jsonname: "x",
-      varname: "x",
-      default: 1 as unknown as boolean,
-      base: "base",
-    });
+    const coerce = wuesten.AttributeBooleanOptional(attrParam<boolean, number>({ default: 1 }));
     expect(coerce.Get().unwrap()).toEqual(true);
     expect(coerce.Coerce(undefined).is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -391,20 +349,24 @@ class Builder implements WuestenBuilder<Entity, Entity> {
     throw new Error("Method not implemented.");
   }
 
-  readonly _id = wuesten.AttributeString({ jsonname: "id", varname: "Id", base: "base" });
-  readonly _test = wuesten.AttributeInteger({ jsonname: "test", varname: "Test", base: "base" });
+  readonly _id = wuesten.AttributeString(attrParam({ jsonname: "id", varname: "Id", base: "base" }));
+  readonly _test = wuesten.AttributeInteger(attrParam({ jsonname: "test", varname: "Test", base: "base" }));
 
-  constructor(
-    readonly param: WuestenAttributeParameter<Entity> = {
-      jsonname: "builder",
-      varname: "Builder",
-      base: "base",
-    },
-  ) {
-    const base = [param.base, param.jsonname].join(".");
-    this._id = wuesten.AttributeString({ jsonname: "id", varname: "Id", base });
+  readonly param: WuestenAttributeBase<Entity, Entity>;
+
+  constructor(param?: WuestenAttributeParameter<Entity, Entity>) {
+    this.param = WuestenFactoryAttributeMerge(
+      attrParam({
+        jsonname: "builder",
+        varname: "Builder",
+        base: "base",
+      }),
+      param,
+    );
+    const base = [this.param.base, this.param.jsonname].join(".");
+    this._id = wuesten.AttributeString(attrParam({ jsonname: "id", varname: "Id", base }));
     this._id.CoerceAttribute(param);
-    this._test = wuesten.AttributeInteger({ jsonname: "test", varname: "Test", base });
+    this._test = wuesten.AttributeInteger(attrParam({ jsonname: "test", varname: "Test", base }));
     this._test.CoerceAttribute(param);
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -445,19 +407,23 @@ class Builder implements WuestenBuilder<Entity, Entity> {
   }
 }
 
-class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
-  Builder(param?: WuestenAttributeParameter<Entity>): Builder {
-    return new Builder(param || { jsonname: "test", varname: "Test", base: "base" });
+class TestFactory extends WuestenFactory<Entity, Entity, Entity> {
+  constructor(param: WuestenAttributeParameter<Entity, Entity>) {
+    super(param);
   }
-  // FromObject(object: never): Result<Entity> {
-  //     const builder = this.Builder();
-  //     if (typeof object !== "object" || object === null) {
-  //         return Result.Err("Not an object")
-  //     }
-  //     builder.id(object["id"])
-  //     builder.test(object["test"])
-  //     return builder.Validate()
-  // }
+
+  Names(): WuestenNames {
+    throw new Error("Method not implemented.");
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Builder(param?: WuestenAttributeParameter<Entity, Entity>): WuestenBuilder<Entity, Entity> {
+    return new Builder(param);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  AddFormat(name: string, fn: (recv: unknown) => unknown): TestFactory {
+    throw new Error("Method not implemented.");
+  }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ToObject(typ: Entity): Entity {
     throw new Error("Method not implemented.");
@@ -489,7 +455,10 @@ class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
 
 describe("object coerce", () => {
   it("object no default", () => {
-    const coerce = wuesten.AttributeObject({ jsonname: "x", varname: "X", base: "super" }, new TestFactory());
+    const coerce = wuesten.AttributeObject(
+      attrParam({ jsonname: "x", varname: "X", base: "super" }),
+      new TestFactory(attrParam({ jsonname: "x", varname: "X", base: "super" })),
+    );
     expect(coerce.Get().is_err()).toBeTruthy();
     expect(
       coerce
@@ -660,7 +629,10 @@ describe("object coerce", () => {
   });
 
   it("objectoptional no default", () => {
-    const coerce = wuesten.AttributeObjectOptional({ jsonname: "x", varname: "X", base: "super" }, new TestFactory());
+    const coerce = wuesten.AttributeObjectOptional(
+      attrParam({ jsonname: "x", varname: "X", base: "super" }),
+      new TestFactory(attrParam({ jsonname: "x", varname: "X", base: "super" })),
+    );
     expect(coerce.Get().is_ok()).toBeTruthy();
     expect(
       coerce

@@ -239,6 +239,15 @@ func getFromAttributeOptionalBoolean(js JSONDict, attr string) rusty.Optional[bo
 	return format
 }
 
+func getFromAttributeOptionalAny(js JSONDict, attr string) rusty.Optional[any] {
+	format := rusty.None[any]()
+	formatVal, found := js.Lookup(attr)
+	if found {
+		format = rusty.Some(formatVal)
+	}
+	return format
+}
+
 func getFromAttributeOptionalInt(js JSONDict, attr string) rusty.Optional[int] {
 	format := rusty.None[int]()
 	formatVal, found := js.Lookup(attr)
