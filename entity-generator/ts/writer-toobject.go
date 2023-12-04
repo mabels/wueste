@@ -54,18 +54,16 @@ func (g *tsGenerator) generateToObject(prop eg.Property, baseName string) {
 	default:
 		panic("generateToObject not implemented")
 	}
+	g.writeToObjectBlock(prop, name)
+}
+
+func (g *tsGenerator) writeToObjectBlock(prop eg.Property, name string) {
 	g.bodyWriter.WriteBlock(g.lang.Export(
 		g.lang.ReturnType(
-			g.lang.Call("function "+g.lang.PublicName(baseName, "ToObject"),
+			g.lang.Call("function "+g.lang.PublicName(name, "ToObject"),
 				g.lang.ReturnType("v0", g.lang.AsType(prop))), name)), "", func(wr *eg.ForIfWhileLangWriter) {
-		// wr.FormatLine(
-		// 	g.lang.AssignDefault(
-		// 		g.lang.Const(g.lang.ReturnType("o0", g.lang.AsType(prop))), " []"))
 		g.writeArrayToObject(wr, prop, 0)
-		// wr.FormatLine("return o0")
-		//   return out
 	})
-
 }
 
 func (g *tsGenerator) generateObjectToObject(pi eg.PropertyItem) string {

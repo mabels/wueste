@@ -254,10 +254,12 @@ func (g *tsGenerator) writeReflectionGetter(wr *eg.ForIfWhileLangWriter, baseNam
 		// getObjectName(pi.Property(), []string{pi.Name()})
 		if level[0].Type() != eg.ARRAY {
 			// wr.FormatLine("/* XX %s:%s */", prop.Type(), level[0].Type())
-			getterName := g.lang.PublicName(getObjectName(prop, []string{g.getLastName(level)}), "Getter")
+			// getterName := g.lang.PublicName(getObjectName(prop, []string{g.getLastName(level)}), "Getter")
+			// g.includes.AddProperty(getterName, prop)
+			getterName := "WuestenArrayGetterWalk"
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, getterName)
 			// if len(level) > 1 {
 			// my := level[len(level)-2]
-			g.includes.AddProperty(getterName, prop)
 			wr.FormatLine("// Array %s --- %s --- %v", getterName, getObjectName(prop), prop.Meta().Parent().Value().Type())
 			wr.WriteBlock(
 				getterName,

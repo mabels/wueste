@@ -81,6 +81,18 @@ func TestTypescript(t *testing.T) {
 	}
 }
 
+func TestCallDot(t *testing.T) {
+	l := &tsLang{}
+	assert.Equal(t, "a", l.CallDot("a"))
+	assert.Equal(t, `["a"]`, l.CallDot(`"a"`))
+	assert.Equal(t, "[a]", l.CallDot("[a]"))
+	assert.Equal(t, "a.b.c", l.CallDot("a", "b", "c"))
+	assert.Equal(t, `a["b"].c`, l.CallDot("a", `"b"`, "c"))
+	assert.Equal(t, "a[b].c", l.CallDot("a", "[b]", "c"))
+	assert.Equal(t, "a[b][c].d", l.CallDot("a", "[b]", "[c]", "d"))
+	assert.Equal(t, "v024[iv024]", l.CallDot("v024", "[iv024]"))
+}
+
 func TestMainAction(t *testing.T) {
 	cfg := getConfig()
 	MainAction([]string{

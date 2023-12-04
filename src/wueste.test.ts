@@ -3,7 +3,6 @@ import {
   WuestenAttributeParameter,
   WuestePayload,
   WuestenFactory,
-  wuesten,
   WuestenBuilder,
   WuestenDecoder,
   WuestenEncoder,
@@ -11,11 +10,13 @@ import {
   WuestenRecordGetter,
   WuestenGetterBuilder,
   WuesteToIterator,
-  WuestenFactoryParam,
-  WuestenFactoryAttributeMerge,
   WuestenAttributeBase,
   WuestenNames,
+  WuestenAttributeFactory,
+  WuestenAttributeFactoryOptional,
+  WuestenAttribute,
 } from "./wueste";
+import { Formatter } from "./formatter";
 
 it("array coerce from array", () => {
   const ri = WuesteToIterator<number>([1, 2, 3]);
@@ -99,8 +100,8 @@ it("array coerce from generator array", () => {
   expect(idx).toBe(0);
 });
 
-function attrParam<I, T>(def?: WuestenFactoryParam<I, T>): WuestenAttributeBase<I, T> {
-  return WuestenFactoryAttributeMerge({
+function attrParam<T, C>(def?: WuestenAttributeParameter<C>): WuestenAttribute<T, C> {
+  return WuestenAttributeFactory({
     jsonname: "x",
     varname: "X",
     base: "base",
@@ -110,7 +111,7 @@ function attrParam<I, T>(def?: WuestenFactoryParam<I, T>): WuestenAttributeBase<
 
 describe("string coerce", () => {
   it("string attribute", () => {
-    const coerce = wuesten.AttributeString(attrParam());
+    const coerce = WuestenAttributeFactory(attrParam());
     expect(coerce.Get().unwrap_err().message).toContain("Attribute[base.x] is required");
     expect(coerce.CoerceAttribute({}).unwrap_err().message).toContain("Attribute[base.x] not found");
     expect(coerce.CoerceAttribute({ x: 4 }).unwrap()).toBe("4");
@@ -119,7 +120,7 @@ describe("string coerce", () => {
     expect(coerce.Get().unwrap()).toBe("9");
   });
   it("string optional attribute", () => {
-    const coerce = wuesten.AttributeStringOptional(attrParam());
+    const coerce = WuestenAttributeFactoryOptional(attrParam());
     expect(coerce.Get().is_ok()).toBeTruthy();
     expect(coerce.CoerceAttribute({}).is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -130,7 +131,7 @@ describe("string coerce", () => {
   });
 
   it("string no default", () => {
-    const coerce = wuesten.AttributeString(attrParam());
+    const coerce = WuestenAttributeFactory(attrParam());
     expect(coerce.Get().is_err()).toBeTruthy();
     expect(coerce.Coerce({}).unwrap()).toBe("[object Object]");
     expect(coerce.Get().unwrap()).toBe("[object Object]");
@@ -204,12 +205,12 @@ describe("datetime coerce", () => {
   });
 
   it("datetime default", () => {
-    const coerce = wuesten.AttributeDateTime(attrParam<Date, string>({ default: "2023-01-01" }));
+    const coerce = wuesten.AttributeDateTime(attrParam<Formatter.Date.CoerceType>({ default: "2023-01-01" }));
     expect(coerce.Get().unwrap()).toEqual(new Date("2023-01-01"));
   });
 
   it("datetime default", () => {
-    const coerce = wuesten.AttributeDateTime(attrParam<Date, string>({ default: 6 as unknown as string }));
+    const coerce = wuesten.AttributeDateTime(attrParam<Formatter.Date.CoerceType>({ default: 6 as unknown as string }));
     expect(coerce.Get().unwrap()).toEqual(new Date(6));
   });
 
@@ -223,7 +224,7 @@ describe("datetime coerce", () => {
   });
 
   it("datetimeoptional default", () => {
-    const coerce = wuesten.AttributeDateTimeOptional(attrParam<Date, string>({ default: "2023-01-01" }));
+    const coerce = wuesten.AttributeDateTimeOptional(attrParam<Formatter.Date.CoerceType>({ default: "2023-01-01" }));
     expect(coerce.Get().unwrap()).toEqual(new Date("2023-01-01"));
     coerce.Coerce(undefined);
     expect(coerce.Get().unwrap()).toBeFalsy();
@@ -310,7 +311,7 @@ describe("bool coerce", () => {
   });
 
   it("bool default", () => {
-    const coerce = wuesten.AttributeBoolean(attrParam<boolean, string>({ default: "true" }));
+    const coerce = wuesten.AttributeBoolean(attrParam<BooleanFormatter.CoerceType>({ default: "true" }));
     expect(coerce.Get().unwrap()).toEqual(true);
   });
 
@@ -328,7 +329,7 @@ describe("bool coerce", () => {
   });
 
   it("booloptional default", () => {
-    const coerce = wuesten.AttributeBooleanOptional(attrParam<boolean, number>({ default: 1 }));
+    const coerce = wuesten.AttributeBooleanOptional(attrParam<BooleanFormatter.CoerceType>({ default: 1 }));
     expect(coerce.Get().unwrap()).toEqual(true);
     expect(coerce.Coerce(undefined).is_ok()).toBeTruthy();
     expect(coerce.Get().unwrap()).toBeUndefined();
@@ -352,9 +353,9 @@ class Builder implements WuestenBuilder<Entity, Entity> {
   readonly _id = wuesten.AttributeString(attrParam({ jsonname: "id", varname: "Id", base: "base" }));
   readonly _test = wuesten.AttributeInteger(attrParam({ jsonname: "test", varname: "Test", base: "base" }));
 
-  readonly param: WuestenAttributeBase<Entity, Entity>;
+  readonly param: WuestenAttributeBase<Entity>;
 
-  constructor(param?: WuestenAttributeParameter<Entity, Entity>) {
+  constructor(param?: WuestenAttributeParameter<Entity>) {
     this.param = WuestenFactoryAttributeMerge(
       attrParam({
         jsonname: "builder",
@@ -408,7 +409,7 @@ class Builder implements WuestenBuilder<Entity, Entity> {
 }
 
 class TestFactory extends WuestenFactory<Entity, Entity, Entity> {
-  constructor(param: WuestenAttributeParameter<Entity, Entity>) {
+  constructor(param: WuestenAttributeParameter<Entity>) {
     super(param);
   }
 
@@ -417,7 +418,7 @@ class TestFactory extends WuestenFactory<Entity, Entity, Entity> {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Builder(param?: WuestenAttributeParameter<Entity, Entity>): WuestenBuilder<Entity, Entity> {
+  Builder(param?: WuestenAttributeParameter<Entity>): WuestenBuilder<Entity, Entity> {
     return new Builder(param);
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

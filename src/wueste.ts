@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Result } from "./result";
 import { Payload } from "./payload";
+import { walk } from "./helper";
 
 export type WuestePayload = Payload;
 
@@ -48,25 +49,27 @@ export class WuestenFormatsHandler {
   }
 }
 
-export interface WuestenAttributeFactory {
-  readonly formatsHandler: WuestenFormatsHandler;
+export interface WuestenFormatFactory {
+  readonly formatFactory: WuestenFormatsHandler;
   readonly encoder: (payload: unknown) => Result<unknown>;
   readonly decoder: (payload: unknown) => Result<unknown>;
 }
 
-export interface WuestenAttributeParam<T, I> {
+export interface WuestenAttributeParam<C> {
   readonly base: string;
   readonly varname: string;
   readonly jsonname: string;
-  default?: T | I;
+  default?: C;
   format?: string;
 }
 
-export type WuestenAttributeParameter<T, I> = WuestenAttributeParam<T, I> & Partial<WuestenAttributeFactory>;
+export type WuestenAttributeParameter<C> = WuestenAttributeParam<C> & Partial<WuestenFormatFactory>;
 
-export type WuestenAttributeBase<T, I> = WuestenAttributeParam<T, I> & WuestenAttributeFactory;
+export type WuestenAttributeBase<C> = WuestenAttributeParam<C> & WuestenFormatFactory;
 
-export type WuestenFactoryParam<T, I> = Partial<WuestenAttributeParameter<T, I>>;
+export type WuestenConstructionParams<C> = Partial<WuestenAttributeParam<C>> & WuestenFormatFactory;
+
+export type WuestenFactoryParam<C> = Partial<WuestenAttributeParameter<C>>;
 
 export type SchemaTypes = "string" | "number" | "integer" | "boolean" | "object" | "array" | "objectitem";
 
@@ -105,31 +108,38 @@ export interface WuestenReflectionArray extends WuestenReflectionBase {
   readonly items: WuestenReflection;
 }
 
-export interface WuestenAttribute<G, I = G> {
-  readonly param: WuestenAttributeBase<G, I>;
-  CoerceAttribute(val: unknown): Result<G>;
-  Coerce(value: I): Result<G>;
-  Get(): Result<G>;
+export interface WuestenFormatterIf<T, C, O> {
+  Coerce(value: C): Result<T>;
+  ToObject(value: T): Result<O>;
 }
 
-export class WuestenRetValType {
-  constructor(readonly Val: unknown) {}
+export interface WuestenBuilder<T, C, O> {
+  readonly param: WuestenAttributeBase<C>;
+  Get(): Result<T>;
+  CoerceAttribute(val: unknown): Result<T>;
+  Coerce(value: C): WuestenBuilder<T, C, O>;
+  ToObject(): Result<O>;
+  ToPayload(encoder: WuestenEncoder): Result<Payload>;
 }
 
-export function WuestenRetVal(val: unknown): WuestenRetValType {
+// export interface WuestenAttribute<T, C, O> extends WuestenBuilder<T, C, O>{
+//   // CoerceAttribute(val: unknown): Result<T>;
+//   // Get(): Result<T>;
+//   // Coerce(value: C): Result<T>;
+//   // ToObject(): Result<O>;
+// }
+
+export class WuestenRetValType<O> {
+  constructor(readonly Val: O) {}
+}
+
+export function WuestenRetVal<O>(val: O): WuestenRetValType<O> {
   return new WuestenRetValType(val);
 }
 
 export type WuestenGetterFn = (level: WuestenReflection[], value: unknown) => void;
 
-export function WuestenRecordGetter(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  fn: WuestenGetterFn,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  level: WuestenReflection[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  v: unknown,
-) {
+export function WuestenRecordGetter(fn: WuestenGetterFn, level: WuestenReflection[], v: unknown) {
   if (Array.isArray(v)) {
     for (let i = 0; i < v.length; ++i) {
       WuestenRecordGetter(
@@ -180,27 +190,27 @@ export class WuestenGetterBuilder {
   }
 }
 
-export interface WuestenGeneratorFunctions<G, I> {
-  readonly coerce: (t: I) => Result<G>;
-  // readonly reflection?: WuestenReflection;
-}
+// export interface WuestenGeneratorFunctions<G, I> {
+//   readonly coerce: (t: I) => Result<G>;
+//   // readonly reflection?: WuestenReflection;
+// }
 
-function coerceAttribute<T, I>(val: unknown, param: WuestenAttributeParameter<T, I>, coerce: (t: I) => Result<T>): Result<T> {
+function coerceAttribute<T, C>(val: unknown, param: WuestenAttributeParameter<C>, coerce: (t: C) => Result<T>): Result<T> {
   const rec = val as WuestenObject;
   for (const key of [param.jsonname, param.varname]) {
     if (rec[key] === undefined || rec[key] === null) {
       continue;
     }
-    const my = coerce(rec[key] as I);
+    const my = coerce(rec[key] as C);
     return my;
   }
   if (param.default !== undefined) {
-    return coerce(param.default as I);
+    return coerce(param.default as C);
   }
   return Result.Err(`not found:${param.jsonname}`);
 }
 
-export function WuestenAttributeName<T, I>(param: WuestenAttributeParameter<T, I>): string {
+export function WuestenAttributeName<C>(param: WuestenAttributeParameter<C>): string {
   const names = [];
   if (param.base) {
     names.push(param.base);
@@ -222,29 +232,40 @@ export function WuestenCoerceAttribute<T>(val: unknown): Result<T> {
   // return res;
 }
 
-export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
-  _value?: G;
+export class WuestenAttr<T, C, O> implements WuestenBuilder<T, C, O> {
+  _value?: T;
+  _default?: T;
   // _idxs: number[] = [];
-  readonly param: WuestenAttributeBase<G, I>;
-  readonly _fnParams: WuestenGeneratorFunctions<G, I>;
-  constructor(param: WuestenAttributeParameter<G, I>, fnParams: WuestenGeneratorFunctions<G, I>) {
-    this.param = WuestenFactoryAttributeMerge(param);
-    const formatHandler = this.param.formatsHandler.get(param.format);
-    if (formatHandler) {
-      this._fnParams = {
-        coerce: (t: I) => {
-          return fnParams.coerce(formatHandler(t) as unknown as I);
-        },
-      };
-    } else {
-      this._fnParams = fnParams;
+  readonly param: WuestenAttributeBase<C>;
+  // readonly _fnParams: WuestenFormatter<T, C, O>;
+  constructor(param: WuestenAttributeParameter<C>) {
+    this.param = WuestenAttributeFactory<T, C, O>(param);
+    // const formatHandler = this.param.formatsHandler.get(param.format);
+    // if (formatHandler) {
+    //   throw new Error("WuestenAttr:formatHandler not implemented.");
+    //   // this._fnParams = {
+    //   //   coerce: (t: I) => {
+    //   //     return fnParams.coerce(formatHandler(t) as unknown as I);
+    //   //   },
+    //   // };
+    // } else {
+    //   this._fnParams = fnParams;
+    // }
+    if (param.default !== undefined) {
+      const result = this.param.Coerce(param.default);
+      if (result.is_ok()) {
+        this._default = result.unwrap();
+      }
     }
-    let def: G | undefined = undefined;
-    const result = this._fnParams.coerce(param.default as I);
-    if (result.is_ok()) {
-      def = result.unwrap() as G;
-    }
-    this.param = { ...this.param, default: def };
+    // this.param = { ...this.param, default: def };
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ToObject(): Result<O> {
+    throw new Error("Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ToPayload(encoder: WuestenEncoder): Result<Payload, Error> {
+    throw new Error("Method not implemented.");
   }
   // Reflection(): WuestenReflection {
   //   throw new Error("Reflection:Method not implemented.");
@@ -252,25 +273,27 @@ export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
   // SetNameSuffix(...idxs: number[]): void {
   //   this._idxs = idxs;
   // }
-  CoerceAttribute(val: unknown): Result<G> {
+  CoerceAttribute(val: unknown): Result<T> {
     if (!(typeof val === "object" && val !== null)) {
       return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
     }
-    const res = coerceAttribute<G, I>(val, this.param, this.Coerce.bind(this));
+    const res = coerceAttribute<T, C>(val, this.param, this.Coerce.bind(this));
     if (res.is_err()) {
       return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] ${res.unwrap_err().message}`);
     }
     return res;
   }
-  Coerce(value: I): Result<G> {
+  Coerce(value: C): WuestenBuilder<T, C, O> {
     const result = this._fnParams.coerce(value);
     if (result.is_ok()) {
       this._value = result.unwrap();
-      return result;
+    } else {
+      this._value = undefined as T;
     }
-    return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is ${result.unwrap_err().message}`);
+    // return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is ${result.unwrap_err().message}`);
+    return this;
   }
-  Get(): Result<G> {
+  Get(): Result<T> {
     if (this.param.default === undefined && this._value === undefined) {
       return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is required`);
     }
@@ -278,66 +301,78 @@ export class WuestenAttr<G, I = G> implements WuestenAttribute<G, I> {
       return Result.Ok(this._value);
     }
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return Result.Ok(this.param.default! as G);
+    return Result.Ok(this.param.default! as T);
   }
 }
 
-export class WuestenObjectOptional<B extends WuestenAttribute<T, C>, T, C> implements WuestenAttribute<T, C> {
-  readonly typ: B;
-  readonly param: WuestenAttributeBase<T, C>;
-  _value: T;
-  constructor(typ: B) {
-    this.typ = typ;
-    this.param = typ.param;
-    this._value = typ.param.default as T;
-  }
-  Reflection(): WuestenReflection {
-    throw new Error("Reflection:Method not implemented.");
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  CoerceAttribute(val: unknown): Result<T, Error> {
-    if (!(typeof val === "object" && val !== null)) {
-      return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
-    }
-    const res = coerceAttribute(val, this.param, this.Coerce.bind(this));
-    if (res.is_ok()) {
-      this._value = res.unwrap() as T;
-      return res;
-    }
-    return Result.Ok(this.param.default as T);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Coerce(value: C): Result<T, Error> {
-    if (value === undefined || value === null) {
-      this._value = undefined as T;
-      return Result.Ok(this._value);
-    }
-    const res = this.typ.Coerce(value);
-    if (res.is_ok()) {
-      this._value = res.unwrap() as unknown as T;
-      return Result.Ok(this._value);
-    }
-    return Result.Err(res.unwrap_err());
-  }
-  Get(): Result<T, Error> {
-    return Result.Ok(this._value);
-  }
+export function WuestenObjectOptional<F>(f: F): F {
+  return f;
 }
 
-export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undefined, I | undefined> {
-  readonly _attr: WuestenAttribute<T | undefined, I | undefined>;
-  readonly param: WuestenAttributeBase<T | undefined, I>;
+// export class WuestenObjectOptional<T, C, O> implements WuestenBuilder<T, C, O> {
+//   readonly typ: WuestenBuilder<T, C, O>;
+//   readonly param: WuestenAttributeBase<C>;
+//   _value: T;
+//   constructor(typ: WuestenBuilder<T, C, O>) {
+//     this.typ = typ;
+//     this.param = typ.param;
+//     this._value = typ.param.default as T;
+//   }
+//   ToObject(): Result<O, Error> {
+//     throw new Error("Method not implemented.");
+//   }
+//   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//   ToPayload(encoder: WuestenEncoder): Result<Payload> {
+//     throw new Error("Method not implemented.");
+//   }
+//   // Reflection(): WuestenReflection {
+//   //   throw new Error("Reflection:Method not implemented.");
+//   // }
+//   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//   CoerceAttribute(val: unknown): Result<T> {
+//     if (!(typeof val === "object" && val !== null)) {
+//       return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is not an object:` + val);
+//     }
+//     const res = coerceAttribute(val, this.param, this.Coerce.bind(this));
+//     if (res.is_ok()) {
+//       this._value = res.unwrap() as T;
+//       return res;
+//     }
+//     return Result.Ok(this.param.default as T);
+//   }
+//   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//   Coerce(value: C): WuestenBuilder<T, C, O> {
+//     if (value === undefined || value === null) {
+//       this._value = undefined as T;
+//       // return Result.Ok(this._value);
+//       return this
+//     }
+//     const res = this.typ.Coerce(value);
+//     if (res.is_ok()) {
+//       this._value = res.unwrap() as unknown as T;
+//       return Result.Ok(this._value);
+//     }
+//     return Result.Err(res.unwrap_err());
+//   }
+//   Get(): Result<T, Error> {
+//     return Result.Ok(this._value);
+//   }
+// }
+
+export class WuestenAttrOptional<T, C, O> implements WuestenFactory<T | undefined, C | undefined, O | undefined> {
+  readonly _attr: WuestenAttribute<T | undefined, C | undefined>;
+  readonly param: WuestenAttributeBase<C | undefined>;
   _value: T;
   _idxs: number[] = [];
 
-  constructor(attr: WuestenAttribute<T | undefined, I | undefined>) {
+  constructor(attr: WuestenAttribute<T | undefined, C | undefined>) {
     this._attr = attr;
-    this.param = WuestenFactoryAttributeMerge(attr.param);
+    this.param = WuestenAttributeFactoryOptional<T | undefined, C | undefined>(attr.param);
     this._value = attr.param.default as T;
   }
-  Reflection(): WuestenReflection {
-    throw new Error("Reflection:Method not implemented.");
-  }
+  // Reflection(): WuestenReflection {
+  //   throw new Error("Reflection:Method not implemented.");
+  // }
   // SetNameSuffix(...idxs: number[]): void {
   //   this._idxs = idxs;
   // }
@@ -353,7 +388,7 @@ export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undef
     return Result.Ok(this.param.default as T);
   }
 
-  Coerce(value: I): Result<T> {
+  Coerce(value: C): Result<T> {
     if (value === undefined || value === null) {
       this._value = undefined as T;
       return Result.Ok(this._value);
@@ -370,10 +405,6 @@ export class WuestenAttrOptional<T, I = T> implements WuestenAttribute<T | undef
   }
 }
 
-export interface WuestenBuilder<T, I> extends WuestenAttribute<T, I> {
-  Get(): Result<T>;
-}
-
 export interface WuestenNames {
   readonly id: string;
   readonly title: string;
@@ -381,78 +412,89 @@ export interface WuestenNames {
   readonly varname: string;
 }
 
-export abstract class WuestenFactory<T, I, O> {
-  readonly _params: WuestenAttributeBase<T, I>;
-  constructor(param: WuestenAttributeParameter<T, I>) {
-    this._params = WuestenFactoryAttributeMerge(param);
+// export type WuestenBuilderResult<R extends WuestenBuilder<T, C, O>, T, C, O> = R
+
+export abstract class WuestenFactory<T, C, O> {
+  readonly _params: WuestenAttributeBase<C>;
+  constructor(param: WuestenAttributeBase<C>) {
+    this._params = WuestenAttributeFactory<T, C, O>(param);
   }
   abstract Names(): WuestenNames;
-  abstract Builder(param?: WuestenFactoryParam<T, I>): WuestenBuilder<T, I>;
-  abstract FromPayload(val: Payload, decoder?: WuestenDecoder): Result<T>;
-  abstract ToPayload(typ: T, encoder?: WuestenEncoder): Result<Payload>;
-  abstract ToObject(typ: T): O; // WuestenObject; keys are json notation
+  abstract Builder(base: WuestenAttributeBase<unknown>, params: WuestenAttributeParameter<C>): WuestenBuilder<T, C, O>;
+  abstract FromPayload(val: Payload, decoder?: WuestenDecoder): Result<WuestenBuilder<T, C, O>>;
+  // abstract ToPayload(typ: T, encoder?: WuestenEncoder): Result<Payload>;
+  // abstract ToObject(typ: T): O; // WuestenObject; keys are json notation
   abstract Clone(typ: T): Result<T>;
   abstract Schema(): WuestenReflection;
   abstract Getter(typ: T, base: WuestenReflection[]): WuestenGetterBuilder;
-  AddFormat(name: string, fn: (recv: unknown) => unknown): WuestenFactory<T, I, O> {
-    this._params.formatsHandler.add(name, fn);
+  AddFormat(name: string, fn: (recv: unknown) => unknown): WuestenFactory<T, C, O> {
+    this._params.formatFactory.add(name, fn);
     return this;
   }
 }
 
 export type WuestenObject = Record<string, unknown>;
 
-export type WuestenFNGetBuilder<T> = (b: T | undefined) => unknown;
-export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, WuestenObject> {
-  readonly param: WuestenAttributeBase<WuestenObject, WuestenObject>;
-  constructor(param?: WuestenFactoryParam<WuestenObject, WuestenObject>) {
-    this.param = WuestenFactoryAttributeMerge({
+export type WuestenFNGetBuilder<C, O> = (b: C | undefined) => WuestenRetValType<O> | unknown;
+export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, WuestenObject, WuestenObject> {
+  readonly param: WuestenAttributeBase<WuestenObject>;
+  constructor(param?: WuestenFactoryParam<WuestenObject>) {
+    this.param = WuestenAttributeFactory({
       base: "WuestenObjectBuilder",
       varname: "WuestenObjectBuilder",
       jsonname: "WuestenObjectBuilder",
       ...param,
     });
   }
-  Reflection(): WuestenReflection {
-    throw new Error("Reflection:Method not implemented.");
-  }
-
-  Get(): Result<WuestenObject, Error> {
+  Get(): Result<WuestenObject> {
     throw new Error("WuestenObjectBuilder:Get Method not implemented.");
   }
+  // // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // CoerceAttribute(val: unknown): Result<WuestenObject, Error> {
+  //   throw new Error("WuestenObjectBuilder:CoerceAttribute Method not implemented.");
+  // }
+  ToObject(): Result<WuestenObject> {
+    throw new Error("WuestenObjectBuilder:ToObject Method not implemented.");
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ToPayload(encoder: WuestenEncoder): Result<Payload, Error> {
+    throw new Error("WuestenObjectBuilder:ToObject Method not implemented.");
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   CoerceAttribute(val: unknown): Result<WuestenObject, Error> {
     throw new Error("WuestenObjectBuilder:CoerceAttribute Method not implemented.");
   }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Coerce(value: WuestenObject): Result<WuestenObject, Error> {
-    return Result.Ok(value);
+  Coerce(value: WuestenObject): WuestenObjectBuilder {
+    // return Result.Ok(value);
     throw new Error("WuestenObjectBuilder:Coerce Method not implemented.");
   }
 }
 
 export class WuestenObjectFactoryImpl extends WuestenFactory<WuestenObject, WuestenObject, WuestenObject> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Builder(
-    param?: WuestenAttributeParameter<WuestenObject, WuestenObject> | undefined,
-  ): WuestenBuilder<WuestenObject, WuestenObject> {
+
+  Builder(param?: WuestenAttributeParameter<WuestenObject>): WuestenObjectBuilder {
     return new WuestenObjectBuilder(param);
   }
   Names(): WuestenNames {
     throw new Error("WuestenObjectFactoryImpl:Names Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  FromPayload(val: Payload, decoder?: WuestenDecoder): Result<WuestenObject, Error> {
+  FromPayload(val: Payload, decoder?: WuestenDecoder): Result<WuestenBuilder<WuestenObject, WuestenObject, WuestenObject>> {
     throw new Error("WuestenObjectFactoryImpl:FromPayload Method not implemented.");
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  ToPayload(typ: WuestenObject, encoder?: WuestenEncoder): Result<Payload, Error> {
-    throw new Error("WuestenObjectFactoryImpl:ToPayload Method not implemented.");
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  ToObject(typ: WuestenObject): WuestenObject {
-    throw new Error("WuestenObjectFactoryImpl:ToObject Method not implemented.");
-  }
+  // // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // ToPayload(typ: WuestenObject, encoder?: WuestenEncoder): Result<Payload, Error> {
+  //   throw new Error("WuestenObjectFactoryImpl:ToPayload Method not implemented.");
+  // }
+  // // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // ToObject(typ: WuestenObject): WuestenObject {
+  //   throw new Error("WuestenObjectFactoryImpl:ToObject Method not implemented.");
+  // }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Clone(typ: WuestenObject): Result<WuestenObject, Error> {
     throw new Error("WuestenObjectFactoryImpl:Clone Method not implemented.");
@@ -464,106 +506,6 @@ export class WuestenObjectFactoryImpl extends WuestenFactory<WuestenObject, Wues
   Getter(typ: WuestenObject, base: WuestenReflection[]): WuestenGetterBuilder {
     throw new Error("WuestenObjectFactoryImpl:Getter not implemented.");
   }
-}
-
-function stringCoerce(value?: unknown): Result<string> {
-  if (typeof value === "string") {
-    return Result.Ok(value);
-  }
-  if (typeof value === "number") {
-    return Result.Ok("" + value);
-  }
-  if (typeof value === "boolean") {
-    return Result.Ok(value ? "true" : "false");
-  }
-  if (
-    (typeof value === "object" || typeof value === "function") &&
-    value !== null &&
-    typeof (value as { toString: () => string })["toString"] === "function"
-  ) {
-    return stringCoerce((value as { toString: () => string }).toString());
-  }
-  try {
-    return Result.Err("not a string: " + value);
-  } catch (err) {
-    return Result.Err("not a string: " + err);
-  }
-}
-
-function dateTimeCoerce(value: unknown): Result<Date> {
-  if (typeof value === "string") {
-    return Result.Ok(new Date(value));
-  }
-  if (typeof value === "number") {
-    return Result.Ok(new Date(value));
-  }
-  if (value instanceof Date) {
-    return Result.Ok(value);
-  }
-  return Result.Err("not a Date: " + value);
-}
-
-function booleanCoerce(value: unknown): Result<boolean> {
-  if (typeof value === "boolean") {
-    return Result.Ok(value);
-  }
-  if (typeof value === "string") {
-    const rnum = numberCoerce((a) => parseFloat(a as string))(value);
-    if (rnum.is_ok()) {
-      if (isNaN(rnum.unwrap()) || !rnum.unwrap()) {
-        return Result.Ok(false);
-      }
-      return Result.Ok(true);
-    }
-    if (["true", "1", "yes", "on"].includes(value.toLowerCase())) {
-      return Result.Ok(true);
-    }
-    if (["false", "0", "no", "off"].includes(value.toLowerCase())) {
-      return Result.Ok(false);
-    }
-  }
-  if (typeof value === "number") {
-    return Result.Ok(!!value);
-  }
-  return Result.Err("not a boolean: " + value);
-}
-
-export class WuestenAttributeObject<T, I, O> extends WuestenAttr<T, I> {
-  private readonly _builder: WuestenAttribute<T, I>;
-  constructor(param: WuestenAttributeParameter<T, I>, factory: WuestenFactory<T, I, O>) {
-    const builder = factory.Builder(param);
-    super(param, { coerce: builder.Coerce.bind(builder) });
-    this._builder = builder;
-  }
-
-  Coerce(value: I): Result<T> {
-    const res = this._builder.Coerce(value);
-    if (res.is_ok()) {
-      this._value = res.unwrap();
-    }
-    return res;
-  }
-
-  Get(): Result<T> {
-    if (this.param.default === undefined && this._value === undefined) {
-      return Result.Err(`Attribute[${WuestenAttributeName(this.param)}] is required`);
-    }
-    if (this._value !== undefined) {
-      return Result.Ok(this._value);
-    }
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return Result.Ok(this.param.default! as T);
-  }
-}
-
-function numberCoerce(parse: (i: unknown) => number): (value: unknown) => Result<number> {
-  return (value: unknown): Result<number> => {
-    const val = parse(value as string);
-    if (isNaN(val)) {
-      return Result.Err(`not a number: ${value}`);
-    }
-    return Result.Ok(val);
-  };
 }
 
 export interface WuesteIteratorNext<T> {
@@ -591,7 +533,6 @@ export class WuesteIteratorArray<T> implements WuesteIterator<T> {
     return { done: true, idx: this._idx, value: undefined as unknown as T };
   }
 }
-
 export class WuesteIteratorGenerator<T> implements WuesteIterator<T> {
   readonly _iter: IterableIterator<T>;
   _idx = 0;
@@ -626,103 +567,192 @@ export function WuesteToIterator<T>(obj: unknown): Result<WuesteIterator<T>> {
   return Result.Err("not iterable");
 }
 
-export type WuesteCoerceTypeDate = Date | string;
-export type WuesteCoerceTypeboolean = boolean | string | number;
-export type WuesteCoerceTypenumber = number | string;
-export type WuesteCoerceTypestring = string | boolean | number | { toString: () => string };
+// export type WuesteCoerceTypeDate = Date | string;
+// export type WuesteCoerceTypeboolean = boolean | string | number;
+// export type WuesteCoerceTypenumber = number | string;
+// export type WuesteCoerceTypestring = string | boolean | number | { toString: () => string };
 
-export const wuesten = {
-  AttributeString: (
-    def: WuestenAttributeParameter<string, WuesteCoerceTypestring>,
-  ): WuestenAttribute<string, WuesteCoerceTypestring> => {
-    return new WuestenAttr(def, { coerce: stringCoerce });
-  },
-  AttributeStringOptional: (
-    def: WuestenAttributeParameter<string, WuesteCoerceTypestring>,
-  ): WuestenAttribute<string | undefined, WuesteCoerceTypestring | undefined> => {
-    return new WuestenAttrOptional(new WuestenAttr(def, { coerce: stringCoerce }));
-  },
+// export const wuesten = {
+//   AttributeString: (
+//     def: WuestenAttributeParameter<StringFormatter.CoerceType>,
+//   ): WuestenAttribute<string, WuesteCoerceTypestring> => {
+//     return new WuestenAttr(def, { coerce: stringCoerce });
+//   },
+//   AttributeStringOptional: (
+//     def: WuestenAttributeParameter<string, WuesteCoerceTypestring>,
+//   ): WuestenAttribute<string | undefined, WuesteCoerceTypestring | undefined> => {
+//     return new WuestenAttrOptional(new WuestenAttr(def, { coerce: stringCoerce }));
+//   },
 
-  AttributeDateTime: (
-    def: WuestenAttributeParameter<WuesteCoerceTypeDate, WuesteCoerceTypeDate>,
-  ): WuestenAttribute<Date, WuesteCoerceTypeDate> => {
-    return new WuestenAttr(def, { coerce: dateTimeCoerce }) as WuestenAttribute<Date, WuesteCoerceTypeDate>;
-  },
-  AttributeDateTimeOptional: (
-    def: WuestenAttributeParameter<WuesteCoerceTypeDate | undefined, WuesteCoerceTypeDate | undefined>,
-  ): WuestenAttribute<Date | undefined, WuesteCoerceTypeDate | undefined> => {
-    return new WuestenAttrOptional(new WuestenAttr(def, { coerce: dateTimeCoerce })) as WuestenAttribute<
-      Date | undefined,
-      WuesteCoerceTypeDate | undefined
-    >;
-  },
+//   AttributeDateTime: (
+//     def: WuestenAttributeParameter<WuesteCoerceTypeDate, WuesteCoerceTypeDate>,
+//   ): WuestenAttribute<Date, WuesteCoerceTypeDate> => {
+//     return new WuestenAttr(def, { coerce: dateTimeCoerce }) as WuestenAttribute<Date, WuesteCoerceTypeDate>;
+//   },
+//   AttributeDateTimeOptional: (
+//     def: WuestenAttributeParameter<WuesteCoerceTypeDate | undefined, WuesteCoerceTypeDate | undefined>,
+//   ): WuestenAttribute<Date | undefined, WuesteCoerceTypeDate | undefined> => {
+//     return new WuestenAttrOptional(new WuestenAttr(def, { coerce: dateTimeCoerce })) as WuestenAttribute<
+//       Date | undefined,
+//       WuesteCoerceTypeDate | undefined
+//     >;
+//   },
 
-  AttributeInteger: (
-    def: WuestenAttributeParameter<number, WuesteCoerceTypenumber>,
-  ): WuestenAttribute<number, WuesteCoerceTypenumber> => {
-    return new WuestenAttr(def, { coerce: numberCoerce((a) => parseInt(a as string, 10)) });
-  },
-  AttributeIntegerOptional: (
-    def: WuestenAttributeParameter<number, WuesteCoerceTypenumber>,
-  ): WuestenAttribute<number | undefined, WuesteCoerceTypenumber | undefined> => {
-    return new WuestenAttrOptional(new WuestenAttr(def, { coerce: numberCoerce((a) => parseInt(a as string, 10)) }));
-  },
+//   AttributeInteger: (
+//     def: WuestenAttributeParameter<number, WuesteCoerceTypenumber>,
+//   ): WuestenAttribute<number, WuesteCoerceTypenumber> => {
+//     return new WuestenAttr(def, { coerce: numberCoerce((a) => parseInt(a as string, 10)) });
+//   },
+//   AttributeIntegerOptional: (
+//     def: WuestenAttributeParameter<number, WuesteCoerceTypenumber>,
+//   ): WuestenAttribute<number | undefined, WuesteCoerceTypenumber | undefined> => {
+//     return new WuestenAttrOptional(new WuestenAttr(def, { coerce: numberCoerce((a) => parseInt(a as string, 10)) }));
+//   },
 
-  AttributeNumber: (
-    def: WuestenAttributeParameter<number, WuesteCoerceTypenumber>,
-  ): WuestenAttribute<number, WuesteCoerceTypenumber> => {
-    return new WuestenAttr(def, { coerce: numberCoerce((a) => parseFloat(a as string)) });
-  },
-  AttributeNumberOptional: (
-    def: WuestenAttributeParameter<number, WuesteCoerceTypenumber>,
-  ): WuestenAttribute<number | undefined, WuesteCoerceTypenumber | undefined> => {
-    return new WuestenAttrOptional(new WuestenAttr(def, { coerce: numberCoerce((a) => parseFloat(a as string)) }));
-  },
+//   AttributeNumber: (
+//     def: WuestenAttributeParameter<number, WuesteCoerceTypenumber>,
+//   ): WuestenAttribute<number, WuesteCoerceTypenumber> => {
+//     return new WuestenAttr(def, { coerce: numberCoerce((a) => parseFloat(a as string)) });
+//   },
+//   AttributeNumberOptional: (
+//     def: WuestenAttributeParameter<number, WuesteCoerceTypenumber>,
+//   ): WuestenAttribute<number | undefined, WuesteCoerceTypenumber | undefined> => {
+//     return new WuestenAttrOptional(new WuestenAttr(def, { coerce: numberCoerce((a) => parseFloat(a as string)) }));
+//   },
 
-  AttributeBoolean: (
-    def: WuestenAttributeParameter<boolean, WuesteCoerceTypeboolean>,
-  ): WuestenAttribute<boolean, WuesteCoerceTypeboolean> => {
-    return new WuestenAttr(def, { coerce: booleanCoerce });
-  },
-  AttributeBooleanOptional: (
-    def: WuestenAttributeParameter<boolean, WuesteCoerceTypeboolean>,
-  ): WuestenAttribute<boolean | undefined, WuesteCoerceTypeboolean | undefined> => {
-    return new WuestenAttrOptional(new WuestenAttr(def, { coerce: booleanCoerce }));
-  },
+//   AttributeBoolean: (
+//     def: WuestenAttributeParameter<boolean, WuesteCoerceTypeboolean>,
+//   ): WuestenAttribute<boolean, WuesteCoerceTypeboolean> => {
+//     return new WuestenAttr(def, { coerce: booleanCoerce });
+//   },
+//   AttributeBooleanOptional: (
+//     def: WuestenAttributeParameter<boolean, WuesteCoerceTypeboolean>,
+//   ): WuestenAttribute<boolean | undefined, WuesteCoerceTypeboolean | undefined> => {
+//     return new WuestenAttrOptional(new WuestenAttr(def, { coerce: booleanCoerce }));
+//   },
 
-  AttributeObject: <E, I, O>(def: WuestenAttributeParameter<E, I>, factory: WuestenFactory<E, I, O>): WuestenAttribute<E, I> => {
-    return new WuestenAttributeObject<E, I, O>(def, factory);
-  },
+//   AttributeObject: <E, I, O>(def: WuestenAttributeParameter<E, I>, factory: WuestenFactory<E, I, O>): WuestenAttribute<E, I> => {
+//     return new WuestenAttributeObject<E, I, O>(def, factory);
+//   },
 
-  AttributeObjectOptional: <E, I, O>(
-    def: WuestenAttributeParameter<E, I>,
-    factory: WuestenFactory<E, I, O>,
-  ): WuestenAttribute<E | undefined, I | undefined> => {
-    return new WuestenAttrOptional<E, I>(new WuestenAttributeObject<E, I, O>(def, factory));
-  },
-};
+//   AttributeObjectOptional: <E, I, O>(
+//     def: WuestenAttributeParameter<E, I>,
+//     factory: WuestenFactory<E, I, O>,
+//   ): WuestenAttribute<E | undefined, I | undefined> => {
+//     return new WuestenAttrOptional<E, I>(new WuestenAttributeObject<E, I, O>(def, factory));
+//   },
+// };
+
+export class WuestenArrayFactory<T, C, O, IT, IC, IO> implements WuesteCreateBuilder<T, C, O> {
+  readonly item: WuesteCreateBuilder<IT, IC, IO>;
+  constructor(item: WuesteCreateBuilder<IT, IC, IO>) {
+    this.item = item;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Builder(factory: WuestenAttributeBase<unknown>, params: WuestenFactoryParam<C>): WuestenArrayBuilder<T, C, O, IT, IC, IO> {
+    return new WuestenArrayBuilder<T, C, O, IT, IC, IO>(this.item, factory, params);
+  }
+}
+
+export class WuestenArrayFactoryOptional<T, C, O, IT, IC, IO> extends WuestenArrayFactory<T, C, O, IT, IC, IO> {}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function WuestenArrayGetterWalk<T>(v: T, base: WuestenReflection[] = []): WuestenGetterBuilder {
+  throw new Error("WuestenArrayGetterWalk:Method not implemented.");
+}
+
+export class WuestenArrayBuilder<T, C, O, IT, IC, IO> implements WuestenBuilder<T, C, O> {
+  readonly param: WuestenAttributeBase<C>;
+  private readonly _itemFactory: WuesteCreateBuilder<IT, IC, IO>;
+  private readonly _values: Result<IT>[] = [];
+  // readonly _value: unknown[] = [];
+  // readonly _errors: Error[] = [];
+  private readonly _factory: WuestenAttributeBase<unknown>;
+  private readonly _params: WuestenFactoryParam<C>;
+  constructor(
+    itemFactory: WuesteCreateBuilder<IT, IC, IO>,
+    factory: WuestenAttributeBase<unknown>,
+    params: WuestenFactoryParam<C>,
+  ) {
+    // this.param = item.param;
+    this.param = undefined as unknown as WuestenAttributeBase<C>;
+    // this._format = {} as WuestenFormatterIf<T, C, O>;
+    this._itemFactory = itemFactory;
+    this._params = params;
+    this._factory = factory;
+  }
+  Get(): Result<T, Error> {
+    throw new Error("Method not implemented.");
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  CoerceAttribute(val: unknown): Result<T, Error> {
+    throw new Error("Method not implemented.");
+  }
+  Coerce(value: C): WuestenBuilder<T, C, O> {
+    // const ret: unknown[] = []
+    walk(value, (item) => {
+      if (Array.isArray(item)) {
+        elems.push([]);
+        elems = elems[elems.length - 1] as unknown[];
+        return;
+      }
+      const attr = this.#itemFactory.New();
+      elems.push(attr.Coerce(item as C).Get());
+    });
+    return this;
+  }
+  ToObject(): Result<O, Error> {
+    const errs: Error[] = [];
+    const ret: unknown[] = [];
+    let elems = ret;
+    walk(this._value, (item) => {
+      if (Array.isArray(item)) {
+        elems.push([]);
+        elems = elems[elems.length - 1] as unknown[];
+        return;
+      }
+      const r = this._format.ToObject(item as T);
+      if (r.is_err()) {
+        errs.push(r.unwrap_err());
+      } else {
+        elems.push(r.unwrap());
+      }
+    });
+    if (errs.length > 0) {
+      return Result.Err(errs.join("\n"));
+    }
+    return Result.Ok(ret as O);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ToPayload(encoder: WuestenEncoder): Result<Payload, Error> {
+    throw new Error("Method not implemented.");
+  }
+}
+
+export class WuestenArrayBuilderOptional<T, C, O, IT, IC, IO> extends WuestenArrayBuilder<T, C, O, IT, IC, IO> {}
 
 export class WuestenTypeRegistryImpl {
   readonly _registry: Record<string, WuestenFactory<unknown, unknown, unknown>> = {};
-  readonly _attributeBase: WuestenAttributeFactory = {
-    formatsHandler: new WuestenFormatsHandler(),
+  readonly _attributeBase: WuestenFormatFactory = {
+    formatFactory: new WuestenFormatsHandler(),
     encoder: WuestenJSONPassThroughEncoder,
     decoder: WuestenJSONPassThroughDecoder,
   };
 
-  Register<T extends WuestenFactory<A, B, C>, A, B, C>(factory: T): T {
-    for (const name of factory.Names().names) {
-      this._registry[name] = factory;
-    }
+  Register<T>(factory: T): T {
+    const wf = factory as unknown as WuestenFactory<unknown, unknown, unknown>;
+    wf.Names().names.forEach((name) => {
+      this._registry[name] = wf;
+    });
     return factory;
   }
 
   AddFormat(name: string, fn: (recv: unknown) => unknown) {
-    this._attributeBase.formatsHandler.add(name, fn);
+    this._attributeBase.formatFactory.add(name, fn);
     return this;
   }
 
-  _deleteUndefined(merge?: Partial<WuestenAttributeFactory>): Partial<WuestenAttributeFactory> {
+  _deleteUndefined(merge?: Partial<WuestenFormatFactory>): Partial<WuestenFormatFactory> {
     const m = { ...merge };
     if (!m.decoder) {
       delete m.decoder;
@@ -730,13 +760,13 @@ export class WuestenTypeRegistryImpl {
     if (!m.encoder) {
       delete m.encoder;
     }
-    if (!m.formatsHandler) {
-      delete m.formatsHandler;
+    if (!m.formatFactory) {
+      delete m.formatFactory;
     }
     return m;
   }
 
-  cloneAttributeBase<T, I>(...merges: (WuestenAttributeParameter<unknown, unknown> | undefined)[]): WuestenAttributeBase<T, I> {
+  cloneAttributeBase<C>(...merges: (WuestenAttributeParameter<unknown> | undefined)[]): WuestenAttributeBase<C> {
     return {
       ...merges.reduce(
         (acc, cur) => {
@@ -747,22 +777,64 @@ export class WuestenTypeRegistryImpl {
         },
       ),
       formatsHandler: this._attributeBase.formatsHandler.clone(),
-    } as WuestenAttributeBase<T, I>;
+    } as WuestenAttributeBase<C>;
   }
+}
+
+export function WuestenMergeAttributeBase<C>(
+  factory: WuestenFormatFactory,
+  ...params: (undefined | WuestenAttributeParameter<unknown>)[]
+): WuestenAttributeBase<C> {
+  return params.reduce(
+    (acc, cur) => {
+      return { ...acc, ...cur };
+    },
+    { ...factory },
+  ) as WuestenAttributeBase<C>;
+}
+
+export function WuestenCoerceHelper<T, C>(val: unknown, param: WuestenAttributeBase<C>, coerce: (t: C) => Result<T>): Result<T> {
+  const rec = val as WuestenObject;
+  for (const key of [param.jsonname, param.varname]) {
+    if (rec[key] === undefined || rec[key] === null) {
+      continue;
+    }
+    const my = coerce(rec[key] as C);
+    return my;
+  }
+  if (param.default !== undefined) {
+    return coerce(param.default as C);
+  }
+  return Result.Err(`not found:${param.jsonname}`);
 }
 
 export const WuestenTypeRegistry = new WuestenTypeRegistryImpl();
 
+// export type WuestenObject = Record<string, unknown>;
 export const WuestenObjectFactory = new WuestenObjectFactoryImpl(
-  WuestenFactoryAttributeMerge({
+  WuestenAttributeFactory<WuestenObject, WuestenObject | unknown, WuestenObject>({
     base: "WuestenObject",
     varname: "WuestenObject",
     jsonname: "WuestenObject",
   }),
 );
 
-export function WuestenFactoryAttributeMerge<T, I>(
-  ...params: (WuestenAttributeParameter<unknown, unknown> | undefined)[]
-): WuestenAttributeBase<T, I> {
-  return WuestenTypeRegistry.cloneAttributeBase(...params);
+export interface WuesteCreateBuilder<T, C, O> {
+  Builder(base: WuestenAttributeBase<unknown>, params: WuestenFactoryParam<C>): WuestenBuilder<T, C, O>;
+}
+
+export function WuestenAttributeFactory<T, C, O>(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ...params: (WuestenAttributeParameter<unknown> | undefined)[]
+): WuesteCreateBuilder<T, C, O> {
+  // return WuestenTypeRegistry.cloneAttributeBase(...params);
+  return undefined as unknown as WuesteCreateBuilder<T, C, O>;
+}
+
+export function WuestenAttributeFactoryOptional<T, C, O>(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ...params: (WuestenAttributeParameter<unknown> | undefined)[]
+): WuesteCreateBuilder<T | undefined, C | undefined, O | undefined> {
+  // return WuestenTypeRegistry.cloneAttributeBase(...params);
+  return undefined as unknown as WuesteCreateBuilder<T, C, O>;
 }
