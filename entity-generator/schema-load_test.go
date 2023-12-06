@@ -2,6 +2,7 @@ package entity_generator
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -112,6 +113,20 @@ func TestNestedJsonAndProp(t *testing.T) {
 	// for i, _ := range pjsProps {
 	// 	assert.Equal(t, pjsProps[i], jspProps[i], "Property %d:%s", i, pjsProps[i].Name)
 	// }
+}
+
+func TestSchemaLoadImpl(t *testing.T) {
+	baseFname, _ := filepath.Abs("./base.schema.json")
+	baseDir := filepath.Dir(baseFname)
+	sl := NewSchemaLoaderImpl("./wueste", "./ts")
+	fname, err := sl.Abs("schema-load_test.go")
+	assert.NoError(t, err)
+	assert.Equal(t, fname, filepath.Join(baseDir, "schema-load_test.go"))
+	_, err = sl.Abs("xchema-load_test.go")
+	assert.Error(t, err)
+	fname, err = sl.Abs("ts-generator_test.go")
+	assert.NoError(t, err)
+	assert.Equal(t, fname, filepath.Join(baseDir, "ts", "ts-generator_test.go"))
 }
 
 // type JsonProperty struct {

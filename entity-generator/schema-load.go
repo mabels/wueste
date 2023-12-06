@@ -52,7 +52,7 @@ type SchemaRegistry struct {
 func NewSchemaRegistry(loaders ...SchemaLoader) *SchemaRegistry {
 	var loader SchemaLoader
 	if len(loaders) == 0 {
-		loader = &schemaLoader{}
+		loader = &SchemaLoaderImpl{}
 	} else {
 		loader = loaders[0]
 	}
@@ -180,22 +180,47 @@ func (sr *SchemaRegistry) Items() []SchemaRegistryItem {
 	return ret
 }
 
-type schemaLoader struct {
-	// registry *SchemaRegistry
+type SchemaLoaderImpl struct {
+	includeDirs []string
+}
+
+func NewSchemaLoaderImpl(includeDirs ...string) SchemaLoaderImpl {
+	return SchemaLoaderImpl{
+		includeDirs: append(includeDirs, "./"),
+	}
+}
+
+func isFile(fname string) bool {
+	stat, err := os.Stat(fname)
+	if err != nil {
+		return false
+	}
+	return !stat.IsDir()
 }
 
 // Abs implements SchemaLoader.
-func (schemaLoader) Abs(path string) (string, error) {
-	return filepath.Abs(path)
+func (sl SchemaLoaderImpl) Abs(fname string) (string, error) {
+	if isFile(fname) {
+		return filepath.Abs(fname)
+	}
+	for _, dir := range sl.includeDirs {
+		incFname := filepath.Join(dir, fname)
+		if isFile(incFname) {
+			return filepath.Abs(incFname)
+		}
+	}
+	return fname, fmt.Errorf("file not found: %s", fname)
+
 }
 
 // ReadFile implements SchemaLoader.
-func (schemaLoader) ReadFile(path string) ([]byte, error) {
-	return os.ReadFile(path)
+func (sl SchemaLoaderImpl) ReadFile(fname string) ([]byte, error) {
+	bytes, err := os.ReadFile(fname)
+	return bytes, err
 }
 
 // Unmarshal implements SchemaLoader.
-func (schemaLoader) Unmarshal(bytes []byte, v interface{}) error {
+func (SchemaLoaderImpl) Unmarshal(bytes []byte, v interface{}) error {
 	return json.Unmarshal(bytes, v)
 }
 

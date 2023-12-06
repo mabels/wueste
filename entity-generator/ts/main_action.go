@@ -11,6 +11,7 @@ import (
 
 func MainAction(args []string) {
 	var cfg eg.GeneratorConfig
+	pflag.StringArrayVar(&cfg.IncludeDirs, "include-dir", []string{}, "include directories")
 	pflag.StringVar(&cfg.OutputDir, "output-dir", "./", "output directory")
 	pflag.StringArrayVar(&cfg.InputFiles, "input-file", []string{}, "input files")
 	pflag.BoolVar(&cfg.WriteTestSchema, "write-test-schema", false, "write test schema")
@@ -18,7 +19,6 @@ func MainAction(args []string) {
 
 	pflag.CommandLine.Parse(args)
 
-	// uuid := uuid.New().String()
 	err := os.MkdirAll(cfg.OutputDir, 0755)
 	if err != nil {
 		log.Fatal(err)
@@ -27,10 +27,9 @@ func MainAction(args []string) {
 	if cfg.WriteTestSchema {
 		eg.WriteTestSchema(&cfg)
 	}
-	// defer os.RemoveAll(dir)
 
 	sl := eg.PropertyCtx{
-		Registry: eg.NewSchemaRegistry(),
+		Registry: eg.NewSchemaRegistry(eg.NewSchemaLoaderImpl(cfg.IncludeDirs...)),
 	}
 	for _, file := range cfg.InputFiles {
 		prop := eg.NewJSONDict()

@@ -11,6 +11,7 @@ type Config struct {
 }
 
 type GeneratorConfig struct {
+	IncludeDirs     []string
 	OutputDir       string
 	InputFiles      []string
 	EntityCfg       Config
