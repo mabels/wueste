@@ -44,6 +44,10 @@ func NewTestContext() PropertyCtx {
 // 	return t.registry
 // }
 
+func (t *TestSchemaLoader) IncludeDirs() []string {
+	return []string{"/abs", "./"}
+}
+
 func (l *TestSchemaLoader) Abs(path string) (string, error) {
 	if strings.HasPrefix(path, "/abs/") {
 		return path, nil

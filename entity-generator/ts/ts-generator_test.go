@@ -92,5 +92,5 @@ func TestMainAction(t *testing.T) {
 		"--eg-from-wueste", cfg.EntityCfg.FromWueste,
 		"--eg-from-result", cfg.EntityCfg.FromResult,
 		"--output-dir", "../../src/generated/go",
-	})
+	}, "test", "test")
 }

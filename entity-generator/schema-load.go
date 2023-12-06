@@ -15,6 +15,7 @@ type SchemaLoader interface {
 	ReadFile(path string) ([]byte, error)
 	Abs(path string) (string, error)
 	Unmarshal(bytes []byte, v interface{}) error
+	IncludeDirs() []string
 	// SchemaRegistry() *SchemaRegistry
 	// LoadRef(refVal string) (Property, error)
 }
@@ -71,19 +72,22 @@ func (sr *SchemaRegistry) EnsureJSONProperty(parentFname rusty.Optional[string],
 		return rusty.Err[JSonFile](fmt.Errorf("only file:// ref supported"))
 	}
 	fname := ref[len("file://"):]
+	loader := sr.loader
 	if !strings.HasSuffix(fname, "/") {
 		dir := "./"
 		if sr.BaseDir.IsSome() {
 			dir = sr.BaseDir.Value()
 		}
 		if parentFname.IsSome() {
-			dir = path.Dir(parentFname.Value())
+			loader = NewSchemaLoaderImpl(
+				append([]string{path.Dir(parentFname.Value())},
+					loader.IncludeDirs()...)...)
 		}
 		fname = path.Join(dir, fname)
 	}
-	fname, err := sr.loader.Abs(fname)
+	fname, err := loader.Abs(fname)
 	if err != nil {
-		var err error = fmt.Errorf("only directory ref supported")
+		var err error = fmt.Errorf("no file found for %s", fname)
 		return rusty.Err[JSonFile](err)
 	}
 	sri, found := sr.registry[fname]
@@ -196,6 +200,10 @@ func isFile(fname string) bool {
 		return false
 	}
 	return !stat.IsDir()
+}
+
+func (sl SchemaLoaderImpl) IncludeDirs() []string {
+	return sl.includeDirs
 }
 
 // Abs implements SchemaLoader.

@@ -16,6 +16,7 @@ type GeneratorConfig struct {
 	InputFiles      []string
 	EntityCfg       Config
 	WriteTestSchema bool
+	Version         bool
 }
 
 func FromArgs(prefix string, cfg *Config) *Config {

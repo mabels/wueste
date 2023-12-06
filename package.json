@@ -7,7 +7,7 @@
     "prebuild": "pnpm run generator",
     "build": "pnpm run build:wasm; pnpm run build:js",
     "build:js": "tsc",
-    "build:wasm": "mkdir -p dist; cp \"$(go env GOROOT)/misc/wasm/wasm_exec.js\"  \"$(go env GOROOT)/misc/wasm/wasm_exec_node.js\"  dist/; GOOS=js GOARCH=wasm go build -o dist/generator.wasm entity-generator/cmd/generator.go",
+    "build:wasm": "mkdir -p dist; cp \"$(go env GOROOT)/misc/wasm/wasm_exec.js\"  \"$(go env GOROOT)/misc/wasm/wasm_exec_node.js\"  dist/; GOOS=js GOARCH=wasm go build -o dist/generator.wasm -ldflags=\"-s -w -X main.Version=$GITHUB_REF -X main.GitCommit=$(git rev-parse --short HEAD)\" entity-generator/cmd/generator.go",
     "pretest": "rm -rf pubdir",
     "test": "pnpm run test:go && pnpm run test:js",
     "pretest:go": "pnpm run generator",
