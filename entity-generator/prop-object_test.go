@@ -9,7 +9,7 @@ import (
 
 func TestResolveRef(t *testing.T) {
 	ctx := PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
 	}
 
 	prop := NewJSONDict()
@@ -34,7 +34,7 @@ func TestResolveRef(t *testing.T) {
 
 func TestParentSimple(t *testing.T) {
 	ctx := PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
 	}
 	prop := NewJSONDict()
 	prop.Set("$ref", "file://./base.schema.json")
@@ -59,7 +59,7 @@ func TestParentSimple(t *testing.T) {
 
 func TestParentNestedArray(t *testing.T) {
 	ctx := PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
 	}
 	prop := NewJSONDict()
 	prop.Set("$ref", "file://./nested_type.schema.json")
@@ -88,7 +88,7 @@ func TestParentNestedArray(t *testing.T) {
 
 func TestBaseSchemaFilename(t *testing.T) {
 	ctx := PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
 	}
 	prop := NewJSONDict()
 	prop.Set("$ref", "file://./base.schema.json")
@@ -111,7 +111,7 @@ func TestBaseSchemaFilename(t *testing.T) {
 
 func TestFileNameNestedArray(t *testing.T) {
 	ctx := PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
 	}
 	prop := NewJSONDict()
 	prop.Set("$ref", "file://./nested_type.schema.json")
@@ -140,7 +140,7 @@ func TestFileNameNestedArray(t *testing.T) {
 
 func TestDeref(t *testing.T) {
 	ctx := PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
 	}
 	prop := NewJSONDict()
 	prop.Set("$ref", "file://./base.schema.json")
@@ -204,7 +204,7 @@ func TestDeref(t *testing.T) {
 
 func TestLoaderResolveRef(t *testing.T) {
 	ctx := PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
 	}
 	prop := NewJSONDict()
 	prop.Set("$ref", "file://./base.schema.json")
@@ -228,7 +228,7 @@ func TestLoaderResolveRef(t *testing.T) {
 
 func TestErrorUnnamedNestedObject(t *testing.T) {
 	ctx := PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
 	}
 	prop := NewJSONDict()
 	prop.Set("$ref", "file://./unnamed_nested_object.schema.json")
@@ -238,7 +238,7 @@ func TestErrorUnnamedNestedObject(t *testing.T) {
 
 func TestInstances(t *testing.T) {
 	ctx := PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
 	}
 	res1 := TestPayloadSchema(ctx).Ok()
 	res2 := TestPayloadSchema(ctx).Ok()
@@ -250,7 +250,7 @@ func TestInstances(t *testing.T) {
 
 func TestSetFilename(t *testing.T) {
 	ctx := PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
 	}
 	jsDict := NewJSONDict()
 	jsDict.Set("$ref", "file://./sub2.schema.json")

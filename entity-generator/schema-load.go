@@ -16,6 +16,7 @@ type SchemaLoader interface {
 	Abs(path string) (string, error)
 	Unmarshal(bytes []byte, v interface{}) error
 	IncludeDirs() []string
+	Clone(prependIncDirs ...string) SchemaLoader
 	// SchemaRegistry() *SchemaRegistry
 	// LoadRef(refVal string) (Property, error)
 }
@@ -79,22 +80,21 @@ func (sr *SchemaRegistry) EnsureJSONProperty(parentFname rusty.Optional[string],
 			dir = sr.BaseDir.Value()
 		}
 		if parentFname.IsSome() {
-			loader = NewSchemaLoaderImpl(
-				append([]string{path.Dir(parentFname.Value())},
-					loader.IncludeDirs()...)...)
+			incDir := path.Dir(parentFname.Value())
+			loader = loader.Clone(incDir)
 		}
 		fname = path.Join(dir, fname)
 	}
-	fname, err := loader.Abs(fname)
+	absFname, err := loader.Abs(fname)
 	if err != nil {
-		var err error = fmt.Errorf("no file found for %s", fname)
+		var err error = fmt.Errorf("no file found for %s->%s", fname, absFname)
 		return rusty.Err[JSonFile](err)
 	}
-	sri, found := sr.registry[fname]
+	sri, found := sr.registry[absFname]
 	if found {
 		return rusty.Ok[JSonFile](sri.jsonFile)
 	}
-	rjsonFile := loadSchema(fname, sr.loader)
+	rjsonFile := loadSchema(absFname, sr.loader)
 	if rjsonFile.IsErr() {
 		return rjsonFile
 	}
@@ -200,6 +200,10 @@ func isFile(fname string) bool {
 		return false
 	}
 	return !stat.IsDir()
+}
+
+func (sl SchemaLoaderImpl) Clone(prependIncDirs ...string) SchemaLoader {
+	return NewSchemaLoaderImpl(append(prependIncDirs, sl.includeDirs...)...)
 }
 
 func (sl SchemaLoaderImpl) IncludeDirs() []string {

@@ -26,33 +26,37 @@ import (
 */
 
 type TestSchemaLoader struct {
+	includeDirs []string
 	// registry *SchemaRegistry
 }
 
-// func NewTestRuntime() PropertyRuntime {
-// 	return PropertyRuntime{}
-// }
-
-func NewTestContext() PropertyCtx {
-	return PropertyCtx{
-		Registry: NewSchemaRegistry(&TestSchemaLoader{}),
+func NewTestSchemaLoader() *TestSchemaLoader {
+	return &TestSchemaLoader{
+		includeDirs: []string{"/abs", "./"},
 	}
 }
 
-// AddSchema implements SchemaLoader.
-// func (t *TestSchemaLoader) SchemaRegistry() *SchemaRegistry {
-// 	return t.registry
-// }
+func NewTestContext() PropertyCtx {
+	return PropertyCtx{
+		Registry: NewSchemaRegistry(NewTestSchemaLoader()),
+	}
+}
+
+func (sl TestSchemaLoader) Clone(prependIncDirs ...string) SchemaLoader {
+	return &TestSchemaLoader{
+		includeDirs: append(prependIncDirs, sl.includeDirs...),
+	}
+}
 
 func (t *TestSchemaLoader) IncludeDirs() []string {
-	return []string{"/abs", "./"}
+	return t.includeDirs
 }
 
 func (l *TestSchemaLoader) Abs(path string) (string, error) {
 	if strings.HasPrefix(path, "/abs/") {
 		return path, nil
 	}
-	return filepath.Join("/abs/", path), nil
+	return filepath.Join(l.includeDirs[0], path), nil
 }
 
 // ReadFile implements SchemaLoader.
