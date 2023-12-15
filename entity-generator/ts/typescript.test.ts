@@ -3,12 +3,7 @@
 import { NestedTypeFactory, NestedTypeGetter } from "../../src/generated/go/nestedtype";
 import { NestedType$Payload, NestedType$PayloadFactory } from "../../src/generated/go/nestedtype$payload";
 import { SimpleTypeFactory, SimpleTypeFactoryImpl, SimpleTypeObject, SimpleTypeParam } from "../../src/generated/go/simpletype";
-import {
-  WuesteJsonBytesDecoder,
-  WuesteJsonBytesEncoder,
-  WuestenFactoryInferT,
-  WuestenReflectionObject,
-} from "../../src/wueste";
+import { WuesteJsonBytesDecoder, WuesteJsonBytesEncoder, WuestenFactoryInferT, WuestenReflectionObject } from "../../src/wueste";
 
 const simpleTypeParam: SimpleTypeParam = {
   bool: true,
