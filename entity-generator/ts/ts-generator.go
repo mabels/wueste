@@ -469,17 +469,29 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenFactory")
 
 	// export function  NewSimpleTypeFactory(): WuestenFactory<SimpleTypeBuilder, SimpleType>
-	className := g.lang.PrivateName(getObjectName(prop), "Factory")
+	className := g.lang.PublicName(getObjectName(prop), "FactoryImpl")
 	partialType := g.lang.PublicName(getObjectName(prop), "CoerceType")
 	// g.lang.OrType(
 	// 	g.lang.Generics("Partial", g.lang.PublicName(getObjectName(prop))),
 	// 	g.lang.Generics("Partial", g.lang.PublicName(getObjectName(prop), "Param")),
 	// 	g.lang.Generics("Partial", g.lang.PublicName(getObjectName(prop), "Object")))
-	g.lang.Class(g.bodyWriter, "", g.lang.Implements(className,
+	g.lang.Class(g.bodyWriter, "export ", g.lang.Implements(className,
 		g.lang.Generics("WuestenFactory", g.lang.PublicName(getObjectName(prop)), partialType,
 			g.lang.PublicName(getObjectName(prop), "Object"))), prop,
 		func(prop eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {
 		}, func(wr *eg.ForIfWhileLangWriter) {
+			wr.WriteLine(g.lang.Readonly(
+				g.lang.AssignDefault("T",
+					fmt.Sprintf("undefined as unknown as %s", g.lang.PublicName(getObjectName(prop))))))
+
+			wr.WriteLine(g.lang.Readonly(
+				g.lang.AssignDefault("I",
+					fmt.Sprintf("undefined as unknown as %s", partialType))))
+
+			wr.WriteLine(g.lang.Readonly(
+				g.lang.AssignDefault("O",
+					fmt.Sprintf("undefined as unknown as %s", g.lang.PublicName(getObjectName(prop), "Object")))))
+
 			wr.WriteBlock("Builder():", g.lang.PublicName(getObjectName(prop), "Builder"), func(wr *eg.ForIfWhileLangWriter) {
 				wr.FormatLine("return new %s()", g.lang.PublicName(getObjectName(prop), "Builder"))
 			})
@@ -582,7 +594,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 	g.bodyWriter.WriteLine(
 		g.lang.AssignDefault(
 			g.lang.Export(g.lang.Const(g.lang.PublicName(getObjectName(prop), "Factory"))),
-			g.lang.New(g.lang.PrivateName(getObjectName(prop), "Factory"))))
+			g.lang.New(g.lang.PublicName(getObjectName(prop), "FactoryImpl"))))
 	g.bodyWriter.WriteLine()
 }
 

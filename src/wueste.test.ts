@@ -446,6 +446,9 @@ class Builder implements WuestenBuilder<Entity, Entity> {
 }
 
 class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
+  readonly T = undefined as unknown as Entity;
+  readonly I = undefined as unknown as Entity;
+  readonly O = undefined as unknown as Entity;
   Builder(param?: WuestenAttributeParameter<Entity>): Builder {
     return new Builder(param || { jsonname: "test", varname: "Test", base: "base" });
   }

@@ -2,8 +2,13 @@
 
 import { NestedTypeFactory, NestedTypeGetter } from "../../src/generated/go/nestedtype";
 import { NestedType$Payload, NestedType$PayloadFactory } from "../../src/generated/go/nestedtype$payload";
-import { SimpleTypeFactory, SimpleTypeObject, SimpleTypeParam } from "../../src/generated/go/simpletype";
-import { WuesteJsonBytesDecoder, WuesteJsonBytesEncoder, WuestenReflectionObject } from "../../src/wueste";
+import { SimpleTypeFactory, SimpleTypeFactoryImpl, SimpleTypeObject, SimpleTypeParam } from "../../src/generated/go/simpletype";
+import {
+  WuesteJsonBytesDecoder,
+  WuesteJsonBytesEncoder,
+  WuestenFactoryInferT,
+  WuestenReflectionObject,
+} from "../../src/wueste";
 
 const simpleTypeParam: SimpleTypeParam = {
   bool: true,
@@ -628,4 +633,58 @@ it(`Payload OpenObject`, () => {
   const ref = NestedType$PayloadFactory.ToObject(obj);
 
   expect(ref).toEqual(json);
+});
+
+it("Test type T I O", () => {
+  const t: SimpleTypeFactoryImpl["T"] = {
+    bool: true,
+    createdAt: new Date(),
+    float64: 42.42,
+    int64: 42,
+    string: "String42",
+    default_bool: true,
+    default_createdAt: new Date("2023-12-31T23:59:59.000Z"),
+    default_float64: 5000,
+    default_int64: 64,
+    default_string: "hallo",
+    sub: {
+      Test: "Test42",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
+    },
+  };
+  expect(t.bool).toBeTruthy();
+  expect(t.int64).toEqual(42);
+});
+
+it("WuestenFactoryInferT", () => {
+  const t: WuestenFactoryInferT<SimpleTypeFactoryImpl> = {
+    bool: true,
+    createdAt: new Date(),
+    float64: 42.42,
+    int64: 42,
+    string: "String42",
+    default_bool: true,
+    default_createdAt: new Date("2023-12-31T23:59:59.000Z"),
+    default_float64: 5000,
+    default_int64: 64,
+    default_string: "hallo",
+    sub: {
+      Test: "Test42",
+      Open: {
+        X: {
+          Y: {
+            Z: 42,
+          },
+        },
+      },
+    },
+  };
+  expect(t.bool).toBeTruthy();
+  expect(t.int64).toEqual(42);
 });

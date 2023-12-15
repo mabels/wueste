@@ -18,7 +18,7 @@
     "generator": "bin/generator --write-test-schema  --input-file ./src/generated/wasm/simple_type.schema.json --input-file ./src/generated/wasm/base.schema.json --input-file ./src/helper.test.schema.json --eg-from-wueste ../../wueste --eg-from-result ../../result --output-dir ./src/generated/wasm && bin/generator --eg-from-wueste ../wueste --eg-from-result ../result --input-file ./src/payload.schema.json --output-dir ./src/generated/",
     "postgenerator": "pnpm run build:js",
     "presmoke": "pnpm run pubdir ; cd pubdir ; pnpm pack",
-    "smoke": "cd smoke; rm -f package.json; pnpm init ; pnpm install -f ../pubdir/wueste-*.tgz; npx wueste wueste-generator --write-test-schema --input-file ./generated/simple_type.schema.json --input-file ./node_modules/wueste/payload.schema.json --output-dir ./generated; npx ts-node ./smoke.ts",
+    "smoke": "cd smoke; rm -f package.json; pnpm init ; pnpm install -f ../pubdir/wueste-*.tgz; npx wueste wueste-generator --write-test-schema --input-file ./generated/simple_type.schema.json --input-file ./node_modules/wueste/payload.schema.json --output-dir ./generated; npm_config_yes=true npx ts-node ./smoke.ts",
     "lint": "eslint . --ext .ts",
     "prettier": "prettier ."
   },

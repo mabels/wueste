@@ -347,6 +347,9 @@ export interface WuestenBuilder<T, I> extends WuestenAttribute<T, I> {
 }
 
 export interface WuestenFactory<T, I, O> {
+  readonly T: T;
+  readonly I: I;
+  readonly O: O;
   Builder(param?: WuestenAttributeParameter<I>): WuestenBuilder<T, I>;
   FromPayload(val: Payload, decoder?: WuestenDecoder): Result<T>;
   ToPayload(typ: T, encoder?: WuestenEncoder): Result<Payload>;
@@ -355,6 +358,27 @@ export interface WuestenFactory<T, I, O> {
   Schema(): WuestenReflection;
   Getter(typ: T, base: WuestenReflection[]): WuestenGetterBuilder;
 }
+export type WuestenFactoryInferT<F extends WuestenFactory<unknown, unknown, unknown>> = F extends WuestenFactory<
+  infer T,
+  unknown,
+  unknown
+>
+  ? T
+  : unknown;
+export type WuestenFactoryInferI<F extends WuestenFactory<unknown, unknown, unknown>> = F extends WuestenFactory<
+  unknown,
+  infer I,
+  unknown
+>
+  ? I
+  : unknown;
+export type WuestenFactoryInferO<F extends WuestenFactory<unknown, unknown, unknown>> = F extends WuestenFactory<
+  unknown,
+  unknown,
+  infer O
+>
+  ? O
+  : unknown;
 
 export type WuestenObject = Record<string, unknown>;
 
@@ -387,6 +411,9 @@ export class WuestenObjectBuilder implements WuestenBuilder<WuestenObject, Wuest
 }
 
 export class WuestenObjectFactoryImpl implements WuestenFactory<WuestenObject, WuestenObject, WuestenObject> {
+  readonly T = undefined as unknown as WuestenObject;
+  readonly I = undefined as unknown as WuestenObject;
+  readonly O = undefined as unknown as WuestenObject;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Builder(param?: WuestenAttributeParameter<WuestenObject> | undefined): WuestenBuilder<WuestenObject, WuestenObject> {
     return new WuestenObjectBuilder(param);
