@@ -350,6 +350,7 @@ export interface WuestenFactory<T, I, O> {
   readonly T: T;
   readonly I: I;
   readonly O: O;
+  Names(): WuestenNames;
   Builder(param?: WuestenAttributeParameter<I>): WuestenBuilder<T, I>;
   FromPayload(val: Payload, decoder?: WuestenDecoder): Result<T>;
   ToPayload(typ: T, encoder?: WuestenEncoder): Result<Payload>;
@@ -417,6 +418,9 @@ export class WuestenObjectFactoryImpl implements WuestenFactory<WuestenObject, W
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Builder(param?: WuestenAttributeParameter<WuestenObject> | undefined): WuestenBuilder<WuestenObject, WuestenObject> {
     return new WuestenObjectBuilder(param);
+  }
+  Names(): WuestenNames {
+    throw new Error("WuestenObjectFactoryImpl:Names Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   FromPayload(val: Payload, decoder?: WuestenDecoder): Result<WuestenObject, Error> {
@@ -702,3 +706,31 @@ export const wuesten = {
   //     return new WuestenAttributeType([] as unknown as T);
   //   }
 };
+
+export interface WuestenNames {
+  readonly id: string;
+  readonly title: string;
+  readonly names: string[];
+  readonly varname: string;
+}
+
+export class WuestenTypeRegistryImpl {
+  readonly #registry: Map<string, WuestenFactory<unknown, unknown, unknown>> = new Map();
+
+  Register<T extends WuestenFactory<unknown, unknown, unknown>>(wf: T): T {
+    wf.Names().names.forEach((name) => {
+      this.#registry.set(name, wf);
+    });
+    return wf;
+  }
+
+  RegisteredNames(): string[] {
+    return Array.from(this.#registry.keys());
+  }
+
+  GetByName<T extends WuestenFactory<unknown, unknown, unknown>>(name: string): T | undefined {
+    return this.#registry.get(name) as T;
+  }
+}
+
+export const WuestenTypeRegistry = new WuestenTypeRegistryImpl();

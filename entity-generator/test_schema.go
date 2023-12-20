@@ -275,8 +275,8 @@ func TestJSONPayloadSchema() JSonFile {
 		"filename":	"payload.schema.json",
 		"jsonProperty": {
 			"type":     "object",
-			"$id":         "https://Sub",
-			"title":       "Payload",
+			"$id":         "https://IPayload",
+			"title":       "IPayload",
 			"description": "Description",
 			"properties": {
 				"Test": {

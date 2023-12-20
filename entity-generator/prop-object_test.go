@@ -81,7 +81,7 @@ func TestParentNestedArray(t *testing.T) {
 	assert.Equal(t, arr3.Meta().Parent().Value().Id(), arr2.Id())
 
 	obj := arr3.Items()
-	assert.Equal(t, obj.Id(), "https://Sub")
+	assert.Equal(t, obj.Id(), "https://IPayload")
 	assert.Equal(t, obj.Meta().Parent().Value().Id(), arr3.Id())
 
 }
@@ -133,7 +133,7 @@ func TestFileNameNestedArray(t *testing.T) {
 	assert.Equal(t, arr3.Meta().FileName().Value(), "/abs/nested_type.schema.json")
 
 	obj := arr3.Items()
-	assert.Equal(t, obj.Id(), "https://Sub")
+	assert.Equal(t, obj.Id(), "https://IPayload")
 	assert.Equal(t, obj.Meta().FileName().Value(), "/abs/nested_type.schema.json")
 
 }

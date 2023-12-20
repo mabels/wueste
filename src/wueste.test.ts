@@ -11,6 +11,7 @@ import {
   WuestenRecordGetter,
   WuestenGetterBuilder,
   WuesteToIterator,
+  WuestenNames,
 } from "./wueste";
 
 it("array coerce from array", () => {
@@ -461,6 +462,9 @@ class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
   //     builder.test(object["test"])
   //     return builder.Validate()
   // }
+  Names(): WuestenNames {
+    throw new Error("Method not implemented.");
+  }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ToObject(typ: Entity): Entity {
     throw new Error("Method not implemented.");

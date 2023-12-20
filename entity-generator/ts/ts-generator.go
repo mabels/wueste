@@ -503,24 +503,36 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 			})
 
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenJSONPassThroughDecoder")
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenNames")
+
+			wr.WriteBlock("", g.lang.ReturnType(g.lang.Call("Names"), "WuestenNames"), func(wr *eg.ForIfWhileLangWriter) {
+				wr.WriteBlock("return", "", func(wr *eg.ForIfWhileLangWriter) {
+					wr.FormatLine("id: %s,", g.lang.Quote(prop.Id()))
+					title := prop.Title()
+					if title == "" {
+						title = prop.Id()
+					}
+					wr.FormatLine("title: %s,", g.lang.Quote(title))
+					names := []string{prop.Id()}
+					if prop.Id() != prop.Title() {
+						names = append(names, prop.Title())
+					}
+					varname := g.lang.PublicName(title)
+					if varname != prop.Id() && varname != title {
+						names = append(names, varname)
+					}
+					jsonBytes, _ := json.Marshal(names)
+					wr.FormatLine("names: %s,", string(jsonBytes))
+					wr.FormatLine("varname: %s", g.lang.Quote(varname))
+				})
+			})
 			wr.WriteBlock("",
 				g.lang.ReturnType(
 					g.lang.Call("FromPayload", g.lang.ReturnType("val", "WuestePayload"), "decoder = WuestenJSONPassThroughDecoder"),
 					g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop)))),
 				func(wr *eg.ForIfWhileLangWriter) {
-					ids := []string{getObjectName(prop)}
-					if prop.Id() != "" {
-						ids = append(ids, prop.Id())
-					}
-					if prop.Title() != "" {
-						ids = append(ids, prop.Title())
-					}
-					conditions := []string{}
-					for _, id := range ids {
-						conditions = append(conditions, fmt.Sprintf("val.Type === %s", g.lang.Quote(id)))
-					}
-					wr.WriteBlock("if", fmt.Sprintf("(!(%s))", strings.Join(conditions, " || ")), func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return WuesteResult.Err(new Error(`WuestePayload Type mismatch:[%s] != ${val.Type}`));", strings.Join(ids, ","))
+					wr.WriteBlock("if", "(!this.Names().names.includes(val.Type))", func(wr *eg.ForIfWhileLangWriter) {
+						wr.FormatLine("return WuesteResult.Err(new Error(`WuestePayload Type mismatch:[${this.Names().names.join(',')}] != ${val.Type}`));")
 					})
 					// <Partial<SimpleTypeParam>>
 					wr.FormatLine("const data = %s", g.lang.Call("decoder", "val.Data"))
@@ -595,6 +607,8 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 		g.lang.AssignDefault(
 			g.lang.Export(g.lang.Const(g.lang.PublicName(getObjectName(prop), "Factory"))),
 			g.lang.New(g.lang.PublicName(getObjectName(prop), "FactoryImpl"))))
+	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenTypeRegistry")
+	g.bodyWriter.WriteLine(g.lang.CallDot("WuestenTypeRegistry", g.lang.Call("Register", g.lang.PublicName(getObjectName(prop), "Factory"))))
 	g.bodyWriter.WriteLine()
 }
 
