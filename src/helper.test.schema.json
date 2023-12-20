@@ -30,10 +30,10 @@
             "required": ["test"]
           }
         },
-        "bool": { "type": "boolean" },
-        "num": { "type": "number" },
-        "int": { "type": "integer" },
-        "str": { "type": "string" },
+        "bool": { "type": "boolean", "x-groups": ["group1", "bool"] },
+        "num": { "type": "number", "x-groups": ["group1", "num"] },
+        "int": { "type": "integer", "x-groups": ["group1", "int"] },
+        "str": { "type": "string", "x-groups": ["group1", "str"] },
         "opt-bool": { "type": "boolean" },
         "opt-num": { "type": "number" },
         "opt-int": { "type": "integer" },

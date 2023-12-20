@@ -307,11 +307,14 @@ func TestJsonFlatSchema() JSonFile {
 			"description": "Jojo SimpleType",
 			"properties": {
 				"string": {
-					"type": "string"
+					"type": "string",
+					"description": "string description",
+					"x-groups": ["string", "key"]
 				},
 				"default-string": {
 					"type":    "string",
-					"default": "hallo"
+					"default": "hallo",
+					"x-groups": ["key"]
 				},
 				"optional-string": {
 					"type": "string"
@@ -339,7 +342,8 @@ func TestJsonFlatSchema() JSonFile {
 					"default": "2023-12-31T23:59:59Z"
 				},
 				"float64": {
-					"type": "number"
+					"type": "number",
+					"x-groups": ["number", "key"]
 				},
 				"default-float64": {
 					"type":    "number",
@@ -357,7 +361,8 @@ func TestJsonFlatSchema() JSonFile {
 				},
 				"int64": {
 					"type":   "integer",
-					"format": "int64"
+					"format": "int64",
+					"x-groups": ["integer", "key"]
 				},
 				"default-int64": {
 					"type":    "integer",
@@ -374,7 +379,8 @@ func TestJsonFlatSchema() JSonFile {
 					"default": 32
 				},
 				"bool": {
-					"type": "boolean"
+					"type": "boolean",
+					"x-groups": ["boolean", "key"]
 				},
 				"default-bool": {
 					"type":    "boolean",

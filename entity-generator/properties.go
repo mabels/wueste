@@ -72,6 +72,12 @@ func JSONsetOptionalString(js JSONDict, key string, value rusty.Optional[string]
 	}
 }
 
+func JSONsetXProperties(js JSONDict, value map[string]interface{}) {
+	for k, v := range value {
+		js.Set(k, v)
+	}
+}
+
 func JSONsetOptionalBoolean(js JSONDict, key string, value rusty.Optional[bool]) {
 	if !value.IsNone() {
 		js.Set(key, value.Value())

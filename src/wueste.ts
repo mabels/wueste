@@ -41,17 +41,31 @@ export type WuestenReflection =
   | WuestenReflectionObject
   | WuestenReflectionArray
   | WuestenReflectionLiteral
+  | WuestenReflectionLiteralString
   | WuestenReflectionObjectItem;
 
-export interface WuestenReflectionBase {
+// export type WuestenXKeyedMap = Record<string, unknown>;
+// export type WuestenXKeyedMap<T extends string= any> = { [P in keyof T]: string extends `x-${T}` ? string : never };
+export type WuestenXKeyedMap = Partial<{
+  readonly "x-groups": string[];
+}>;
+
+export interface WuestenReflectionBase extends WuestenXKeyedMap {
   readonly type: SchemaTypes;
+  readonly description?: string;
   readonly ref?: string;
 }
 
+// export type WuestenReflectionBase = WuestenReflectionForSchema | WuestenXKeyedMap
+
 export interface WuestenReflectionLiteral extends WuestenReflectionBase {
-  readonly type: "string" | "number" | "integer" | "boolean";
-  // coerceFromString(val: string): void;
-  // getAsString(): string|undefined;
+  readonly type: "number" | "integer" | "boolean";
+  readonly format?: string;
+}
+
+export interface WuestenReflectionLiteralString extends WuestenReflectionBase {
+  readonly type: "string";
+  readonly format?: string;
 }
 
 export interface WuestenReflectionObjectItem {

@@ -82,13 +82,19 @@ type Property interface {
 	Type() Type
 	Description() rusty.Optional[string]
 	Ref() rusty.Optional[string]
+	XProperties() map[string]interface{}
 	Meta() PropertyMeta
+}
+
+type PropertyFormat interface {
+	Format() rusty.Optional[string]
 }
 
 type PropertyBuilder struct {
 	Id          string
 	Type        Type
 	Description rusty.Optional[string]
+	XProperties map[string]interface{}
 	Ref         rusty.Optional[string]
 }
 
@@ -101,6 +107,9 @@ func NewProperty(p PropertyBuilder) Property {
 	// if p.Ref.IsSome() {
 	// 	p.Runtime.Ref = p.Ref
 	// }
+	if p.XProperties == nil {
+		p.XProperties = make(map[string]interface{})
+	}
 	r := &property{
 		param: p,
 		meta:  NewPropertyMeta(),
@@ -111,6 +120,10 @@ func NewProperty(p PropertyBuilder) Property {
 // func (p property) Clone() Property {
 // 	return NewProperty(p.param)
 // }
+
+func (p *property) XProperties() map[string]interface{} {
+	return p.param.XProperties
+}
 
 func (p *property) Ref() rusty.Optional[string] {
 	return p.param.Ref

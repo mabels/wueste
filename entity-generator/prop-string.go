@@ -20,6 +20,7 @@ type PropertyString interface {
 	Default() rusty.Optional[string] // match Type
 	Format() rusty.Optional[StringFormat]
 	Ref() rusty.Optional[string]
+	XProperties() map[string]interface{}
 	Meta() PropertyMeta
 
 	// Runtime() *PropertyRuntime
@@ -38,16 +39,20 @@ type PropertyStringBuilder struct {
 	Description rusty.Optional[string]
 	Default     rusty.Optional[string]
 	Ref         rusty.Optional[string]
+	XProperties map[string]interface{}
 	// Enum      []string
 	// MinLength rusty.Optional[int]
 	// MaxLength rusty.Optional[int]
+
 	Format rusty.Optional[StringFormat]
 	// Runtime PropertyRuntime
 	// Ctx     PropertyCtx
 }
 
 func NewPropertyStringBuilder(pb *PropertiesBuilder) *PropertyStringBuilder {
-	return &PropertyStringBuilder{}
+	return &PropertyStringBuilder{
+		XProperties: make(map[string]interface{}),
+	}
 }
 
 // func (b *PropertyStringBuilder) FromProperty(prop Property) *PropertyStringBuilder {
@@ -65,6 +70,7 @@ func (b *PropertyStringBuilder) FromJson(js JSONDict) *PropertyStringBuilder {
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.Format = getFromAttributeOptionalString(js, "format")
 	b.Default = getFromAttributeOptionalString(js, "default")
+	b.XProperties = getFromAttributeXProperties(js)
 	return b
 }
 
@@ -75,6 +81,7 @@ func PropertyStringToJson(b PropertyString) JSONDict {
 	JSONsetOptionalString(jsp, "description", b.Description())
 	JSONsetOptionalString(jsp, "format", b.Format())
 	JSONsetOptionalString(jsp, "default", b.Default())
+	JSONsetXProperties(jsp, b.XProperties())
 	return jsp
 }
 
@@ -148,6 +155,10 @@ func (p *propertyString) Default() rusty.Optional[string] {
 
 func (p *propertyString) Format() rusty.Optional[StringFormat] {
 	return p.param.Format
+}
+
+func (p *propertyString) XProperties() map[string]interface{} {
+	return p.param.XProperties
 }
 
 func (p *propertyString) Ref() rusty.Optional[string] {

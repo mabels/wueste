@@ -1,4 +1,4 @@
-import { WuestenAttr, WuestenGetterBuilder, WuestenReflection } from "./wueste";
+import { WuestenAttr, WuestenGetterBuilder, WuestenReflection, WuestenReflectionObjectItem, WuestenXKeyedMap } from "./wueste";
 
 import { hmac } from "@noble/hashes/hmac";
 import { sha1 } from "@noble/hashes/sha1";
@@ -104,4 +104,35 @@ export function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] =
     val && mac.update(enc.encode(val));
   });
   return mac.digest();
+}
+
+export interface Group {
+  readonly path: string;
+  readonly schema: WuestenReflection;
+  readonly ref: unknown;
+}
+export interface Groups {
+  [key: string]: Group[];
+}
+
+export function groups(ref: WuestenGetterBuilder) {
+  const groups: Groups = {};
+  ref.Apply((path, ref) => {
+    const last = path[path.length - 1] as WuestenXKeyedMap;
+    const property = ((last as WuestenReflectionObjectItem).property || last) as WuestenReflection;
+    const xGroups = (property as WuestenXKeyedMap)["x-groups"];
+    if (Array.isArray(xGroups)) {
+      for (const g of xGroups) {
+        if (!groups[g]) {
+          groups[g] = [];
+        }
+        groups[g].push({
+          path: asDottedPath(path),
+          schema: property,
+          ref,
+        });
+      }
+    }
+  });
+  return groups;
 }

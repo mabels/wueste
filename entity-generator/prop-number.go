@@ -10,6 +10,7 @@ type PropertyNumber interface {
 	Ref() rusty.Optional[string]
 	Description() rusty.Optional[string]
 	Format() rusty.Optional[string]
+	XProperties() map[string]interface{}
 	Default() rusty.Optional[float64] // match Type
 	// Enum() []float64
 	Maximum() rusty.Optional[float64]
@@ -29,6 +30,7 @@ type PropertyNumberBuilder struct {
 	Description rusty.Optional[string]
 	Format      rusty.Optional[string]
 	Default     rusty.Optional[float64]
+	XProperties map[string]interface{}
 	// Enum        []float64
 	Maximum rusty.Optional[float64]
 	Minimum rusty.Optional[float64]
@@ -45,6 +47,7 @@ func (b *PropertyNumberBuilder) FromJson(js JSONDict) *PropertyNumberBuilder {
 	b.Type = "number"
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
+	b.XProperties = getFromAttributeXProperties(js)
 	b.Format = getFromAttributeOptionalString(js, "format")
 	b.Default = getFromAttributeOptionalFloat64(js, "default")
 	b.Maximum = getFromAttributeOptionalFloat64(js, "maximum")
@@ -58,6 +61,7 @@ func PropertyNumberToJson(b PropertyNumber) JSONDict {
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "format", b.Format())
 	JSONsetOptionalString(jsp, "description", b.Description())
+	JSONsetXProperties(jsp, b.XProperties())
 	JSONsetOptionalFloat64(jsp, "default", b.Default())
 	JSONsetOptionalFloat64(jsp, "maximum", b.Maximum())
 	JSONsetOptionalFloat64(jsp, "minimum", b.Minimum())
@@ -79,6 +83,10 @@ func NewPropertyNumber(p PropertyNumberBuilder) rusty.Result[Property] {
 		param: p,
 		meta:  NewPropertyMeta(),
 	})
+}
+
+func (p *propertyNumber) XProperties() map[string]interface{} {
+	return p.param.XProperties
 }
 
 func (p *propertyNumber) Meta() PropertyMeta {

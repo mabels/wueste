@@ -591,9 +591,10 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 				wr.WriteLine("return builder.Get();")
 			})
 
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenReflectionObject")
 			wr.WriteBlock("", g.lang.ReturnType(
-				g.lang.Call("Schema"), "WuestenReflection"), func(wr *eg.ForIfWhileLangWriter) {
-				wr.FormatLine("return %s;", g.lang.PublicName(getObjectName(prop), "Schema"))
+				g.lang.Call("Schema"), "WuestenReflectionObject"), func(wr *eg.ForIfWhileLangWriter) {
+				wr.FormatLine("return %s as WuestenReflectionObject;", g.lang.PublicName(getObjectName(prop), "Schema"))
 			})
 			wr.WriteBlock("", g.lang.ReturnType(
 				g.lang.Call("Getter", g.lang.ReturnType("typ", g.lang.PublicName(getObjectName(prop))),
@@ -621,23 +622,31 @@ func (g *tsGenerator) writeSchema(wr *eg.ForIfWhileLangWriter, prop eg.Property,
 		wr.WriteLine(g.lang.Comma(g.lang.ReturnType("id", g.lang.Quote(prop.Id()))))
 	}
 	wr.WriteLine(g.lang.Comma(g.lang.ReturnType("type", g.lang.Quote(prop.Type()))))
+	if prop.Description().IsSome() {
+		wr.WriteLine(g.lang.Comma(g.lang.ReturnType("description", g.lang.Quote(prop.Description().Value()))))
+	}
+	if prop.XProperties() != nil {
+		for xk, xv := range prop.XProperties() {
+			jsonXk, err := json.Marshal(xk)
+			if err != nil {
+				panic(err)
+			}
+			jsonXv, err := json.Marshal(xv)
+			if err != nil {
+				panic(err)
+			}
+
+			wr.WriteLine(g.lang.Comma(g.lang.ReturnType(string(jsonXk), string(jsonXv))))
+		}
+	}
 
 	switch prop.Type() {
-	case eg.STRING, eg.INTEGER, eg.NUMBER, eg.BOOLEAN:
-		// nimpl := "() => { throw new Error('not implemented') }"
-		// if len(itemNames) > 0 {
-		// 	nimpl = fmt.Sprintf("(val) => %s", g.lang.Call(g.lang.CallDot("my",
-		// 		g.lang.PublicName(itemNames[0])), "val"))
-		// }
-		// wr.WriteLine(g.lang.Comma(g.lang.ReturnType("coerceFromString", nimpl)))
-		// nimpl = "() => { throw new Error('not implemented') }"
-		// if len(itemNames) > 0 {
-		// 	nimpl = fmt.Sprintf("() => %s", g.lang.Call(
-		// 		"JSON.stringify",
-		// 		g.lang.CallDot("my.Get().unwrap()",
-		// 			g.lang.PublicName(itemNames[0]))))
-		// }
-		// wr.WriteLine(g.lang.Comma(g.lang.ReturnType("getAsString", nimpl)))
+	case eg.BOOLEAN:
+	case eg.STRING, eg.INTEGER, eg.NUMBER:
+		pi := prop.(eg.PropertyFormat)
+		if pi.Format().IsSome() {
+			wr.WriteLine(g.lang.Comma(g.lang.ReturnType("format", g.lang.Quote(pi.Format().Value()))))
+		}
 	case eg.OBJECT:
 		po := prop.(eg.PropertyObject)
 		if po.Schema() != "" {
@@ -945,7 +954,7 @@ func (g *tsGenerator) generateArrayCoerce(level int, rootArray, returnType strin
 
 func (g *tsGenerator) generateLocalArrays(prop eg.PropertyObject, pa eg.PropertyArray, pi eg.PropertyItem) {
 	baseName := getObjectName(pi.Property(), []string{pi.Name()})
-	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenReflection")
+	// g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenReflectionArray")
 
 	g.generateSchemaExport(pi.Property(), baseName)
 	// g.bodyWriter.WriteLine("// eslint-disable-next-line @typescript-eslint/no-unused-vars")

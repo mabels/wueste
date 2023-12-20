@@ -9,6 +9,7 @@ type PropertyBoolean interface {
 	Type() Type
 	Description() rusty.Optional[string]
 	Default() rusty.Optional[bool] // match Type
+	XProperties() map[string]interface{}
 	Ref() rusty.Optional[string]
 	Meta() PropertyMeta
 }
@@ -16,6 +17,7 @@ type PropertyBoolean interface {
 type PropertyBooleanBuilder struct {
 	Id          string
 	Type        Type
+	XProperties map[string]interface{}
 	Description rusty.Optional[string]
 	Default     rusty.Optional[bool]
 	Ref         rusty.Optional[string]
@@ -30,6 +32,7 @@ func (b *PropertyBooleanBuilder) FromJson(js JSONDict) *PropertyBooleanBuilder {
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
 	b.Default = getFromAttributeOptionalBoolean(js, "default")
+	b.XProperties = getFromAttributeXProperties(js)
 	return b
 }
 
@@ -39,6 +42,7 @@ func PropertyBooleanToJson(b PropertyBoolean) JSONDict {
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "description", b.Description())
 	JSONsetOptionalBoolean(jsp, "default", b.Default())
+	JSONsetXProperties(jsp, b.XProperties())
 	return jsp
 }
 
@@ -58,6 +62,10 @@ func NewPropertyBoolean(p PropertyBooleanBuilder) rusty.Result[Property] {
 		param: p,
 		meta:  NewPropertyMeta(),
 	})
+}
+
+func (p *propertyBoolean) XProperties() map[string]interface{} {
+	return p.param.XProperties
 }
 
 func (p *propertyBoolean) Meta() PropertyMeta {

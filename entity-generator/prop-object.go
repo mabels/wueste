@@ -42,6 +42,7 @@ type PropertyObject interface {
 	Title() string
 	Schema() string
 	Description() rusty.Optional[string]
+	XProperties() map[string]interface{}
 
 	Properties() *properties
 	Items() []PropertyItem
@@ -73,6 +74,10 @@ type propertyObject struct {
 	// _runtime    PropertyRuntime
 	// _ctx        PropertyCtx
 	// deref       map[string]PropertyItem
+}
+
+func (p *propertyObject) XProperties() map[string]interface{} {
+	return p.param.XProperties
 }
 
 func (p *propertyObject) Meta() PropertyMeta {
@@ -167,12 +172,13 @@ type PropertyObjectBuilder struct {
 	Type        Type
 	Description rusty.Optional[string]
 
-	Id         string
-	Title      string
-	Schema     string
-	Properties *properties // PropertiesObject
-	Required   []string
-	Ref        rusty.Optional[string]
+	Id          string
+	Title       string
+	Schema      string
+	Properties  *properties // PropertiesObject
+	Required    []string
+	Ref         rusty.Optional[string]
+	XProperties map[string]interface{}
 
 	// Runtime PropertyRuntime
 	// Ctx     PropertyCtx
@@ -279,6 +285,7 @@ func (b *PropertyObjectBuilder) FromJson(js JSONDict) *PropertyObjectBuilder {
 	b.Title = getFromAttributeString(js, "title")
 	b.Schema = getFromAttributeString(js, "$schema")
 	b.Description = getFromAttributeOptionalString(js, "description")
+	b.XProperties = getFromAttributeXProperties(js)
 	b.Properties = newProperties()
 	_properties, found := js.Lookup("properties")
 	if found {
@@ -346,6 +353,7 @@ func PropertyObjectToJson(b PropertyObject) JSONDict {
 		JSONsetString(jsp, "$schema", b.Schema())
 	}
 	JSONsetOptionalString(jsp, "description", b.Description())
+	JSONsetXProperties(jsp, b.XProperties())
 	props := NewJSONDict()
 	items := b.Items()
 	for _, v := range items {

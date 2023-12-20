@@ -10,6 +10,7 @@ type PropertyArray interface {
 	Id() string
 	Type() Type
 	Description() rusty.Optional[string]
+	XProperties() map[string]interface{}
 	// Format() rusty.Optional[string]
 	// Optional() bool
 	// SetOptional()
@@ -33,6 +34,7 @@ type PropertyArrayBuilder struct {
 	Type        Type
 	Ref         rusty.Optional[string]
 	Description rusty.Optional[string]
+	XProperties map[string]interface{}
 	// Format      rusty.Optional[string]
 	// Optional    bool
 	MinItems rusty.Optional[int]
@@ -161,6 +163,10 @@ func (p *propertyArray) Id() string {
 
 func (p *propertyArray) Ref() rusty.Optional[string] {
 	return p.param.Ref
+}
+
+func (p *propertyArray) XProperties() map[string]interface{} {
+	return p.param.XProperties
 }
 
 // func (p *propertyArray) Runtime() *PropertyRuntime {

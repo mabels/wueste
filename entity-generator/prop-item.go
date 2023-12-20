@@ -11,6 +11,7 @@ type PropertyItem interface {
 	Id() string
 	Type() Type
 	Description() rusty.Optional[string]
+	XProperties() map[string]interface{}
 	Ref() rusty.Optional[string]
 	Meta() PropertyMeta
 }
@@ -22,6 +23,10 @@ type propertyItem struct {
 	property Property
 	idx      int
 	// order    int
+}
+
+func (pi *propertyItem) XProperties() map[string]interface{} {
+	return nil
 }
 
 func (pi *propertyItem) Description() rusty.Optional[string] {

@@ -9,6 +9,7 @@ type PropertyInteger interface {
 	Type() Type
 	Description() rusty.Optional[string]
 	Format() rusty.Optional[string]
+	XProperties() map[string]interface{}
 	// Optional() bool
 	// SetOptional()
 	Default() rusty.Optional[int] // match Type
@@ -35,6 +36,7 @@ type PropertyIntegerBuilder struct {
 	Description rusty.Optional[string]
 	Format      rusty.Optional[string]
 	Default     rusty.Optional[int]
+	XProperties map[string]interface{}
 	// Enum        []T
 	// Default rusty.Optional[T]
 	Maximum rusty.Optional[int]
@@ -55,6 +57,7 @@ func (b *PropertyIntegerBuilder) FromJson(js JSONDict) *PropertyIntegerBuilder {
 	b.Type = "integer"
 	ensureAttributeId(js, func(id string) { b.Id = id })
 	b.Description = getFromAttributeOptionalString(js, "description")
+	b.XProperties = getFromAttributeXProperties(js)
 	b.Format = getFromAttributeOptionalString(js, "format")
 	b.Default = getFromAttributeOptionalInt(js, "default")
 	b.Maximum = getFromAttributeOptionalInt(js, "maximum")
@@ -68,6 +71,7 @@ func PropertyIntegerToJson(b PropertyInteger) JSONDict {
 	JSONsetString(jsp, "type", b.Type())
 	JSONsetOptionalString(jsp, "format", b.Format())
 	JSONsetOptionalString(jsp, "description", b.Description())
+	JSONsetXProperties(jsp, b.XProperties())
 	JSONsetOptionalInt(jsp, "default", b.Default())
 	JSONsetOptionalInt(jsp, "maximum", b.Maximum())
 	JSONsetOptionalInt(jsp, "minimum", b.Minimum())
@@ -89,6 +93,10 @@ func NewPropertyInteger(p PropertyIntegerBuilder) rusty.Result[Property] {
 		param: p,
 		meta:  NewPropertyMeta(),
 	})
+}
+
+func (p *propertyInteger) XProperties() map[string]interface{} {
+	return p.param.XProperties
 }
 
 func (p *propertyInteger) Meta() PropertyMeta {

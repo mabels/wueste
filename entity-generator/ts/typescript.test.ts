@@ -704,3 +704,44 @@ it("testRegistery", () => {
   expect((fac?.Schema() as WuestenReflectionObject).title).toBe("IPayload");
   expect((fac?.Schema() as WuestenReflectionObject).id).toBe("https://IPayload");
 });
+
+it("test schema x-groups", () => {
+  expect(SimpleTypeFactory.Schema().properties![0]).toEqual({
+    name: "string",
+    type: "objectitem",
+    property: { description: "string description", type: "string", "x-groups": ["string", "key"] },
+  });
+  expect(SimpleTypeFactory.Schema().properties![4]).toEqual({
+    name: "createdAt",
+    property: {
+      type: "string",
+      format: "date-time",
+    },
+    type: "objectitem",
+  });
+  expect(SimpleTypeFactory.Schema().properties![8]).toEqual({
+    name: "float64",
+    property: {
+      type: "number",
+      "x-groups": ["number", "key"],
+    },
+    type: "objectitem",
+  });
+  expect(SimpleTypeFactory.Schema().properties![12]).toEqual({
+    name: "int64",
+    property: {
+      type: "integer",
+      format: "int64",
+      "x-groups": ["integer", "key"],
+    },
+    type: "objectitem",
+  });
+  expect(SimpleTypeFactory.Schema().properties![16]).toEqual({
+    name: "bool",
+    property: {
+      type: "boolean",
+      "x-groups": ["boolean", "key"],
+    },
+    type: "objectitem",
+  });
+});

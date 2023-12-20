@@ -221,6 +221,19 @@ func ensureAttributeId(js JSONDict, fn func(id string)) {
 	}
 }
 
+func getFromAttributeXProperties(js JSONDict) map[string]interface{} {
+	var xProperties map[string]interface{} = nil
+	for _, keys := range js.Keys() {
+		if strings.HasPrefix(keys, "x-") {
+			if xProperties == nil {
+				xProperties = make(map[string]interface{})
+			}
+			xProperties[keys] = js.Get(keys)
+		}
+	}
+	return xProperties
+}
+
 func getFromAttributeOptionalString(js JSONDict, attr string) rusty.Optional[string] {
 	format := rusty.None[string]()
 	formatVal, found := js.Lookup(attr)

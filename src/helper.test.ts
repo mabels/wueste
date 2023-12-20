@@ -1,4 +1,4 @@
-import { fromEnv, walk, toHash } from "./helper";
+import { fromEnv, walk, toHash, groups } from "./helper";
 import { helperTest, helperTestFactory, helperTestGetter } from "./generated/wasm/helpertest";
 import { WuestenRetVal } from "./wueste";
 import { helperTest$helperTestSubBuilder, helperTest$helperTestSub$arrayBuilder } from "./generated/wasm/helpertest$helpertestsub";
@@ -125,6 +125,85 @@ describe("helper", () => {
       "hi",
       "murks",
     ]);
+  });
+
+  it("grouping helper", () => {
+    expect(groups(helperTestGetter(ref))).toEqual({
+      bool: [
+        {
+          path: "helperTest.sub.helperTestSub.bool",
+          schema: {
+            type: "boolean",
+            "x-groups": ["group1", "bool"],
+          },
+          ref: true,
+        },
+      ],
+      group1: [
+        {
+          path: "helperTest.sub.helperTestSub.bool",
+          schema: {
+            type: "boolean",
+            "x-groups": ["group1", "bool"],
+          },
+          ref: true,
+        },
+        {
+          path: "helperTest.sub.helperTestSub.num",
+          schema: {
+            type: "number",
+            "x-groups": ["group1", "num"],
+          },
+          ref: 1.1,
+        },
+        {
+          path: "helperTest.sub.helperTestSub.int",
+          schema: {
+            type: "integer",
+            "x-groups": ["group1", "int"],
+          },
+          ref: 42,
+        },
+        {
+          path: "helperTest.sub.helperTestSub.str",
+          schema: {
+            type: "string",
+            "x-groups": ["group1", "str"],
+          },
+          ref: "hi",
+        },
+      ],
+      int: [
+        {
+          path: "helperTest.sub.helperTestSub.int",
+          schema: {
+            type: "integer",
+            "x-groups": ["group1", "int"],
+          },
+          ref: 42,
+        },
+      ],
+      num: [
+        {
+          path: "helperTest.sub.helperTestSub.num",
+          schema: {
+            type: "number",
+            "x-groups": ["group1", "num"],
+          },
+          ref: 1.1,
+        },
+      ],
+      str: [
+        {
+          path: "helperTest.sub.helperTestSub.str",
+          schema: {
+            type: "string",
+            "x-groups": ["group1", "str"],
+          },
+          ref: "hi",
+        },
+      ],
+    });
   });
 
   it("coerce is function", () => {
