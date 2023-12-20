@@ -1,4 +1,4 @@
-import { Result } from "./result";
+import { Result, WithoutResult } from "./result";
 
 it("ResultOk", () => {
   const result = Result.Ok(1);
@@ -30,4 +30,11 @@ it("is Result", () => {
   expect(Result.Is(Result.Ok(1))).toBe(true);
   expect(Result.Is(Result.Err("xxx"))).toEqual(true);
   expect(Result.Is(new Result())).toBe(true);
+});
+
+it("WithoutResult", () => {
+  const result = Result.Ok({ a: 1 });
+  const a1: Partial<WithoutResult<typeof result>> = {};
+  a1.a = 1;
+  expect(a1.a).toEqual(1);
 });

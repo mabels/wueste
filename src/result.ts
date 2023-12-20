@@ -79,3 +79,5 @@ export class ResultError<T extends Error> extends Result<never, T> {
     return this._error;
   }
 }
+
+export type WithoutResult<T> = T extends Result<infer U> ? U : T;
