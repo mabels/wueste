@@ -535,135 +535,250 @@ describe("object coerce", () => {
     });
   });
 
-  it("WuestenRecordGetter Nothing", () => {
-    const fn = jest.fn();
-    WuestenRecordGetter(fn, [], undefined);
-    expect(fn.mock.calls.length).toBe(0);
-  });
-
-  it("WuestenRecordGetter ObjectEmpty", () => {
-    const fn = jest.fn();
-    WuestenRecordGetter(fn, [], {});
-    expect(fn.mock.calls.length).toBe(0);
-  });
-
-  it("WuestenRecordGetter ObjectEmpty", () => {
-    const fn = jest.fn();
-    WuestenRecordGetter(fn, [], {
-      a: 1,
-      b: {
-        c: 2,
-        d: [10, 11],
-      },
+  describe("WuestenRecordGetter", () => {
+    it("WuestenRecordGetter Nothing", () => {
+      const fn = jest.fn();
+      WuestenRecordGetter(fn, [], undefined);
+      expect(fn.mock.calls.length).toBe(0);
     });
-    expect(fn.mock.calls).toEqual([
-      [[{ name: "a", property: undefined, type: "objectitem" }], "a"],
-      [[{ name: "a", property: undefined, type: "objectitem" }], 1],
-      [[{ name: "b", property: undefined, type: "objectitem" }], "b"],
-      [
-        [
-          { name: "b", property: undefined, type: "objectitem" },
-          { name: "c", property: undefined, type: "objectitem" },
-        ],
-        "c",
-      ],
-      [
-        [
-          { name: "b", property: undefined, type: "objectitem" },
-          { name: "c", property: undefined, type: "objectitem" },
-        ],
-        2,
-      ],
-      [
-        [
-          { name: "b", property: undefined, type: "objectitem" },
-          { name: "d", property: undefined, type: "objectitem" },
-        ],
-        "d",
-      ],
-      [
-        [
-          { name: "b", property: undefined, type: "objectitem" },
-          { name: "d", property: undefined, type: "objectitem" },
-          { id: "[0]", items: undefined, type: "array" },
-        ],
-        10,
-      ],
-      [
-        [
-          { name: "b", property: undefined, type: "objectitem" },
-          { name: "d", property: undefined, type: "objectitem" },
-          { id: "[1]", items: undefined, type: "array" },
-        ],
-        11,
-      ],
-    ]);
-  });
 
-  it("WuestenRecordGetter ArrayEmpty", () => {
-    const fn = jest.fn();
-    WuestenRecordGetter(fn, [], [4, { a: 1, b: { c: 1 } }]);
-    expect(fn.mock.calls).toEqual([
-      [[{ id: "[0]", items: undefined, type: "array" }], 4],
-      [
+    it("WuestenRecordGetter ObjectEmpty", () => {
+      const fn = jest.fn();
+      WuestenRecordGetter(fn, [], {});
+      expect(fn.mock.calls).toEqual([
         [
-          { id: "[1]", items: undefined, type: "array" },
-          { name: "a", property: undefined, type: "objectitem" },
+          [
+            {
+              id: "{}",
+              type: "object",
+            },
+          ],
+          {},
         ],
-        "a",
-      ],
-      [
-        [
-          { id: "[1]", items: undefined, type: "array" },
-          { name: "a", property: undefined, type: "objectitem" },
-        ],
-        1,
-      ],
-      [
-        [
-          { id: "[1]", items: undefined, type: "array" },
-          { name: "b", property: undefined, type: "objectitem" },
-        ],
-        "b",
-      ],
-      [
-        [
-          { id: "[1]", items: undefined, type: "array" },
-          { name: "b", property: undefined, type: "objectitem" },
-          { name: "c", property: undefined, type: "objectitem" },
-        ],
-        "c",
-      ],
-      [
-        [
-          { id: "[1]", items: undefined, type: "array" },
-          { name: "b", property: undefined, type: "objectitem" },
-          { name: "c", property: undefined, type: "objectitem" },
-        ],
-        1,
-      ],
-    ]);
-    /*
-    [
+      ]);
+    });
 
-    [[{ id: "[0]", items: undefined, type: "array" }], 4],
-    [
-      [
-        { id: "[1]", items: undefined, type: "array" },
-        { name: "a", property: undefined, type: "objectitem" },
-      ],
-      1,
-    ],
-    [
-      [
-        { id: "[1]", items: undefined, type: "array" },
-        { name: "b", property: undefined, type: "objectitem" },
-        { name: "c", property: undefined, type: "objectitem" },
-      ],
-      1,
-    ],
-  ]);
-  */
+    it("WuestenRecordGetter Object", () => {
+      const fn = jest.fn();
+      const val = {
+        a: 1,
+        b: {
+          c: 2,
+          d: [10, 11],
+        },
+      };
+      WuestenRecordGetter(fn, [], val);
+      expect(fn.mock.calls).toEqual([
+        [[{ id: "{}", type: "object" }], val],
+        // [[{ name: "a", property: undefined, type: "objectitem" }], "a"],
+        [
+          [
+            { id: "{}", type: "object" },
+            { name: "[a]", key: "a", type: "objectitem" },
+          ],
+          1,
+        ],
+
+        [
+          [
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+          ],
+          val["b"],
+        ],
+
+        [
+          [
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+            { id: "{}", type: "object" },
+          ],
+          val["b"],
+        ],
+        [
+          [
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+            { id: "{}", type: "object" },
+            { name: "[c]", key: "c", type: "objectitem" },
+          ],
+          2,
+        ],
+        [
+          [
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+            { id: "{}", type: "object" },
+            { name: "[d]", key: "d", type: "objectitem" },
+          ],
+          [10, 11],
+        ],
+
+        [
+          [
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+            { id: "{}", type: "object" },
+            { name: "[d]", key: "d", type: "objectitem" },
+            { id: "[]", type: "array" },
+          ],
+          [10, 11],
+        ],
+
+        [
+          [
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+            { id: "{}", type: "object" },
+            { name: "[d]", key: "d", type: "objectitem" },
+            { id: "[]", type: "array" },
+            { name: "[0]", idx: 0, type: "arrayitem" },
+          ],
+          10,
+        ],
+
+        [
+          [
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+            { id: "{}", type: "object" },
+            { name: "[d]", key: "d", type: "objectitem" },
+            { id: "[]", type: "array" },
+            { name: "[1]", idx: 1, type: "arrayitem" },
+          ],
+          11,
+        ],
+
+        // [
+        //   [
+        //     { name: "b", property: undefined, type: "objectitem" },
+        //     { name: "c", property: undefined, type: "objectitem" },
+        //   ],
+        //   2,
+        // ],
+        // [
+        //   [
+        //     { name: "b", property: undefined, type: "objectitem" },
+        //     { name: "d", property: undefined, type: "objectitem" },
+        //   ],
+        //   "d",
+        // ],
+        // [
+        //   [
+        //     { name: "b", property: undefined, type: "objectitem" },
+        //     { name: "d", property: undefined, type: "objectitem" },
+        //     { id: "[0]", items: undefined, type: "array" },
+        //   ],
+        //   10,
+        // ],
+        // [
+        //   [
+        //     { name: "b", property: undefined, type: "objectitem" },
+        //     { name: "d", property: undefined, type: "objectitem" },
+        //     { id: "[1]", items: undefined, type: "array" },
+        //   ],
+        //   11,
+        // ],
+      ]);
+    });
+
+    it("WuestenRecordGetter Array Empty", () => {
+      const fn = jest.fn();
+      WuestenRecordGetter(fn, [], []);
+      expect(fn.mock.calls).toEqual([
+        [
+          [
+            {
+              id: "[]",
+              type: "array",
+            },
+          ],
+          [],
+        ],
+      ]);
+    });
+
+    it("WuestenRecordGetter Array", () => {
+      const fn = jest.fn();
+      const valb = { c: 1, d: new Date("2020-01-01") };
+      const val = [4, { a: 1, b: valb }];
+      WuestenRecordGetter(fn, [], val);
+      expect(fn.mock.calls).toEqual([
+        [[{ id: "[]", type: "array" }], val],
+        [
+          [
+            { id: "[]", type: "array" },
+            { name: "[0]", idx: 0, type: "arrayitem" },
+          ],
+          4,
+        ],
+        [
+          [
+            { id: "[]", type: "array" },
+            { name: "[1]", idx: 1, type: "arrayitem" },
+          ],
+          val[1],
+        ],
+        [
+          [
+            { id: "[]", type: "array" },
+            { name: "[1]", idx: 1, type: "arrayitem" },
+            { id: "{}", type: "object" },
+          ],
+          val[1],
+        ],
+        [
+          [
+            { id: "[]", type: "array" },
+            { name: "[1]", idx: 1, type: "arrayitem" },
+            { id: "{}", type: "object" },
+            { name: "[a]", key: "a", type: "objectitem" },
+          ],
+          1,
+        ],
+        [
+          [
+            { id: "[]", type: "array" },
+            { name: "[1]", idx: 1, type: "arrayitem" },
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+          ],
+          valb,
+        ],
+        [
+          [
+            { id: "[]", type: "array" },
+            { name: "[1]", idx: 1, type: "arrayitem" },
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+            { id: "{}", type: "object" },
+          ],
+          valb,
+        ],
+        [
+          [
+            { id: "[]", type: "array" },
+            { name: "[1]", idx: 1, type: "arrayitem" },
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+            { id: "{}", type: "object" },
+            { name: "[c]", key: "c", type: "objectitem" },
+          ],
+          valb.c,
+        ],
+        [
+          [
+            { id: "[]", type: "array" },
+            { name: "[1]", idx: 1, type: "arrayitem" },
+            { id: "{}", type: "object" },
+            { name: "[b]", key: "b", type: "objectitem" },
+            { id: "{}", type: "object" },
+            { name: "[d]", key: "d", type: "objectitem" },
+          ],
+          valb.d,
+        ],
+      ]);
+    });
   });
 
   it("objectoptional no default", () => {

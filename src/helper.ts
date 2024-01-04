@@ -25,9 +25,11 @@ function asDottedPath(path: WuestenReflection[]): string {
     .map((r) => {
       switch (r.type) {
         case "object":
-          return r.title || r.id || "_";
+          return r.title || r.id || "{}";
         case "array":
-          return undefined;
+          return r.id || "[]";
+        case "arrayitem":
+          return r.name;
         case "objectitem":
           return r.name;
         case "string":
@@ -43,7 +45,7 @@ function asDottedPath(path: WuestenReflection[]): string {
     .join(".");
 }
 
-export function walk<T>(a: T, strategy: (x: unknown) => unknown | Promise<unknown>): unknown {
+export function walk<T>(a: T, strategy: (x: unknown) => unknown): unknown {
   if (Array.isArray(a)) {
     const b = strategy(a);
     if (!Array.isArray(b)) {
@@ -76,6 +78,19 @@ export function walk<T>(a: T, strategy: (x: unknown) => unknown | Promise<unknow
   return b;
 }
 
+export function isArrayOrObject(v: unknown): boolean {
+  if (v instanceof Date) {
+    return false;
+  }
+  if (Array.isArray(v)) {
+    return true;
+  }
+  if (typeof v === "object" && v !== null) {
+    return true;
+  }
+  return false;
+}
+
 const enc = new TextEncoder();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] = []): Uint8Array {
@@ -90,6 +105,11 @@ export function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] =
         return;
       }
     }
+    const last = path[path.length - 1] as WuestenReflection;
+    if (last.type === "object" || last.type === "array") {
+      // skip object and array only hash primitives
+      return;
+    }
     let val: string | undefined = undefined;
     if (typeof ref === "boolean") {
       val = ref ? "true" : "false";
@@ -100,8 +120,12 @@ export function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] =
     } else if (ref instanceof Date) {
       val = ref.toISOString();
     }
-    // console.log(">>>>>>", dotted, val);
-    val && mac.update(enc.encode(val));
+    if (val) {
+      if (last.type === "objectitem" && last.key) {
+        mac.update(enc.encode(last.key));
+      }
+      mac.update(enc.encode(val));
+    }
   });
   return mac.digest();
 }

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Result } from "./result";
 import { Payload } from "./payload";
+import { isArrayOrObject } from "./helper";
 
 export type WuestePayload = Payload;
 
@@ -35,14 +36,15 @@ export interface WuestenAttributeParameter<T> {
   // format?: string // date-time
 }
 
-export type SchemaTypes = "string" | "number" | "integer" | "boolean" | "object" | "array" | "objectitem";
+export type SchemaTypes = "string" | "number" | "integer" | "boolean" | "object" | "array" | "objectitem" | "arrayitem";
 
 export type WuestenReflection =
   | WuestenReflectionObject
   | WuestenReflectionArray
   | WuestenReflectionLiteral
   | WuestenReflectionLiteralString
-  | WuestenReflectionObjectItem;
+  | WuestenReflectionObjectItem
+  | WuestenReflectionArrayItem;
 
 // export type WuestenXKeyedMap = Record<string, unknown>;
 // export type WuestenXKeyedMap<T extends string= any> = { [P in keyof T]: string extends `x-${T}` ? string : never };
@@ -72,7 +74,16 @@ export interface WuestenReflectionObjectItem {
   readonly type: "objectitem";
   readonly name: string;
   readonly property: WuestenReflection;
+  readonly key?: string; // only used for pur object
 }
+
+export interface WuestenReflectionArrayItem {
+  readonly type: "arrayitem";
+  readonly name: string;
+  readonly idx: number;
+  readonly item: WuestenReflection;
+}
+
 export interface WuestenReflectionObject extends WuestenReflectionBase {
   readonly type: "object";
   readonly id?: string;
@@ -115,35 +126,49 @@ export function WuestenRecordGetter(
   v: unknown,
 ) {
   if (Array.isArray(v)) {
+    const alevel: WuestenReflection[] = [
+      ...level,
+      {
+        id: "[]",
+        type: "array",
+      } as WuestenReflectionArray,
+    ];
+    fn(alevel, v);
     for (let i = 0; i < v.length; ++i) {
-      WuestenRecordGetter(
-        fn,
-        [
-          ...level,
-          {
-            id: `[${i}]`,
-            type: "array",
-            items: undefined as unknown as WuestenReflection,
-          },
-        ],
-        v[i],
-      );
+      const myl = [
+        ...alevel,
+        {
+          name: `[${i}]`,
+          idx: i,
+          type: "arrayitem",
+        } as WuestenReflectionArrayItem,
+      ];
+      fn(myl, v[i]);
+      isArrayOrObject(v[i]) && WuestenRecordGetter(fn, myl, v[i]);
     }
   } else if (v instanceof Date) {
     fn(level, v.toISOString());
   } else if (typeof v === "object" && v !== null) {
+    const olevel: WuestenReflection[] = [
+      ...level,
+      {
+        id: "{}",
+        type: "object",
+      },
+    ];
+    fn(olevel, v);
     for (const k of Object.keys(v).sort()) {
       const val = (v as Record<string, unknown>)[k];
       const myl: WuestenReflection[] = [
-        ...level,
+        ...olevel,
         {
           type: "objectitem",
-          name: k,
-          property: undefined as unknown as WuestenReflection,
-        },
+          name: `[${k}]`,
+          key: k,
+        } as WuestenReflectionObjectItem,
       ];
-      WuestenRecordGetter(fn, myl, k);
-      WuestenRecordGetter(fn, myl, val);
+      fn(myl, val);
+      isArrayOrObject(val) && WuestenRecordGetter(fn, myl, val);
     }
   } else if (typeof v === "boolean") {
     fn(level, v);

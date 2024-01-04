@@ -175,16 +175,16 @@ it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   );
 });
 
-it(`Factory Contains Schema`, () => {
+it(`Factory Contains Schema Simple`, () => {
   expect((SimpleTypeFactory.Schema() as WuestenReflectionObject).id).toEqual("https://SimpleType");
 });
 
-it(`Factory Contains Schema`, () => {
+it(`Factory Contains Schema Builder`, () => {
   const builder = SimpleTypeFactory.Builder();
   expect(builder.Coerce(simpleTypeParam).is_ok()).toBeTruthy();
   const fn = jest.fn();
   SimpleTypeFactory.Getter(builder.Get().unwrap()).Apply(fn);
-  expect(fn).toHaveBeenCalledTimes(30);
+  expect(fn).toHaveBeenCalledTimes(34);
 });
 
 it(`SimpleType-Builder Object-Clone`, () => {
@@ -371,31 +371,40 @@ it("Nested-Getter", () => {
     true,
     false,
     "Test37",
-    "X",
-    "Y",
-    "Z",
-    37,
+    nested.arrayarrayFlatSchema[0][0][0][0].Open,
+    nested.arrayarrayFlatSchema[0][0][0][0].Open.X,
+    nested.arrayarrayFlatSchema[0][0][0][0].Open.X,
+    (nested.arrayarrayFlatSchema[0][0][0][0].Open.X as { Y: { Z: number } }).Y,
+    (nested.arrayarrayFlatSchema[0][0][0][0].Open.X as { Y: { Z: number } }).Y,
+    (nested.arrayarrayFlatSchema[0][0][0][0].Open.X as { Y: { Z: number } }).Y.Z,
     "39",
-    "X",
-    "Y",
-    "Z",
-    39,
+    nested.arrayarrayFlatSchema[0][0][1][0].Open,
+    nested.arrayarrayFlatSchema[0][0][1][0].Open.X,
+    nested.arrayarrayFlatSchema[0][0][1][0].Open.X,
+    (nested.arrayarrayFlatSchema[0][0][1][0].Open.X as { Y: { Z: number } }).Y,
+    (nested.arrayarrayFlatSchema[0][0][1][0].Open.X as { Y: { Z: number } }).Y,
+    (nested.arrayarrayFlatSchema[0][0][1][0].Open.X as { Y: { Z: number } }).Y.Z,
     "Test49",
-    "X",
-    "Y",
-    "Z",
-    49,
+    nested.arraySubType[0].Open,
+    nested.arraySubType[0].Open.X,
+    nested.arraySubType[0].Open.X,
+    (nested.arraySubType[0].Open.X as { Y: { Z: number } }).Y,
+    (nested.arraySubType[0].Open.X as { Y: { Z: number } }).Y,
+    (nested.arraySubType[0].Open.X as { Y: { Z: number } }).Y.Z,
     "47",
-    "X",
-    "Y",
-    "Z",
-    47,
+    nested.arraySubType[1].Open,
+    nested.arraySubType[1].Open.X,
+    nested.arraySubType[1].Open.X,
+    (nested.arraySubType[1].Open.X as { Y: { Z: number } }).Y,
+    (nested.arraySubType[1].Open.X as { Y: { Z: number } }).Y,
+    (nested.arraySubType[1].Open.X as { Y: { Z: number } }).Y.Z,
     "Test63",
-    "X",
-    "Y",
-    "Z",
-    63,
-
+    nested.sub_flat.Open,
+    nested.sub_flat.Open.X,
+    nested.sub_flat.Open.X,
+    (nested.sub_flat.Open.X as { Y: { Z: number } }).Y,
+    (nested.sub_flat.Open.X as { Y: { Z: number } }).Y,
+    (nested.sub_flat.Open.X as { Y: { Z: number } }).Y.Z,
     "xxx",
     "hallo",
     "hallo",
@@ -412,10 +421,12 @@ it("Nested-Getter", () => {
     true,
     true,
     "Test57",
-    "X",
-    "Y",
-    "Z",
-    57,
+    nested.sub.Open,
+    nested.sub.Open.X,
+    nested.sub.Open.X,
+    (nested.sub.Open.X as { Y: { Z: number } }).Y,
+    (nested.sub.Open.X as { Y: { Z: number } }).Y,
+    (nested.sub.Open.X as { Y: { Z: number } }).Y.Z,
   ]);
 });
 
