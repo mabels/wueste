@@ -124,6 +124,7 @@ export function WuestenRecordGetter(
   level: WuestenReflection[],
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   v: unknown,
+  toplevel = true,
 ) {
   if (Array.isArray(v)) {
     const alevel: WuestenReflection[] = [
@@ -133,7 +134,9 @@ export function WuestenRecordGetter(
         type: "array",
       } as WuestenReflectionArray,
     ];
-    fn(alevel, v);
+    if (v.length === 0 || toplevel || level[level.length - 1].type === "arrayitem") {
+      fn(alevel, v);
+    }
     for (let i = 0; i < v.length; ++i) {
       const myl = [
         ...alevel,
@@ -144,7 +147,7 @@ export function WuestenRecordGetter(
         } as WuestenReflectionArrayItem,
       ];
       fn(myl, v[i]);
-      isArrayOrObject(v[i]) && WuestenRecordGetter(fn, myl, v[i]);
+      isArrayOrObject(v[i]) && WuestenRecordGetter(fn, myl, v[i], false);
     }
   } else if (v instanceof Date) {
     fn(level, v.toISOString());
@@ -156,8 +159,11 @@ export function WuestenRecordGetter(
         type: "object",
       },
     ];
-    fn(olevel, v);
-    for (const k of Object.keys(v).sort()) {
+    const keys = Object.keys(v).sort();
+    if (keys.length === 0 || toplevel || level[level.length - 1].type === "arrayitem") {
+      fn(olevel, v);
+    }
+    for (const k of keys) {
       const val = (v as Record<string, unknown>)[k];
       const myl: WuestenReflection[] = [
         ...olevel,
@@ -168,7 +174,7 @@ export function WuestenRecordGetter(
         } as WuestenReflectionObjectItem,
       ];
       fn(myl, val);
-      isArrayOrObject(val) && WuestenRecordGetter(fn, myl, val);
+      isArrayOrObject(val) && WuestenRecordGetter(fn, myl, val, false);
     }
   } else if (typeof v === "boolean") {
     fn(level, v);

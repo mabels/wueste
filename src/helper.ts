@@ -20,7 +20,7 @@ export function fromEnv<T, P>(builder: WuestenAttr<T, P>, env: Record<string, st
   return builder;
 }
 
-function asDottedPath(path: WuestenReflection[]): string {
+export function asDottedPath(path: WuestenReflection[]): string {
   return path
     .map((r) => {
       switch (r.type) {

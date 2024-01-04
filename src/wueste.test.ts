@@ -592,14 +592,6 @@ describe("object coerce", () => {
             { id: "{}", type: "object" },
             { name: "[b]", key: "b", type: "objectitem" },
             { id: "{}", type: "object" },
-          ],
-          val["b"],
-        ],
-        [
-          [
-            { id: "{}", type: "object" },
-            { name: "[b]", key: "b", type: "objectitem" },
-            { id: "{}", type: "object" },
             { name: "[c]", key: "c", type: "objectitem" },
           ],
           2,
@@ -610,17 +602,6 @@ describe("object coerce", () => {
             { name: "[b]", key: "b", type: "objectitem" },
             { id: "{}", type: "object" },
             { name: "[d]", key: "d", type: "objectitem" },
-          ],
-          [10, 11],
-        ],
-
-        [
-          [
-            { id: "{}", type: "object" },
-            { name: "[b]", key: "b", type: "objectitem" },
-            { id: "{}", type: "object" },
-            { name: "[d]", key: "d", type: "objectitem" },
-            { id: "[]", type: "array" },
           ],
           [10, 11],
         ],
@@ -648,37 +629,6 @@ describe("object coerce", () => {
           ],
           11,
         ],
-
-        // [
-        //   [
-        //     { name: "b", property: undefined, type: "objectitem" },
-        //     { name: "c", property: undefined, type: "objectitem" },
-        //   ],
-        //   2,
-        // ],
-        // [
-        //   [
-        //     { name: "b", property: undefined, type: "objectitem" },
-        //     { name: "d", property: undefined, type: "objectitem" },
-        //   ],
-        //   "d",
-        // ],
-        // [
-        //   [
-        //     { name: "b", property: undefined, type: "objectitem" },
-        //     { name: "d", property: undefined, type: "objectitem" },
-        //     { id: "[0]", items: undefined, type: "array" },
-        //   ],
-        //   10,
-        // ],
-        // [
-        //   [
-        //     { name: "b", property: undefined, type: "objectitem" },
-        //     { name: "d", property: undefined, type: "objectitem" },
-        //     { id: "[1]", items: undefined, type: "array" },
-        //   ],
-        //   11,
-        // ],
       ]);
     });
 
@@ -745,16 +695,16 @@ describe("object coerce", () => {
           ],
           valb,
         ],
-        [
-          [
-            { id: "[]", type: "array" },
-            { name: "[1]", idx: 1, type: "arrayitem" },
-            { id: "{}", type: "object" },
-            { name: "[b]", key: "b", type: "objectitem" },
-            { id: "{}", type: "object" },
-          ],
-          valb,
-        ],
+        // [
+        //   [
+        //     { id: "[]", type: "array" },
+        //     { name: "[1]", idx: 1, type: "arrayitem" },
+        //     { id: "{}", type: "object" },
+        //     { name: "[b]", key: "b", type: "objectitem" },
+        //     { id: "{}", type: "object" },
+        //   ],
+        //   valb,
+        // ],
         [
           [
             { id: "[]", type: "array" },
