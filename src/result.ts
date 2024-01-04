@@ -81,3 +81,68 @@ export class ResultError<T extends Error> extends Result<never, T> {
 }
 
 export type WithoutResult<T> = T extends Result<infer U> ? U : T;
+
+/*
+
+type FinalizedResult<T> = {
+  result: T;
+  scopeResult?: Result<void>;
+  finally: () => Promise<void>;
+}
+
+type exection2ResultParam<T> = {
+  init: () => Promise<T>;
+  inScope?: (t: T) => Promise<void>;
+  cleanup: (t: T) => Promise<void>;
+
+}
+
+async function expection2Result<T>({fn, inScope, cleanup}: exection2ResultParam<T>): Promise<Result<FinalizedResult<T>>> {
+  try {
+    const res = await fn();
+    if (inScope) {
+      try {
+        await inScope?.(res)
+      } catch (err) {
+        return Result.Err(err as Error)
+      }
+      await cleanup(res)
+      return Result.Ok({
+        result: res,
+        finally: async () => { }
+      })
+    }
+    return Result.Ok({
+      result: res ,
+      finally: async () => {
+        return cleanup(res)
+      }
+    })
+  } catch (err) {
+    return Result.Err(err as Error)
+  }
+}
+*/
+
+// await expection2Result({
+//   init: openDB,
+//   inScope: (res) => {
+//     res.query()
+//   },
+//   cleanup: async (y) => {
+//     await y.close()
+//  }
+// })
+// async function openDB() {
+//   try {
+//     const opendb = await openDB()
+//     return Result.Ok({
+//       openDB,
+//       finally: async () => {
+//         await opendb.close()
+//     }})
+//   } catch (err) {
+//     return Result.Err(err)
+//   }
+// }
+// }
