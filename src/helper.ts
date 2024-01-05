@@ -1,4 +1,11 @@
-import { WuestenAttr, WuestenGetterBuilder, WuestenReflection, WuestenReflectionObjectItem, WuestenXKeyedMap } from "./wueste";
+import {
+  WuestenAttr,
+  WuestenGetterBuilder,
+  WuestenReflection,
+  WuestenReflectionObjectItem,
+  WuestenReflectionValue,
+  WuestenXKeyedMap,
+} from "./wueste";
 
 import { hmac } from "@noble/hashes/hmac";
 import { sha1 } from "@noble/hashes/sha1";
@@ -20,9 +27,9 @@ export function fromEnv<T, P>(builder: WuestenAttr<T, P>, env: Record<string, st
   return builder;
 }
 
-export function asDottedPath(path: WuestenReflection[]): string {
+export function asDottedPath(path: WuestenReflectionValue[]): string {
   return path
-    .map((r) => {
+    .map(({ schema: r }) => {
       switch (r.type) {
         case "object":
           return r.title || r.id || "{}";
@@ -95,7 +102,8 @@ const enc = new TextEncoder();
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] = []): Uint8Array {
   const mac = hmac.create(sha1, "");
-  ref.Apply((path, ref) => {
+  ref.Apply((path) => {
+    const ref = path[path.length - 1].value;
     const dotted = asDottedPath(path);
     for (const ex of exclude) {
       if (typeof ex === "string" && ex === dotted) {
@@ -105,7 +113,7 @@ export function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] =
         return;
       }
     }
-    const last = path[path.length - 1] as WuestenReflection;
+    const last = path[path.length - 1].schema;
     if (last.type === "object" || last.type === "array") {
       // skip object and array only hash primitives
       return;
@@ -130,6 +138,14 @@ export function toHash(ref: WuestenGetterBuilder, exclude: (string | RegExp)[] =
   return mac.digest();
 }
 
+export function toPathValue(a: WuestenReflectionValue[]): unknown {
+  if (!Array.isArray(a) || a.length === 0) {
+    return undefined;
+  }
+  const my = a[a.length - 1];
+  return my.value;
+}
+
 export interface Group {
   readonly path: string;
   readonly schema: WuestenReflection;
@@ -141,9 +157,10 @@ export interface Groups {
 
 export function groups(ref: WuestenGetterBuilder) {
   const groups: Groups = {};
-  ref.Apply((path, ref) => {
-    const last = path[path.length - 1] as WuestenXKeyedMap;
-    const property = ((last as WuestenReflectionObjectItem).property || last) as WuestenReflection;
+  ref.Apply((path) => {
+    const last = path[path.length - 1];
+    const ref = last.value;
+    const property = ((last.schema as WuestenReflectionObjectItem).property || last.schema) as WuestenReflection;
     const xGroups = (property as WuestenXKeyedMap)["x-groups"];
     if (Array.isArray(xGroups)) {
       for (const g of xGroups) {

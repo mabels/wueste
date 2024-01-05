@@ -1,4 +1,4 @@
-import { fromEnv, walk, toHash, groups } from "./helper";
+import { fromEnv, walk, toHash, groups, toPathValue } from "./helper";
 import { helperTest, helperTestFactory, helperTestGetter } from "./generated/wasm/helpertest";
 import { WuestenRetVal } from "./wueste";
 import { helperTest$helperTestSubBuilder, helperTest$helperTestSub$arrayBuilder } from "./generated/wasm/helpertest$helpertestsub";
@@ -112,7 +112,7 @@ describe("helper", () => {
   it("hashit", () => {
     const fn = jest.fn();
     helperTestGetter(ref).Apply(fn);
-    expect(fn.mock.calls.map((i) => i[1])).toEqual([
+    expect(fn.mock.calls.map((i) => toPathValue(i[0]))).toEqual([
       "test",
       "test1",
       "test2",

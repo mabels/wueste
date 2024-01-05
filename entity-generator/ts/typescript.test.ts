@@ -3,6 +3,7 @@
 import { NestedTypeFactory, NestedTypeGetter } from "../../src/generated/go/nestedtype";
 import { NestedType$IPayload, NestedType$IPayloadFactory } from "../../src/generated/go/nestedtype$ipayload";
 import { SimpleTypeFactory, SimpleTypeFactoryImpl, SimpleTypeObject, SimpleTypeParam } from "../../src/generated/go/simpletype";
+import { toPathValue } from "../../src/helper";
 import {
   WuesteJsonBytesDecoder,
   WuesteJsonBytesEncoder,
@@ -359,7 +360,7 @@ it("Nested-Getter", () => {
   const nested = createNested();
   const fn = jest.fn();
   NestedTypeGetter(nested).Apply(fn);
-  expect(fn.mock.calls.map((i) => i[1])).toEqual([
+  expect(fn.mock.calls.map((i) => toPathValue(i[0]))).toEqual([
     true,
     false,
     "42",

@@ -1,3 +1,4 @@
+import { toPathValue } from "./helper";
 import { Result } from "./result";
 import {
   WuestenAttributeParameter,
@@ -12,6 +13,7 @@ import {
   WuestenGetterBuilder,
   WuesteToIterator,
   WuestenNames,
+  WuestenReflectionValue,
 } from "./wueste";
 
 it("array coerce from array", () => {
@@ -486,7 +488,7 @@ class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
     throw new Error("Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Getter(typ: Entity, base: WuestenReflection[]): WuestenGetterBuilder {
+  Getter(typ: Entity, base: WuestenReflectionValue[]): WuestenGetterBuilder {
     throw new Error("Method not implemented.");
   }
   // Schema(): WuestenSchema {
@@ -538,16 +540,42 @@ describe("object coerce", () => {
   describe("WuestenRecordGetter", () => {
     it("WuestenRecordGetter Nothing", () => {
       const fn = jest.fn();
-      WuestenRecordGetter(fn, [], undefined);
+      WuestenRecordGetter(fn, []);
+      expect(fn.mock.calls.length).toBe(0);
+    });
+
+    it("WuestenRecordGetter Illegal", () => {
+      const fn = jest.fn();
+      WuestenRecordGetter(fn, [
+        {
+          schema: {
+            id: "bla",
+            type: "object",
+          },
+          value: undefined,
+        },
+      ]);
       expect(fn.mock.calls.length).toBe(0);
     });
 
     it("WuestenRecordGetter ObjectEmpty", () => {
       const fn = jest.fn();
-      WuestenRecordGetter(fn, [], {});
-      expect(fn.mock.calls).toEqual([
+      WuestenRecordGetter(fn, [
+        {
+          schema: {
+            id: "bla",
+            type: "object",
+          },
+          value: {},
+        },
+      ]);
+      expect(removeValue(fn.mock.calls)).toEqual([
         [
           [
+            {
+              id: "bla",
+              type: "object",
+            },
             {
               id: "{}",
               type: "object",
@@ -558,6 +586,15 @@ describe("object coerce", () => {
       ]);
     });
 
+    function removeValue(arr: WuestenReflectionValue[][][]): [WuestenReflection[], unknown][] {
+      return arr.map((a) => {
+        const wr = a[0].map((b) => {
+          return b.schema;
+        });
+        return [wr, toPathValue(a[0])];
+      });
+    }
+
     it("WuestenRecordGetter Object", () => {
       const fn = jest.fn();
       const val = {
@@ -567,28 +604,26 @@ describe("object coerce", () => {
           d: [10, 11],
         },
       };
-      WuestenRecordGetter(fn, [], val);
-      expect(fn.mock.calls).toEqual([
-        [[{ id: "{}", type: "object" }], val],
+      const basePath: WuestenReflection = {
+        id: "bla",
+        type: "object",
+      };
+      WuestenRecordGetter(fn, [
+        {
+          schema: basePath,
+          value: val,
+        },
+      ]);
+      expect(removeValue(fn.mock.calls)).toEqual([
+        [[basePath, { id: "{}", type: "object" }], val],
         // [[{ name: "a", property: undefined, type: "objectitem" }], "a"],
-        [
-          [
-            { id: "{}", type: "object" },
-            { name: "[a]", key: "a", type: "objectitem" },
-          ],
-          1,
-        ],
+        [[basePath, { id: "{}", type: "object" }, { name: "[a]", key: "a", type: "objectitem" }], 1],
+
+        [[basePath, { id: "{}", type: "object" }, { name: "[b]", key: "b", type: "objectitem" }], val["b"]],
 
         [
           [
-            { id: "{}", type: "object" },
-            { name: "[b]", key: "b", type: "objectitem" },
-          ],
-          val["b"],
-        ],
-
-        [
-          [
+            basePath,
             { id: "{}", type: "object" },
             { name: "[b]", key: "b", type: "objectitem" },
             { id: "{}", type: "object" },
@@ -598,6 +633,7 @@ describe("object coerce", () => {
         ],
         [
           [
+            basePath,
             { id: "{}", type: "object" },
             { name: "[b]", key: "b", type: "objectitem" },
             { id: "{}", type: "object" },
@@ -608,6 +644,7 @@ describe("object coerce", () => {
 
         [
           [
+            basePath,
             { id: "{}", type: "object" },
             { name: "[b]", key: "b", type: "objectitem" },
             { id: "{}", type: "object" },
@@ -620,6 +657,7 @@ describe("object coerce", () => {
 
         [
           [
+            basePath,
             { id: "{}", type: "object" },
             { name: "[b]", key: "b", type: "objectitem" },
             { id: "{}", type: "object" },
@@ -634,10 +672,22 @@ describe("object coerce", () => {
 
     it("WuestenRecordGetter Array Empty", () => {
       const fn = jest.fn();
-      WuestenRecordGetter(fn, [], []);
-      expect(fn.mock.calls).toEqual([
+      WuestenRecordGetter(fn, [
+        {
+          schema: {
+            id: "bla",
+            type: "object",
+          },
+          value: [],
+        },
+      ]);
+      expect(removeValue(fn.mock.calls)).toEqual([
         [
           [
+            {
+              id: "bla",
+              type: "object",
+            },
             {
               id: "[]",
               type: "array",
@@ -652,33 +702,25 @@ describe("object coerce", () => {
       const fn = jest.fn();
       const valb = { c: 1, d: new Date("2020-01-01") };
       const val = [4, { a: 1, b: valb }];
-      WuestenRecordGetter(fn, [], val);
-      expect(fn.mock.calls).toEqual([
-        [[{ id: "[]", type: "array" }], val],
+      const basePath: WuestenReflection = {
+        id: "bla",
+        type: "array",
+        items: { type: "object" },
+      };
+      WuestenRecordGetter(fn, [
+        {
+          schema: basePath,
+          value: val,
+        },
+      ]);
+      expect(removeValue(fn.mock.calls)).toEqual([
+        [[basePath, { id: "[]", type: "array" }], val],
+        [[basePath, { id: "[]", type: "array" }, { name: "[0]", idx: 0, type: "arrayitem" }], 4],
+        [[basePath, { id: "[]", type: "array" }, { name: "[1]", idx: 1, type: "arrayitem" }], val[1]],
+        [[basePath, { id: "[]", type: "array" }, { name: "[1]", idx: 1, type: "arrayitem" }, { id: "{}", type: "object" }], val[1]],
         [
           [
-            { id: "[]", type: "array" },
-            { name: "[0]", idx: 0, type: "arrayitem" },
-          ],
-          4,
-        ],
-        [
-          [
-            { id: "[]", type: "array" },
-            { name: "[1]", idx: 1, type: "arrayitem" },
-          ],
-          val[1],
-        ],
-        [
-          [
-            { id: "[]", type: "array" },
-            { name: "[1]", idx: 1, type: "arrayitem" },
-            { id: "{}", type: "object" },
-          ],
-          val[1],
-        ],
-        [
-          [
+            basePath,
             { id: "[]", type: "array" },
             { name: "[1]", idx: 1, type: "arrayitem" },
             { id: "{}", type: "object" },
@@ -688,6 +730,7 @@ describe("object coerce", () => {
         ],
         [
           [
+            basePath,
             { id: "[]", type: "array" },
             { name: "[1]", idx: 1, type: "arrayitem" },
             { id: "{}", type: "object" },
@@ -707,6 +750,7 @@ describe("object coerce", () => {
         // ],
         [
           [
+            basePath,
             { id: "[]", type: "array" },
             { name: "[1]", idx: 1, type: "arrayitem" },
             { id: "{}", type: "object" },
@@ -718,6 +762,7 @@ describe("object coerce", () => {
         ],
         [
           [
+            basePath,
             { id: "[]", type: "array" },
             { name: "[1]", idx: 1, type: "arrayitem" },
             { id: "{}", type: "object" },

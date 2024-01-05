@@ -115,74 +115,100 @@ export function WuestenRetVal(val: unknown): WuestenRetValType {
   return new WuestenRetValType(val);
 }
 
-export type WuestenGetterFn = (level: WuestenReflection[], value: unknown) => void;
+export interface WuestenReflectionValue {
+  readonly schema: WuestenReflection;
+  readonly value: unknown;
+}
 
-export function WuestenRecordGetter(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  fn: WuestenGetterFn,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  level: WuestenReflection[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  v: unknown,
-  toplevel = true,
-) {
+export type WuestenGetterFn = (path: WuestenReflectionValue[]) => void;
+
+function setValue(fn: WuestenGetterFn, v: unknown, path: WuestenReflectionValue[]) {
+  const last = path[path.length - 1] as { value: unknown };
   if (Array.isArray(v)) {
-    const alevel: WuestenReflection[] = [
-      ...level,
+    WuestenRecordGetter(fn, path, false);
+  } else if (v instanceof Date) {
+    last.value = v.toISOString();
+  } else if (typeof v === "object" && v !== null) {
+    WuestenRecordGetter(fn, path, false);
+  } else if (typeof v === "boolean") {
+    last.value = v;
+  } else if (typeof v === "string") {
+    last.value = v;
+  } else if (typeof v === "number") {
+    last.value = v;
+  }
+}
+
+export function WuestenRecordGetter(fn: WuestenGetterFn, path: WuestenReflectionValue[], toplevel = true) {
+  if (path.length == 0) {
+    return;
+  }
+  const v = path[path.length - 1].value;
+  if (Array.isArray(v)) {
+    const alevel: WuestenReflectionValue[] = [
+      ...path,
       {
-        id: "[]",
-        type: "array",
-      } as WuestenReflectionArray,
+        schema: {
+          id: "[]",
+          type: "array",
+        } as WuestenReflectionArray,
+        value: v,
+      },
     ];
-    if (v.length === 0 || toplevel || level[level.length - 1].type === "arrayitem") {
-      fn(alevel, v);
+    if (v.length === 0 || toplevel || path[path.length - 1].schema.type === "arrayitem") {
+      fn(alevel);
     }
     for (let i = 0; i < v.length; ++i) {
       const myl = [
         ...alevel,
         {
-          name: `[${i}]`,
-          idx: i,
-          type: "arrayitem",
-        } as WuestenReflectionArrayItem,
+          schema: {
+            name: `[${i}]`,
+            idx: i,
+            type: "arrayitem",
+          } as WuestenReflectionArrayItem,
+          value: v[i],
+        },
       ];
-      fn(myl, v[i]);
-      isArrayOrObject(v[i]) && WuestenRecordGetter(fn, myl, v[i], false);
+      fn(myl);
+      setValue(fn, v[i], myl);
     }
-  } else if (v instanceof Date) {
-    fn(level, v.toISOString());
+    return;
   } else if (typeof v === "object" && v !== null) {
-    const olevel: WuestenReflection[] = [
-      ...level,
+    const olevel: WuestenReflectionValue[] = [
+      ...path,
       {
-        id: "{}",
-        type: "object",
+        schema: {
+          id: "{}",
+          type: "object",
+        },
+        value: v,
       },
     ];
     const keys = Object.keys(v).sort();
-    if (keys.length === 0 || toplevel || level[level.length - 1].type === "arrayitem") {
-      fn(olevel, v);
+    if (keys.length === 0 || toplevel || path[path.length - 1].schema.type === "arrayitem") {
+      fn(olevel);
     }
     for (const k of keys) {
       const val = (v as Record<string, unknown>)[k];
-      const myl: WuestenReflection[] = [
+      const myl: WuestenReflectionValue[] = [
         ...olevel,
         {
-          type: "objectitem",
-          name: `[${k}]`,
-          key: k,
-        } as WuestenReflectionObjectItem,
+          schema: {
+            type: "objectitem",
+            name: `[${k}]`,
+            key: k,
+          } as WuestenReflectionObjectItem,
+          value: val,
+        },
       ];
-      fn(myl, val);
-      isArrayOrObject(val) && WuestenRecordGetter(fn, myl, val, false);
+      fn(myl);
+      isArrayOrObject(val) && WuestenRecordGetter(fn, myl, false);
     }
-  } else if (typeof v === "boolean") {
-    fn(level, v);
-  } else if (typeof v === "string") {
-    fn(level, v);
-  } else if (typeof v === "number") {
-    fn(level, v);
+    return;
   }
+  console.warn("WuestenRecordGetter: never reached");
+  return;
 }
 
 export class WuestenGetterBuilder {
@@ -402,7 +428,7 @@ export interface WuestenFactory<T, I, O> {
   ToObject(typ: T): O; // WuestenObject; keys are json notation
   Clone(typ: T): Result<T>;
   Schema(): WuestenReflection;
-  Getter(typ: T, base: WuestenReflection[]): WuestenGetterBuilder;
+  Getter(typ: T, base: WuestenReflectionValue[]): WuestenGetterBuilder;
 }
 export type WuestenFactoryInferT<F extends WuestenFactory<unknown, unknown, unknown>> = F extends WuestenFactory<
   infer T,
@@ -487,7 +513,7 @@ export class WuestenObjectFactoryImpl implements WuestenFactory<WuestenObject, W
     throw new Error("WuestenObjectFactoryImpl:Schema not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Getter(typ: WuestenObject, base: WuestenReflection[]): WuestenGetterBuilder {
+  Getter(typ: WuestenObject, base: WuestenReflectionValue[]): WuestenGetterBuilder {
     throw new Error("WuestenObjectFactoryImpl:Getter not implemented.");
   }
 

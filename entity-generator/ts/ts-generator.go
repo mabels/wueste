@@ -596,9 +596,10 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 				g.lang.Call("Schema"), "WuestenReflectionObject"), func(wr *eg.ForIfWhileLangWriter) {
 				wr.FormatLine("return %s as WuestenReflectionObject;", g.lang.PublicName(getObjectName(prop), "Schema"))
 			})
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenReflectionValue")
 			wr.WriteBlock("", g.lang.ReturnType(
 				g.lang.Call("Getter", g.lang.ReturnType("typ", g.lang.PublicName(getObjectName(prop))),
-					g.lang.ReturnType("base", "WuestenReflection[] = []")), "WuestenGetterBuilder"), func(wr *eg.ForIfWhileLangWriter) {
+					g.lang.ReturnType("base", "WuestenReflectionValue[] = []")), "WuestenGetterBuilder"), func(wr *eg.ForIfWhileLangWriter) {
 				wr.FormatLine("return %s", g.lang.Call(g.lang.PublicName(getObjectName(prop), "Getter"), "typ", "base"))
 			})
 
@@ -1000,7 +1001,7 @@ func (g *tsGenerator) generateLocalArrays(prop eg.PropertyObject, pa eg.Property
 }
 
 func (g *tsGenerator) generateSchemaExport(prop eg.Property, baseName string) {
-	g.generateReflectionGetter(prop, baseName)
+	g.generateReflectionGetter(propertyValue{prop: prop}, baseName)
 	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenReflection")
 	g.bodyWriter.WriteBlock(g.lang.Export(g.lang.Const(g.lang.ReturnType(
 		g.lang.PublicName(baseName, "Schema"),
