@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Result } from "./result";
+import { Result } from "@adviser/result";
 import { Payload } from "./payload";
 import { isArrayOrObject } from "./helper";
 

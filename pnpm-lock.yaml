@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@adviser/result':
+    specifier: ^0.0.1
+    version: 0.0.1
   '@cmdcode/buff':
     specifier: ^2.2.4
     version: 2.2.4
@@ -59,6 +62,11 @@ packages:
     resolution: {integrity: sha512-1Yjs2SvM8TflER/OD3cOjhWWOZb58A2t7wpE2S9XfBYTiIl+XFhQG2bjy4Pu1I+EAlCNUzRDYDdFwFYUKvXcIA==}
     engines: {node: '>=0.10.0'}
     dev: true
+
+  /@adviser/result@0.0.1:
+    resolution: {integrity: sha512-GFLtKP+M+NVXC6d4Hsx25DMG4CaXGg10b7aATlvrJNFQXcCCN1uIiSRLPUMMuuG5UWiHZjx4Q3I2O8ekRrSwiw==}
+    engines: {node: '>=16'}
+    dev: false
 
   /@ampproject/remapping@2.2.1:
     resolution: {integrity: sha512-lFMjJTrFL3j7L9yBxwYfCq2k6qqwHyzuUl/XBnif78PWTJYyL/dfowQHWE3sp6U6ZzqWiiIZnpTMO96zhkjwtg==}

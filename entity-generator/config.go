@@ -24,6 +24,6 @@ func FromArgs(prefix string, cfg *Config) *Config {
 	pflag.StringVar(&cfg.Indent, prefix+"indent", "  ", "one indent level")
 	pflag.StringVar(&cfg.PackageName, prefix+"package", "please_set_this", "Package name")
 	pflag.StringVar(&cfg.FromWueste, prefix+"from-wueste", "wueste/wueste", "Path to wueste")
-	pflag.StringVar(&cfg.FromResult, prefix+"from-result", "wueste/result", "Path to result")
+	pflag.StringVar(&cfg.FromResult, prefix+"from-result", "@adviser/result", "Path to result")
 	return cfg
 }

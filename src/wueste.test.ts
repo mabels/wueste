@@ -1,5 +1,5 @@
 import { toPathValue } from "./helper";
-import { Result } from "./result";
+import { Result } from "@adviser/result";
 import {
   WuestenAttributeParameter,
   WuestePayload,
