@@ -1,7 +1,7 @@
 import { toPathValue } from "./helper";
-import { Result } from "@adviser/result";
 import {
   WuestenAttributeParameter,
+  WuesteResult,
   WuestePayload,
   WuestenFactory,
   wuesten,
@@ -390,7 +390,7 @@ class Builder implements WuestenBuilder<Entity, Entity> {
     throw new Error("Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  CoerceAttribute(val: unknown): Result<Entity, Error> {
+  CoerceAttribute(val: unknown): WuesteResult<Entity, Error> {
     throw new Error("Method not implemented.");
   }
 
@@ -415,12 +415,12 @@ class Builder implements WuestenBuilder<Entity, Entity> {
     throw new Error("Method not implemented.");
   }
 
-  Get(): Result<Entity, Error> {
+  Get(): WuesteResult<Entity, Error> {
     throw new Error("Method not implemented.");
   }
-  Coerce(value: unknown): Result<Entity, Error> {
+  Coerce(value: unknown): WuesteResult<Entity, Error> {
     if (typeof value !== "object" || value === null) {
-      return Result.Err("not an object");
+      return WuesteResult.Err("not an object");
     }
     const results = {
       id: this._id.CoerceAttribute(value),
@@ -430,9 +430,9 @@ class Builder implements WuestenBuilder<Entity, Entity> {
       .filter((r) => r.is_err())
       .map((r) => r.unwrap_err().message);
     if (errors.length > 0) {
-      return Result.Err(errors.join(", "));
+      return WuesteResult.Err(errors.join(", "));
     }
-    return Result.Ok({
+    return WuesteResult.Ok({
       id: results.id.unwrap(),
       test: results.test.unwrap(),
     });
@@ -472,16 +472,16 @@ class TestFactory implements WuestenFactory<Entity, Entity, Entity> {
     throw new Error("Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  FromPayload(val: WuestePayload, decoder: WuestenDecoder): Result<Entity> {
+  FromPayload(val: WuestePayload, decoder: WuestenDecoder): WuesteResult<Entity> {
     throw new Error("Method not implemented.");
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  ToPayload(typ: Entity, encoder?: WuestenEncoder): Result<WuestePayload, Error> {
+  ToPayload(typ: Entity, encoder?: WuestenEncoder): WuesteResult<WuestePayload, Error> {
     throw new Error("Method not implemented.");
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Clone(typ: Entity): Result<Entity, Error> {
+  Clone(typ: Entity): WuesteResult<Entity, Error> {
     throw new Error("Method not implemented.");
   }
   Schema(): WuestenReflection {

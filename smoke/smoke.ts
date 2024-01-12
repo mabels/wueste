@@ -1,6 +1,16 @@
 import { SimpleTypeFactory } from "./generated/simpletype";
 import { PayloadFactory } from "wueste/payload";
-import { WuestenRetVal } from "wueste/wueste";
+import { WuestenRetVal, WuesteResult, WuesteResultOK, WuesteResultError } from "wueste/wueste";
+
+const res = WuesteResult.Ok(42);
+console.log(`WuesteResult.Ok(42) => ${res.unwrap()}`);
+
+const resok = new WuesteResultOK(42);
+console.log(`WuesteResultOK(42) => ${resok.unwrap()}`);
+
+const reserr = new WuesteResultError(new Error("test"));
+console.log(`WuesteResultError("test") => ${reserr.unwrap_err().message}`);
+
 
 const builder = SimpleTypeFactory.Builder();
 builder.bool(true);

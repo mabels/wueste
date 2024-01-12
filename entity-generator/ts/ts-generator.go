@@ -495,7 +495,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 			wr.WriteBlock("Builder():", g.lang.PublicName(getObjectName(prop), "Builder"), func(wr *eg.ForIfWhileLangWriter) {
 				wr.FormatLine("return new %s()", g.lang.PublicName(getObjectName(prop), "Builder"))
 			})
-			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result", "WuesteResult")
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteResult")
 			wr.WriteBlock("", g.lang.ReturnType(
 				g.lang.Call("ToObject", g.lang.ReturnType("obj", g.lang.PublicName(getObjectName(prop)))),
 				g.lang.PublicName(getObjectName(prop), "Object")), func(wr *eg.ForIfWhileLangWriter) {
@@ -576,7 +576,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 					}, "({", "});")
 				})
 
-			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result", "WuesteResult")
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteResult")
 			wr.WriteBlock("", g.lang.ReturnType(
 				g.lang.Call("Clone", g.lang.ReturnType("oth", g.lang.PublicName(getObjectName(prop)))),
 				g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop)))), func(wr *eg.ForIfWhileLangWriter) {
@@ -1319,7 +1319,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 			// }
 		}, func(wr *eg.ForIfWhileLangWriter) {
 
-			g.includes.AddType(g.cfg.EntityCfg.FromResult, "Result", "WuesteResult")
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuesteResult")
 
 			wr.WriteLine(g.lang.Readonly(g.lang.ReturnType("_attr", attrsClassName)))
 			wr.WriteBlock("", g.lang.Call("constructor",

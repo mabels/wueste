@@ -38,7 +38,7 @@ func getConfig() *eg.GeneratorConfig {
 			Indent: "  ",
 			// PackageName: "test",
 			FromWueste: "../../wueste",
-			FromResult: "@adviser/result",
+			// FromResult: "../../wueste",
 		},
 	}
 }
@@ -90,6 +90,7 @@ func TestMainAction(t *testing.T) {
 		"--input-file", "../../src/generated/go/simple_type.schema.json",
 		"--input-file", "../generated/go/nested_type.schema.json",
 		"--eg-from-wueste", cfg.EntityCfg.FromWueste,
+		// "--eg-from-result", cfg.EntityCfg.FromResult,
 		"--output-dir", "../../src/generated/go",
 	}, "test", "test")
 }

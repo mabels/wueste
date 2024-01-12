@@ -1,7 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Result } from "@adviser/result";
+import { Result, ResultError, ResultOK, WithoutResult } from "@adviser/result";
 import { Payload } from "./payload";
 import { isArrayOrObject } from "./helper";
+
+export class WuesteResult<T, E = Error> extends Result<T, E> {}
+
+export class WuesteResultOK<T> extends ResultOK<T> {}
+export class WuesteResultError<T extends Error> extends ResultError<T> {}
+
+export type WuesteWithoutResult<T> = WithoutResult<T>;
 
 export type WuestePayload = Payload;
 
