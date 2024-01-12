@@ -1,13 +1,7 @@
-import { Result } from "wueste/result";
-
 import { SimpleTypeFactory } from "./generated/simpletype";
 import { PayloadFactory } from "wueste/payload";
-import { WuestenRetVal, WuestePayload } from "wueste/wueste";
+import { WuestenRetVal } from "wueste/wueste";
 
-const test = Result.Ok(42);
-if (test.is_err()) {
-  console.log(test.unwrap_err());
-}
 const builder = SimpleTypeFactory.Builder();
 builder.bool(true);
 builder.string("test");
@@ -24,7 +18,7 @@ builder.sub((sub) => {
   });
 });
 
-const payload: Result<WuestePayload> = PayloadFactory.Builder().Coerce({
+const payload = PayloadFactory.Builder().Coerce({
   Type: "SimpleType",
   Data: builder.Get().unwrap() as unknown as Record<string, unknown>,
 });
