@@ -279,8 +279,16 @@ func (l *tsLang) Call(line string, params ...string) string {
 	return line + "(" + strings.Join(params, ", ") + ")"
 }
 
-func (l *tsLang) Interface(wr *eg.ForIfWhileLangWriter, prefix, name string, prop eg.PropertyObject, itemFn func(prop eg.PropertyItem, wr *eg.ForIfWhileLangWriter)) string {
+func (l *tsLang) Interface(
+	wr *eg.ForIfWhileLangWriter,
+	prefix, name string,
+	prop eg.PropertyObject,
+	itemFn func(prop eg.PropertyItem, wr *eg.ForIfWhileLangWriter),
+	onceFn ...func(wr *eg.ForIfWhileLangWriter)) string {
 	return wr.WriteBlock(prefix+"interface ", name, func(wr *eg.ForIfWhileLangWriter) {
+		for _, once := range onceFn {
+			once(wr)
+		}
 		for _, pi := range prop.Items() {
 			itemFn(pi, wr)
 		}
@@ -465,6 +473,48 @@ func (g *tsGenerator) generateJSONDict(prop eg.PropertyObject) {
 	g.bodyWriter.WriteLine()
 }
 
+func (g *tsGenerator) generatePayload(prop eg.PropertyObject) {
+	g.lang.Interface(g.bodyWriter, "export ", g.lang.PublicType(getObjectName(prop), "Payload"), prop, func(pi eg.PropertyItem, wr *eg.ForIfWhileLangWriter) {
+	}, func(wr *eg.ForIfWhileLangWriter) {
+		names := g.getNames(prop)
+		quotedNames := []string{}
+		for _, name := range names.names {
+			quotedNames = append(quotedNames, g.lang.Quote(name))
+		}
+		wr.WriteLine(g.lang.Line(
+			g.lang.ReturnType(
+				g.lang.Readonly(g.lang.Type("Type", false)),
+				strings.Join(quotedNames, "|"))))
+		wr.WriteLine(g.lang.Line(
+			g.lang.ReturnType(
+				g.lang.Readonly(g.lang.Type("Data", false)),
+				g.lang.PublicType(getObjectName(prop), "Object"))))
+	})
+	g.bodyWriter.WriteLine()
+}
+
+type Names struct {
+	title   string
+	names   []string
+	varname string
+}
+
+func (g *tsGenerator) getNames(prop eg.PropertyObject) Names {
+	title := prop.Title()
+	if title == "" {
+		title = prop.Id()
+	}
+	names := []string{prop.Id()}
+	if prop.Id() != prop.Title() {
+		names = append(names, prop.Title())
+	}
+	varname := g.lang.PublicName(title)
+	if varname != prop.Id() && varname != title {
+		names = append(names, varname)
+	}
+	return Names{title: title, names: names, varname: varname}
+}
+
 func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 	g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenFactory")
 
@@ -508,31 +558,20 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 			wr.WriteBlock("", g.lang.ReturnType(g.lang.Call("Names"), "WuestenNames"), func(wr *eg.ForIfWhileLangWriter) {
 				wr.WriteBlock("return", "", func(wr *eg.ForIfWhileLangWriter) {
 					wr.FormatLine("id: %s,", g.lang.Quote(prop.Id()))
-					title := prop.Title()
-					if title == "" {
-						title = prop.Id()
-					}
-					wr.FormatLine("title: %s,", g.lang.Quote(title))
-					names := []string{prop.Id()}
-					if prop.Id() != prop.Title() {
-						names = append(names, prop.Title())
-					}
-					varname := g.lang.PublicName(title)
-					if varname != prop.Id() && varname != title {
-						names = append(names, varname)
-					}
-					jsonBytes, _ := json.Marshal(names)
+					names := g.getNames(prop)
+					wr.FormatLine("title: %s,", g.lang.Quote(names.title))
+					jsonBytes, _ := json.Marshal(names.names)
 					wr.FormatLine("names: %s,", string(jsonBytes))
-					wr.FormatLine("varname: %s", g.lang.Quote(varname))
+					wr.FormatLine("varname: %s", g.lang.Quote(names.varname))
 				})
 			})
 			wr.WriteBlock("",
 				g.lang.ReturnType(
-					g.lang.Call("FromPayload", g.lang.ReturnType("val", "WuestePayload"), "decoder = WuestenJSONPassThroughDecoder"),
+					g.lang.Call("FromPayload", g.lang.ReturnType("val", g.lang.PublicName(getObjectName(prop), "Payload")), "decoder = WuestenJSONPassThroughDecoder"),
 					g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop)))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.WriteBlock("if", "(!this.Names().names.includes(val.Type))", func(wr *eg.ForIfWhileLangWriter) {
-						wr.FormatLine("return WuesteResult.Err(new Error(`WuestePayload Type mismatch:[${this.Names().names.join(',')}] != ${val.Type}`));")
+						wr.FormatLine("return WuesteResult.Err(new Error(`%s Type mismatch:[${this.Names().names.join(',')}] != ${val.Type}`));", g.lang.PublicName(getObjectName(prop), "Payload"))
 					})
 					// <Partial<SimpleTypeParam>>
 					wr.FormatLine("const data = %s", g.lang.Call("decoder", "val.Data"))
@@ -551,7 +590,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 			wr.WriteBlock("",
 				g.lang.ReturnType(
 					g.lang.Call("ToPayload", g.lang.ReturnType("val", g.lang.OrType(g.lang.Generics("WuesteResult", name), name)),
-						"encoder = WuestenJSONPassThroughEncoder"), g.lang.Generics("WuesteResult", "WuestePayload")),
+						"encoder = WuestenJSONPassThroughEncoder"), g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop), "Payload"))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.FormatLine("let toEncode: %s;", name)
 					wr.WriteIf("(WuesteResult.Is(val))", func(wr *eg.ForIfWhileLangWriter) {
@@ -572,7 +611,7 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 							id = prop.Title()
 						}
 						wr.FormatLine("Type: %s,", g.lang.Quote(id))
-						wr.FormatLine("Data: data.unwrap() as unknown as Record<string, unknown>")
+						wr.FormatLine("Data: data.unwrap() as unknown as %s", g.lang.PublicName(getObjectName(prop), "Object"))
 					}, "({", "});")
 				})
 
@@ -1341,7 +1380,7 @@ func (g *tsGenerator) generateBuilder(prop eg.PropertyObject) {
 				g.lang.Call("Get", ""), g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop)))), func(wr *eg.ForIfWhileLangWriter) {
 				wr.WriteLine(g.lang.Return(g.lang.Call("this._attr.Get", "")))
 			})
-			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestePayload")
+			// g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestePayload")
 		})
 
 }
@@ -1356,6 +1395,7 @@ type tsGenerator struct {
 func (g *tsGenerator) generatePropertyObject(prop eg.PropertyObject, sl eg.PropertyCtx) {
 	g.generateClass(prop)
 	g.generateJSONDict(prop)
+	g.generatePayload(prop)
 	g.generateBuilder(prop)
 	g.generateFactory(prop)
 

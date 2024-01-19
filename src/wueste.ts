@@ -9,7 +9,7 @@ export class WuesteResultError<T extends Error> extends ResultError<T> {}
 
 export type WuesteWithoutResult<T> = WithoutResult<T>;
 
-export type WuestePayload = Payload;
+export type WuestePayload = Omit<Omit<Payload, "Type">, "Data"> & { Type: unknown; Data: unknown };
 
 export type WuestenEncoder = (payload: unknown) => Result<unknown>;
 
@@ -429,34 +429,19 @@ export interface WuestenFactory<T, I, O> {
   readonly O: O;
   Names(): WuestenNames;
   Builder(param?: WuestenAttributeParameter<I>): WuestenBuilder<T, I>;
-  FromPayload(val: Payload, decoder?: WuestenDecoder): Result<T>;
-  ToPayload(typ: T, encoder?: WuestenEncoder): Result<Payload>;
+  FromPayload(val: WuestePayload, decoder?: WuestenDecoder): Result<T>;
+  ToPayload(typ: T, encoder?: WuestenEncoder): Result<WuestePayload>;
   ToObject(typ: T): O; // WuestenObject; keys are json notation
   Clone(typ: T): Result<T>;
   Schema(): WuestenReflection;
   Getter(typ: T, base: WuestenReflectionValue[]): WuestenGetterBuilder;
 }
-export type WuestenFactoryInferT<F extends WuestenFactory<unknown, unknown, unknown>> = F extends WuestenFactory<
-  infer T,
-  unknown,
-  unknown
->
-  ? T
-  : unknown;
-export type WuestenFactoryInferI<F extends WuestenFactory<unknown, unknown, unknown>> = F extends WuestenFactory<
-  unknown,
-  infer I,
-  unknown
->
-  ? I
-  : unknown;
-export type WuestenFactoryInferO<F extends WuestenFactory<unknown, unknown, unknown>> = F extends WuestenFactory<
-  unknown,
-  unknown,
-  infer O
->
-  ? O
-  : unknown;
+export type WuestenFactoryInferT<F extends WuestenFactory<unknown, unknown, unknown>> =
+  F extends WuestenFactory<infer T, unknown, unknown> ? T : unknown;
+export type WuestenFactoryInferI<F extends WuestenFactory<unknown, unknown, unknown>> =
+  F extends WuestenFactory<unknown, infer I, unknown> ? I : unknown;
+export type WuestenFactoryInferO<F extends WuestenFactory<unknown, unknown, unknown>> =
+  F extends WuestenFactory<unknown, unknown, infer O> ? O : unknown;
 
 export type WuestenObject = Record<string, unknown>;
 

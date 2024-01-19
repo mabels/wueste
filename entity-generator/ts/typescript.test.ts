@@ -2,7 +2,13 @@
 
 import { NestedTypeFactory, NestedTypeGetter } from "../../src/generated/go/nestedtype";
 import { NestedType$IPayload, NestedType$IPayloadFactory } from "../../src/generated/go/nestedtype$ipayload";
-import { SimpleTypeFactory, SimpleTypeFactoryImpl, SimpleTypeObject, SimpleTypeParam } from "../../src/generated/go/simpletype";
+import {
+  SimpleTypeFactory,
+  SimpleTypeFactoryImpl,
+  SimpleTypeObject,
+  SimpleTypeParam,
+  SimpleTypePayload,
+} from "../../src/generated/go/simpletype";
 import { toPathValue } from "../../src/helper";
 import {
   WuesteJsonBytesDecoder,
@@ -172,7 +178,7 @@ it(`SimpleType-Builder Payload-JSON-Payload`, () => {
   // const fromPayload = SimpleTypeFactory.Builder();
   (payload as { Type: string }).Type = "Kaput";
   expect(SimpleTypeFactory.FromPayload(payload).unwrap_err().message).toEqual(
-    "WuestePayload Type mismatch:[https://SimpleType,SimpleType] != Kaput",
+    "SimpleTypePayload Type mismatch:[https://SimpleType,SimpleType] != Kaput",
   );
 });
 
@@ -713,6 +719,17 @@ it("testRegistery", () => {
   const fac = WuestenTypeRegistry.GetByName("IPayload");
   expect((fac?.Schema() as WuestenReflectionObject).title).toBe("IPayload");
   expect((fac?.Schema() as WuestenReflectionObject).id).toBe("https://IPayload");
+});
+
+it("from-to-payload", () => {
+  const st = SimpleTypeFactory.Builder().Coerce(simpleTypeParam).unwrap();
+  const p: SimpleTypePayload = {
+    Type: "https://SimpleType",
+    Data: SimpleTypeFactory.ToObject(st),
+  };
+  expect(st).toEqual(SimpleTypeFactory.FromPayload(p).unwrap());
+  const p2 = SimpleTypeFactory.ToPayload(st).unwrap();
+  expect(p).toEqual(p2);
 });
 
 it("test schema x-groups", () => {

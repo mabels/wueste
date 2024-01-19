@@ -844,3 +844,32 @@ describe("object coerce", () => {
 // AttributeObjectOptional: <B extends WuestenBuilder<T>, T>(wf: WuestenFactory<B, T>): WuestenAttribute<T | undefined> => {
 //     return new WuestenAttributeObject(wf);
 // },
+
+// const inp = JSON.parse(`{ "Type": "Weno", "Data", { "Id": "test", "Test": 6.4 } }`);
+
+// interface PayloadImpl<T extends string, D>  {
+//   Type: T
+//   Data: D
+// }
+
+// interface Wemo {
+//   Id: string
+//   Test: number
+// }
+
+// class WenoPayload implements Payload {
+//   readonly const Type = "Weno"
+//   readonly const Data: Wemo
+// }
+// interface XenoPayload extends PayloadImpl<"Xeno", { Id: string, Xest: number }> {
+// }
+
+// type Payloads = XenoPayload|WenoPayload
+
+// T<S extends string> = S extends "Weno" ? WenoPayload : never
+
+// const pay = WuestenTypeRegistry.GetByName(inp.Type)?.FromPayload(inp) as Payloads
+
+// const WenoFactory.FromPayload(pay)
+
+// pay.Data = unknown
