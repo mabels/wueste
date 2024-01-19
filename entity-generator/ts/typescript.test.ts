@@ -2,13 +2,7 @@
 
 import { NestedTypeFactory, NestedTypeGetter } from "../../src/generated/go/nestedtype";
 import { NestedType$IPayload, NestedType$IPayloadFactory } from "../../src/generated/go/nestedtype$ipayload";
-import {
-  SimpleTypeFactory,
-  SimpleTypeFactoryImpl,
-  SimpleTypeObject,
-  SimpleTypeParam,
-  SimpleTypePayload,
-} from "../../src/generated/go/simpletype";
+import { SimpleTypeFactory, SimpleTypeFactoryImpl, SimpleTypeObject, SimpleTypeParam } from "../../src/generated/go/simpletype";
 import { toPathValue } from "../../src/helper";
 import {
   WuesteJsonBytesDecoder,
@@ -723,7 +717,7 @@ it("testRegistery", () => {
 
 it("from-to-payload", () => {
   const st = SimpleTypeFactory.Builder().Coerce(simpleTypeParam).unwrap();
-  const p: SimpleTypePayload = {
+  const p = {
     Type: "https://SimpleType",
     Data: SimpleTypeFactory.ToObject(st),
   };

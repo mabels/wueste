@@ -9,7 +9,7 @@ export class WuesteResultError<T extends Error> extends ResultError<T> {}
 
 export type WuesteWithoutResult<T> = WithoutResult<T>;
 
-export type WuestePayload = Omit<Omit<Payload, "Type">, "Data"> & { Type: unknown; Data: unknown };
+export type WuestePayload = Omit<Payload, "Data"> & { Data: unknown };
 
 export type WuestenEncoder = (payload: unknown) => Result<unknown>;
 

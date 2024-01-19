@@ -565,9 +565,11 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 					wr.FormatLine("varname: %s", g.lang.Quote(names.varname))
 				})
 			})
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestePayload")
 			wr.WriteBlock("",
 				g.lang.ReturnType(
-					g.lang.Call("FromPayload", g.lang.ReturnType("val", g.lang.PublicName(getObjectName(prop), "Payload")), "decoder = WuestenJSONPassThroughDecoder"),
+					g.lang.Call("FromPayload", g.lang.ReturnType("val",
+						g.lang.OrType(g.lang.PublicName(getObjectName(prop), "Payload"), "WuestePayload")), "decoder = WuestenJSONPassThroughDecoder"),
 					g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop)))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.WriteBlock("if", "(!this.Names().names.includes(val.Type))", func(wr *eg.ForIfWhileLangWriter) {
