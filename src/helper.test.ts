@@ -1,6 +1,17 @@
-import { fromEnv, walk, toHash, groups, toPathValue } from "./helper";
+import {
+  fromEnv,
+  walk,
+  toHash,
+  toPathValue,
+  groups,
+  walkSchema,
+  walkSchemaFilter,
+  xFilter,
+  getValueByAttrName,
+  WalkSchemaObjectCollector,
+} from "./helper";
 import { helperTest, helperTestFactory, helperTestGetter } from "./generated/wasm/helpertest";
-import { WuestenRetVal } from "./wueste";
+import { WuestenFactory, WuestenReflection, WuestenReflectionObject, WuestenReflectionObjectItem, WuestenRetVal } from "./wueste";
 import { helperTest$helperTestSubBuilder, helperTest$helperTestSub$arrayBuilder } from "./generated/wasm/helpertest$helpertestsub";
 
 const ref: helperTest = {
@@ -432,4 +443,167 @@ it("walk object replace array", () => {
       return x;
     }),
   ).toEqual({ x: [8, 8] });
+});
+
+const filterResult = [
+  [
+    {
+      id: "https://github.com/mabels/wueste#readme",
+      name: undefined,
+      title: "helperTest",
+      type: "object",
+    },
+    {
+      id: undefined,
+      name: "sub",
+      title: undefined,
+      type: "objectitem",
+    },
+    {
+      id: "https://github.com/mabels/wueste#sub",
+      name: undefined,
+      title: "helperTestSub",
+      type: "object",
+    },
+    {
+      id: undefined,
+      name: "bool",
+      title: undefined,
+      type: "objectitem",
+    },
+  ],
+  [
+    {
+      id: "https://github.com/mabels/wueste#readme",
+      name: undefined,
+      title: "helperTest",
+      type: "object",
+    },
+    {
+      id: undefined,
+      name: "sub",
+      title: undefined,
+      type: "objectitem",
+    },
+    {
+      id: "https://github.com/mabels/wueste#sub",
+      name: undefined,
+      title: "helperTestSub",
+      type: "object",
+    },
+    {
+      id: undefined,
+      name: "num",
+      title: undefined,
+      type: "objectitem",
+    },
+  ],
+  [
+    {
+      id: "https://github.com/mabels/wueste#readme",
+      name: undefined,
+      title: "helperTest",
+      type: "object",
+    },
+    {
+      id: undefined,
+      name: "sub",
+      title: undefined,
+      type: "objectitem",
+    },
+    {
+      id: "https://github.com/mabels/wueste#sub",
+      name: undefined,
+      title: "helperTestSub",
+      type: "object",
+    },
+    {
+      id: undefined,
+      name: "int",
+      title: undefined,
+      type: "objectitem",
+    },
+  ],
+  [
+    {
+      id: "https://github.com/mabels/wueste#readme",
+      name: undefined,
+      title: "helperTest",
+      type: "object",
+    },
+    {
+      id: undefined,
+      name: "sub",
+      title: undefined,
+      type: "objectitem",
+    },
+    {
+      id: "https://github.com/mabels/wueste#sub",
+      name: undefined,
+      title: "helperTestSub",
+      type: "object",
+    },
+    {
+      id: undefined,
+      name: "str",
+      title: undefined,
+      type: "objectitem",
+    },
+  ],
+];
+
+interface smallSchema {
+  id?: string;
+  type: string;
+  name?: string;
+  title?: string;
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterPath(b: any[][]): smallSchema[][] {
+  return b.map((i) =>
+    i.map((j: smallSchema) => ({
+      id: j.id,
+      type: j.type,
+      name: j.name,
+      title: j.title,
+    })),
+  );
+}
+
+it("groupsAttributes", () => {
+  const walk = jest.fn();
+  walkSchema(helperTestFactory.Schema(), walkSchemaFilter(xFilter("x-groups", "group1"), walk));
+  expect(filterPath(walk.mock.calls.map((i) => i[0]))).toEqual(filterResult);
+});
+
+function testRender(paths: WuestenReflection[][]): string {
+  const obj = paths[0][paths[0].length - 2] as WuestenReflectionObject;
+  return `class ${obj.title} {${paths
+    .map(
+      (i) =>
+        `${(i[i.length - 1] as WuestenReflectionObjectItem).name}: ${(i[i.length - 1] as WuestenReflectionObjectItem).property.type}`,
+    )
+    .join(";\n")}
+}`;
+}
+
+it("Key-Type-Generator", async () => {
+  const helper = await import("./generated/wasm/helpertest");
+
+  const factory = getValueByAttrName(helper, (key, val) => {
+    if (key.endsWith("Factory")) {
+      return val;
+    }
+  }) as WuestenFactory<unknown, unknown, unknown>;
+
+  const oc = new WalkSchemaObjectCollector();
+  walkSchema(factory.Schema(), walkSchemaFilter(xFilter("x-groups", "group1"), oc.add));
+  expect(
+    Array.from(oc.objects.entries()).map((a) => {
+      return [a[0], filterPath(a[1])];
+    }),
+  ).toEqual([["helperTestSub", filterResult]]);
+  expect(testRender(oc.objects.get("helperTestSub")!)).toBe(
+    `class helperTestSub {bool: boolean;\nnum: number;\nint: integer;\nstr: string\n}`,
+  );
 });

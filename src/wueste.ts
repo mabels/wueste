@@ -213,7 +213,7 @@ export function WuestenRecordGetter(fn: WuestenGetterFn, path: WuestenReflection
     }
     return;
   }
-  console.warn("WuestenRecordGetter: never reached");
+  console.warn(`WuestenRecordGetter: never reached: ${v}`);
   return;
 }
 

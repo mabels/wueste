@@ -2,9 +2,9 @@ import {
   WuestenAttr,
   WuestenGetterBuilder,
   WuestenReflection,
+  WuestenReflectionObject,
   WuestenReflectionObjectItem,
   WuestenReflectionValue,
-  WuestenXKeyedMap,
 } from "./wueste";
 
 import { hmac } from "@noble/hashes/hmac";
@@ -155,24 +155,118 @@ export interface Groups {
   [key: string]: Group[];
 }
 
-export function groups(ref: WuestenGetterBuilder) {
+export type WalkPathFilterFN<T = unknown> = (key: string, val: T) => T | undefined;
+
+export function xFilter(xName = "x-groups", grp?: string): WalkPathFilterFN {
+  xName = xName.toLocaleLowerCase();
+  return (key: string, val: unknown) => {
+    if (key.toLocaleLowerCase() === xName && (!grp || (Array.isArray(val) ? val : [val]).includes(grp))) {
+      return val;
+    }
+    return undefined;
+  };
+}
+
+export function getValueByAttrName<T = unknown>(prop: unknown, fn: WalkPathFilterFN): T | undefined {
+  if (typeof prop === "object" && prop !== null) {
+    const x = Object.entries(prop).find(([k, v]) => fn(k, v));
+    if (x) {
+      return x[1];
+    }
+  }
+  return undefined;
+}
+
+export type WalkPathFn = (path: WuestenReflection[]) => void;
+
+export function walkSchemaFilter(fn: WalkPathFilterFN, walkFn: WalkPathFn = () => {}): WalkPathFn {
+  return (path: WuestenReflection[]) => {
+    const rln = path[path.length - 1];
+    if (rln.type === "objectitem") {
+      const unkProp = rln.property as unknown as Record<string, unknown>;
+      const val = getValueByAttrName(unkProp, fn);
+      if (val) {
+        walkFn(path);
+        return rln;
+      }
+    }
+  };
+}
+
+export class WalkSchemaObjectCollector {
+  readonly objects: Map<string, WuestenReflection[][]> = new Map();
+
+  readonly add = (path: WuestenReflection[]) => {
+    if (path.length <= 2) {
+      throw new Error("path too short");
+    }
+    const object = path[path.length - 2] as WuestenReflectionObject;
+    const objectitem = path[path.length - 1] as WuestenReflectionObjectItem;
+    if (object.type !== "object" || objectitem.type !== "objectitem") {
+      throw new Error("not an object");
+    }
+    const id = object.title || object.id;
+    if (!id) {
+      throw new Error("no id");
+    }
+    let rfn = this.objects.get(id);
+    if (!rfn) {
+      rfn = [];
+      this.objects.set(id, rfn);
+    }
+    rfn.push(path);
+  };
+}
+
+export function walkSchema(
+  reflection: WuestenReflection,
+  walkFn: (path: WuestenReflection[]) => unknown,
+  path: WuestenReflection[] = [],
+) {
+  path = path.concat(reflection);
+  switch (reflection.type) {
+    case "object":
+      walkFn(path);
+      (reflection.properties || [])
+        .map((p: WuestenReflection) => walkSchema(p, walkFn, path))
+        .filter((r) => r)
+        .map((r) => r);
+      break;
+    case "array":
+      walkFn(path);
+      walkSchema(reflection.items, walkFn, path);
+      break;
+    case "arrayitem":
+      walkFn(path);
+      walkSchema(reflection.item, walkFn, path);
+      break;
+    case "objectitem":
+      walkFn(path);
+      walkSchema(reflection.property, walkFn, path);
+      break;
+  }
+}
+
+export function groups(ref: WuestenGetterBuilder, xName = "x-groups"): Groups {
   const groups: Groups = {};
   ref.Apply((path) => {
     const last = path[path.length - 1];
     const ref = last.value;
     const property = ((last.schema as WuestenReflectionObjectItem).property || last.schema) as WuestenReflection;
-    const xGroups = (property as WuestenXKeyedMap)["x-groups"];
-    if (Array.isArray(xGroups)) {
-      for (const g of xGroups) {
-        if (!groups[g]) {
-          groups[g] = [];
-        }
-        groups[g].push({
-          path: asDottedPath(path),
-          schema: property,
-          ref,
-        });
+    const _Groups = getValueByAttrName(property, xFilter(xName));
+    if (!_Groups) {
+      return;
+    }
+    const xGroups = Array.isArray(_Groups) ? _Groups : [_Groups];
+    for (const g of xGroups) {
+      if (!groups[g]) {
+        groups[g] = [];
       }
+      groups[g].push({
+        path: asDottedPath(path),
+        schema: property,
+        ref,
+      });
     }
   });
   return groups;
