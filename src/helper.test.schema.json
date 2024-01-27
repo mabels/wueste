@@ -5,7 +5,8 @@
   "properties": {
     "test": {
       "type": "string",
-      "default": "test-string"
+      "default": "test-string",
+      "x-groups": ["group1", "test"]
     },
     "sub": {
       "type": "object",

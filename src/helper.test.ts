@@ -152,6 +152,14 @@ describe("helper", () => {
       ],
       group1: [
         {
+          path: "helperTest.test",
+          ref: "test",
+          schema: {
+            type: "string",
+            "x-groups": ["group1", "test"],
+          },
+        },
+        {
           path: "helperTest.sub.helperTestSub.bool",
           schema: {
             type: "boolean",
@@ -212,6 +220,16 @@ describe("helper", () => {
             "x-groups": ["group1", "str"],
           },
           ref: "hi",
+        },
+      ],
+      test: [
+        {
+          path: "helperTest.test",
+          ref: "test",
+          schema: {
+            type: "string",
+            "x-groups": ["group1", "test"],
+          },
         },
       ],
     });
@@ -445,7 +463,24 @@ it("walk object replace array", () => {
   ).toEqual({ x: [8, 8] });
 });
 
-const filterResult = [
+const filterResultHelperTest = [
+  [
+    {
+      id: "https://github.com/mabels/wueste#readme",
+      name: undefined,
+      title: "helperTest",
+      type: "object",
+    },
+    {
+      id: undefined,
+      name: "test",
+      title: undefined,
+      type: "objectitem",
+    },
+  ],
+];
+
+const filterResultHelperTestSub = [
   [
     {
       id: "https://github.com/mabels/wueste#readme",
@@ -573,7 +608,7 @@ function filterPath(b: any[][]): smallSchema[][] {
 it("groupsAttributes", () => {
   const walk = jest.fn();
   walkSchema(helperTestFactory.Schema(), walkSchemaFilter(xFilter("x-groups", "group1"), walk));
-  expect(filterPath(walk.mock.calls.map((i) => i[0]))).toEqual(filterResult);
+  expect(filterPath(walk.mock.calls.map((i) => i[0]))).toEqual([...filterResultHelperTest, ...filterResultHelperTestSub]);
 });
 
 function testRender(paths: WuestenReflection[][]): string {
@@ -602,7 +637,10 @@ it("Key-Type-Generator", async () => {
     Array.from(oc.objects.entries()).map((a) => {
       return [a[0], filterPath(a[1])];
     }),
-  ).toEqual([["helperTestSub", filterResult]]);
+  ).toEqual([
+    ["helperTest", filterResultHelperTest],
+    ["helperTestSub", filterResultHelperTestSub],
+  ]);
   expect(testRender(oc.objects.get("helperTestSub")!)).toBe(
     `class helperTestSub {bool: boolean;\nnum: number;\nint: integer;\nstr: string\n}`,
   );

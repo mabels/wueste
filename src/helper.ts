@@ -197,7 +197,7 @@ export class WalkSchemaObjectCollector {
   readonly objects: Map<string, WuestenReflection[][]> = new Map();
 
   readonly add = (path: WuestenReflection[]) => {
-    if (path.length <= 2) {
+    if (path.length < 2) {
       throw new Error("path too short");
     }
     const object = path[path.length - 2] as WuestenReflectionObject;
@@ -213,6 +213,9 @@ export class WalkSchemaObjectCollector {
     if (!rfn) {
       rfn = [];
       this.objects.set(id, rfn);
+    }
+    if (rfn.find((x) => (x[x.length - 1] as WuestenReflectionObjectItem).name === objectitem.name)) {
+      return;
     }
     rfn.push(path);
   };
