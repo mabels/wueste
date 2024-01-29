@@ -61,6 +61,7 @@ export type WuestenXKeyedMap = Partial<{
 export interface WuestenReflectionBase extends WuestenXKeyedMap {
   readonly type: SchemaTypes;
   readonly description?: string;
+  readonly default?: string;
   readonly ref?: string;
 }
 
@@ -73,12 +74,14 @@ export interface WuestenReflectionLiteral extends WuestenReflectionBase {
 
 export interface WuestenReflectionLiteralString extends WuestenReflectionBase {
   readonly type: "string";
+  readonly default?: string;
   readonly format?: string;
 }
 
 export interface WuestenReflectionObjectItem {
   readonly type: "objectitem";
   readonly name: string;
+  readonly optional: boolean;
   readonly property: WuestenReflection;
   readonly key?: string; // only used for pur object
 }
@@ -127,6 +130,10 @@ export interface WuestenReflectionValue {
 }
 
 export type WuestenGetterFn = (path: WuestenReflectionValue[]) => void;
+
+function isOptional(obj: { readonly required?: string[] }, key: string): boolean {
+  return obj.required?.indexOf(key) !== -1;
+}
 
 function setValue(fn: WuestenGetterFn, v: unknown, path: WuestenReflectionValue[]) {
   const last = path[path.length - 1] as { value: unknown };
@@ -203,6 +210,7 @@ export function WuestenRecordGetter(fn: WuestenGetterFn, path: WuestenReflection
           schema: {
             type: "objectitem",
             name: `[${k}]`,
+            optional: isOptional(v, k),
             key: k,
           } as WuestenReflectionObjectItem,
           value: val,

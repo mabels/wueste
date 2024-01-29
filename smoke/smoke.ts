@@ -1,4 +1,5 @@
 import { SimpleTypeFactory } from "./generated/simpletype";
+import { SimpleTypeKey } from "./generated/simpletypekey";
 import { PayloadFactory } from "wueste/payload";
 import { WuestenRetVal, WuesteResult, WuesteResultOK, WuesteResultError } from "wueste/wueste";
 
@@ -27,6 +28,11 @@ builder.sub((sub) => {
     return WuestenRetVal({});
   });
 });
+
+const key = SimpleTypeKey.Coerce(builder.Get().unwrap())
+if (JSON.stringify(key) !== '{"string":"test","float64":1.1}') {
+	throw new Error(`Key mismatch ${key}`)
+}
 
 const payload = PayloadFactory.Builder().Coerce({
   Type: "SimpleType",

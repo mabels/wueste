@@ -1,0 +1,45 @@
+#!/usr/bin/env node
+const path = require("node:path");
+const fs = require("node:fs");
+
+let dist = __dirname;
+let distDir = path.join(dist, "../dist");
+if (fs.existsSync(distDir)) {
+  dist = distDir;
+}
+function nodeInclude(p) {
+  if (path.isAbsolute(p)) {
+    return p;
+  }
+  return `./${p}`;
+}
+
+const { SimpleFileSystem } = require(nodeInclude(path.join(dist, "simple_file_system")));
+const { SimpleLogger } = require(nodeInclude(path.join(dist, "simple_logger")));
+
+const { generateGroupType } = require(nodeInclude(path.join(dist, "generate_group_type")));
+
+const { fromSystem } = require(nodeInclude(path.join(dist, "cli_parser")));
+
+const { GenerateGroupConfigFactory } = require(nodeInclude(path.join(dist, "generated", "generategroupconfig")));
+
+const log = new SimpleLogger();
+const cfg = fromSystem(GenerateGroupConfigFactory, {
+  log,
+  env: process.env,
+  args: process.argv.slice(2),
+}).Ok();
+
+const sfs = new SimpleFileSystem();
+
+(async () => {
+  for (const f of cfg.input_files) {
+    await generateGroupType(f, {
+      log,
+      fs: sfs,
+      filter: cfg.filter,
+      includePath: cfg.include_path,
+      outDir: cfg.output_dir,
+    });
+  }
+})().catch((e) => console.error(e));

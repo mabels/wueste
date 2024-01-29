@@ -309,7 +309,7 @@ func TestJsonFlatSchema() JSonFile {
 				"string": {
 					"type": "string",
 					"description": "string description",
-					"x-groups": ["string", "key"]
+					"x-groups": ["string", "key", "primary-key"]
 				},
 				"default-string": {
 					"type":    "string",
@@ -343,7 +343,7 @@ func TestJsonFlatSchema() JSonFile {
 				},
 				"float64": {
 					"type": "number",
-					"x-groups": ["number", "key"]
+					"x-groups": ["number", "key", "primary-key"]
 				},
 				"default-float64": {
 					"type":    "number",

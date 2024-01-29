@@ -729,11 +729,13 @@ it("from-to-payload", () => {
 it("test schema x-groups", () => {
   expect(SimpleTypeFactory.Schema().properties![0]).toEqual({
     name: "string",
+    optional: false,
     type: "objectitem",
-    property: { description: "string description", type: "string", "x-groups": ["string", "key"] },
+    property: { description: "string description", type: "string", "x-groups": ["string", "key", "primary-key"] },
   });
   expect(SimpleTypeFactory.Schema().properties![4]).toEqual({
     name: "createdAt",
+    optional: false,
     property: {
       type: "string",
       format: "date-time",
@@ -742,14 +744,16 @@ it("test schema x-groups", () => {
   });
   expect(SimpleTypeFactory.Schema().properties![8]).toEqual({
     name: "float64",
+    optional: false,
     property: {
       type: "number",
-      "x-groups": ["number", "key"],
+      "x-groups": ["number", "key", "primary-key"],
     },
     type: "objectitem",
   });
   expect(SimpleTypeFactory.Schema().properties![12]).toEqual({
     name: "int64",
+    optional: false,
     property: {
       type: "integer",
       format: "int64",
@@ -759,6 +763,7 @@ it("test schema x-groups", () => {
   });
   expect(SimpleTypeFactory.Schema().properties![16]).toEqual({
     name: "bool",
+    optional: false,
     property: {
       type: "boolean",
       "x-groups": ["boolean", "key"],

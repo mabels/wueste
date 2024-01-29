@@ -1,0 +1,45 @@
+{
+  "$id": "GenerateGroupConfig",
+  "title": "GenerateGroupConfig",
+  "type": "object",
+  "properties": {
+    "debug": {
+      "type": "string",
+      "description": "this is debug",
+      "x-groups": ["primary-key", "secondary-key"]
+    },
+    "output-dir": {
+      "type": "string",
+      "default": "./",
+      "x-groups": ["primary-key", "top-key"]
+    },
+    "include-path": {
+      "type": "string",
+      "default": "./"
+    },
+    "input-files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "filter": {
+      "type": "object",
+      "$id": "Filter",
+      "title": "Filter",
+      "properties": {
+        "x-key": {
+          "type": "string",
+          "default": "x-groups",
+          "x-groups": ["primary-key", "sub-key"]
+        },
+        "x-value": {
+          "type": "string",
+          "default": "primary-key"
+        }
+      },
+      "required": ["x-key", "x-value"]
+    }
+  },
+  "required": ["input-files", "output-dir", "filter", "include-path"]
+}

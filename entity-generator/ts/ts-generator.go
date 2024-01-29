@@ -499,6 +499,14 @@ type Names struct {
 	varname string
 }
 
+func boolAsValue(val bool) string {
+	if val {
+		return "true"
+	} else {
+		return "false"
+	}
+}
+
 func (g *tsGenerator) getNames(prop eg.PropertyObject) Names {
 	title := prop.Title()
 	if title == "" {
@@ -711,6 +719,8 @@ func (g *tsGenerator) writeSchema(wr *eg.ForIfWhileLangWriter, prop eg.Property,
 					wr.WriteBlock("", "", func(wr *eg.ForIfWhileLangWriter) {
 						wr.WriteLine(g.lang.Comma(g.lang.ReturnType("type", g.lang.Quote("objectitem"))))
 						wr.WriteLine(g.lang.Comma(g.lang.ReturnType("name", g.lang.Quote(pi.Name()))))
+
+						wr.WriteLine(g.lang.Comma(g.lang.ReturnType("optional", boolAsValue(pi.Optional()))))
 						if pi.Property().Type() == eg.OBJECT && isNamedType(pi.Property()) {
 							reflection := g.lang.PublicName(getObjectName(pi.Property()), "Schema")
 							g.includes.AddProperty(reflection, pi.Property())
