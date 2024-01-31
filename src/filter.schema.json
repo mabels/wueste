@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "$id": "Filter",
+  "title": "Filter",
+  "properties": {
+    "x-key": {
+      "type": "string",
+      "default": "x-groups",
+      "x-groups": ["primary-key", "sub-key"]
+    },
+    "x-value": {
+      "type": "string",
+      "default": "primary-key"
+    }
+  },
+  "required": ["x-key", "x-value"]
+}

@@ -1,52 +1,6 @@
-import { jsonSchema2Reflection } from "./json_schema_2_reflection";
+import { fileSystemResolver, jsonSchema2Reflection } from "./json_schema_2_reflection";
 import { WuestenReflectionObject } from "./wueste";
-
-const filterSchema = {
-  type: "object",
-  $id: "Filter",
-  title: "Filter",
-  properties: {
-    xKey: {
-      type: "string",
-      default: "x-groups",
-      "x-groups": ["primary-key", "sub-key"],
-    },
-    xValue: {
-      type: "string",
-      default: "primary-key",
-    },
-  },
-  required: ["xKey"],
-};
-
-const jsSchema = {
-  $id: "GenerateGroupConfig",
-  title: "GenerateGroupConfig",
-  type: "object",
-  properties: {
-    debug: {
-      type: "string",
-      description: "this is debug",
-      "x-groups": ["primary-key", "secondary-key"],
-    },
-    outDir: {
-      type: "string",
-      default: "./",
-      "x-groups": ["primary-key", "top-key"],
-    },
-    inputFiles: {
-      $id: "arrayId",
-      type: "array",
-      items: {
-        type: "string",
-      },
-    },
-    filter: {
-      $ref: "file://./test/data/generated/Filter.json",
-    },
-  },
-  required: ["inputFiles", "outDir"],
-};
+import { SimpleFileSystem } from "./simple_file_system";
 
 const refSchema: WuestenReflectionObject = {
   id: "GenerateGroupConfig",
@@ -65,7 +19,7 @@ const refSchema: WuestenReflectionObject = {
     },
     {
       type: "objectitem",
-      name: "outDir",
+      name: "output-dir",
       property: {
         type: "string",
         default: "./",
@@ -75,10 +29,19 @@ const refSchema: WuestenReflectionObject = {
     },
     {
       type: "objectitem",
-      name: "inputFiles",
+      name: "include-path",
+      property: {
+        type: "string",
+        default: "./",
+      },
+      optional: false,
+    },
+    {
+      type: "objectitem",
+      name: "input-files",
       optional: false,
       property: {
-        id: "arrayId",
+        // id: "arrayId",
         type: "array",
         items: {
           type: "string",
@@ -88,7 +51,7 @@ const refSchema: WuestenReflectionObject = {
     {
       type: "objectitem",
       name: "filter",
-      optional: true,
+      optional: false,
       property: {
         type: "object",
         id: "Filter",
@@ -96,7 +59,7 @@ const refSchema: WuestenReflectionObject = {
         properties: [
           {
             type: "objectitem",
-            name: "xKey",
+            name: "x-key",
             property: {
               type: "string",
               default: "x-groups",
@@ -106,29 +69,27 @@ const refSchema: WuestenReflectionObject = {
           },
           {
             type: "objectitem",
-            name: "xValue",
+            name: "x-value",
             property: {
               type: "string",
               default: "primary-key",
             },
-            optional: true,
+            optional: false,
           },
         ],
-        required: ["xKey"],
+        required: ["x-key", "x-value"],
       },
     },
   ],
-  required: ["inputFiles", "outDir"],
+  required: ["input-files", "output-dir", "filter", "include-path"],
 };
 
-it("json_schema_2_reflection", () => {
-  const ref = jsonSchema2Reflection(jsSchema, (f) => {
-    switch (f) {
-      case "file://./test/data/generated/Filter.json":
-        return filterSchema;
-      default:
-        throw new Error("unknown ref " + f);
-    }
-  });
+it("json_schema_2_reflection", async () => {
+  const ref = await jsonSchema2Reflection(
+    {
+      $ref: "src/generate_group_type.schema.json",
+    },
+    fileSystemResolver(new SimpleFileSystem()),
+  );
   expect(ref).toEqual(refSchema);
 });

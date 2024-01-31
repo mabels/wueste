@@ -24,6 +24,9 @@ export class SimpleFileSystem implements FileSystem {
   dirname(fname: string): string {
     return path.dirname(fname);
   }
+  basename(fname: string): string {
+    return path.basename(fname);
+  }
 
   join(...paths: string[]): string {
     return path.join(...paths);
@@ -46,6 +49,10 @@ export class SimpleFileSystem implements FileSystem {
       const cwd = process.cwd();
       return path.resolve(cwd, fname);
     }
+  }
+
+  isAbsolute(fname: string): boolean {
+    return path.isAbsolute(fname);
   }
 
   async create(fname: string): Promise<NamedWritableStream> {

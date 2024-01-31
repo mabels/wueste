@@ -15,6 +15,9 @@ export interface FileSystem {
   relative(from: string, to?: string): string;
 
   dirname(fname: string): string;
+  basename(fname: string): string;
 
   nodeImport(fname: string): string;
+
+  isAbsolute(fname: string): boolean;
 }

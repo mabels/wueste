@@ -4,7 +4,7 @@ import { FileSystem } from "./file_system";
 import { Logger } from "./logger";
 import { WalkSchemaObjectCollector, walkSchema, walkSchemaFilter, xFilter } from "./helper";
 import { GenerateGroupConfig$Filter } from "./generated/generategroupconfig$filter";
-import { jsonSchema2Reflection } from "./json_schema_2_reflection";
+import { fileSystemResolver, jsonSchema2Reflection } from "./json_schema_2_reflection";
 
 function importFileName(typ: WuestenReflection[], suffix?: string): string {
   return importTypeName(typ, suffix).toLowerCase();
@@ -31,9 +31,7 @@ export async function generateGroupType(iFile: string, opts: GenerateGroupTypePa
   const inputFile = opts.fs.abs(iFile);
   const outDir = opts.fs.abs(opts.outDir);
   const includePath = opts.fs.abs(opts.includePath);
-  const schema = jsonSchema2Reflection(JSON.parse(await opts.fs.readFileString(inputFile)), (f) => {
-    throw new Error(`no ref:${f}`);
-  });
+  const schema = await jsonSchema2Reflection({ $ref: inputFile }, fileSystemResolver(opts.fs));
   const oc = new WalkSchemaObjectCollector();
   walkSchema(schema, walkSchemaFilter(xFilter(opts.filter.x_key, opts.filter.x_value), oc.add));
 

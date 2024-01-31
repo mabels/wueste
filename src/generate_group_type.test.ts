@@ -33,6 +33,10 @@ class MockFileSystem implements FileSystem {
     return path.dirname(fname);
   }
 
+  basename(fname: string): string {
+    return path.basename(fname);
+  }
+
   join(...paths: string[]): string {
     return path.join(...paths);
   }
@@ -48,12 +52,16 @@ class MockFileSystem implements FileSystem {
   }
 
   abs(fname: string): string {
-    if (path.isAbsolute(fname)) {
+    if (this.isAbsolute(fname)) {
       return fname;
     } else {
       const cwd = process.cwd();
       return path.resolve(cwd, fname);
     }
+  }
+
+  isAbsolute(fname: string): boolean {
+    return path.isAbsolute(fname);
   }
 
   readonly files = {} as Record<string, FileCollector>;

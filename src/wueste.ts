@@ -102,7 +102,7 @@ export interface WuestenReflectionObject extends WuestenReflectionBase {
   readonly required?: string[];
 }
 export interface WuestenReflectionArray extends WuestenReflectionBase {
-  readonly id: string;
+  readonly id?: string;
   readonly type: "array";
   readonly items: WuestenReflection;
 }
