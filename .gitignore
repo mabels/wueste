@@ -1,5 +1,6 @@
 **/dist/
 .vscode/
+**/*.tgz
 **/pubdir/
 **/generated-ts/
 **/node_modules/

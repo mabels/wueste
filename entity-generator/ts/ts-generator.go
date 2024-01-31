@@ -153,6 +153,10 @@ func (l *tsLang) AsTypeHelper(p eg.Property, withs ...withResult) string {
 				append(withs, WithIsCoerceType(p))...)
 		}
 		ret := l.Name(name)
+		typeSuffix := hasWithResult(WithTypeSuffix(""), withs)
+		if typeSuffix != nil {
+			ret = l.Name(name, typeSuffix.suffix)
+		}
 		res := hasWithResult(WithAddType(func(typ string, prop eg.Property) {}), withs)
 		if res != nil {
 			if isNamedType(p) {
@@ -215,6 +219,7 @@ type withResult struct {
 	action  string
 	addType func(typ string, prop eg.Property)
 	prop    eg.Property
+	suffix  string
 }
 
 func WithIsCoerceType(prop eg.Property) withResult {
@@ -230,6 +235,10 @@ func WithOptional(optional bool) withResult {
 		return withResult{action: "isOptional"}
 	}
 	return withResult{action: "isNotOptional"}
+}
+
+func WithTypeSuffix(suffix string) withResult {
+	return withResult{action: "typeSuffix", suffix: suffix}
 }
 
 func WithAddCoerce() withResult {

@@ -19,10 +19,15 @@ func (g *tsGenerator) writeArrayToObject(wr *eg.ForIfWhileLangWriter, prop eg.Pr
 		}
 	case eg.ARRAY:
 		pa := prop.(eg.PropertyArray)
+		tname := g.lang.AsType(pa)
+		if pa.Items().Type() == eg.OBJECT {
+			g.includes.AddProperty(g.lang.AsType(pa, WithTypeSuffix("Object")), prop)
+			tname = g.lang.AsType(pa, WithTypeSuffix("Object"))
+		}
 		wr.FormatLine(
 			g.lang.AssignDefault(
 				g.lang.Const(
-					g.lang.ReturnType(fmt.Sprintf("o%d", l), g.lang.AsType(pa))),
+					g.lang.ReturnType(fmt.Sprintf("o%d", l), tname)),
 				" []"))
 		wr.WriteBlock("for",
 			fmt.Sprintf("(let i%d = 0; i%d < v%d.length; i%d++)", l+1, l+1, l, l+1),
@@ -45,19 +50,24 @@ func (g *tsGenerator) writeArrayToObject(wr *eg.ForIfWhileLangWriter, prop eg.Pr
 }
 
 func (g *tsGenerator) generateToObject(prop eg.Property, baseName string) {
-	var name string
+	var rType string
 	switch prop.Type() {
 	case eg.OBJECT:
-		name = g.lang.PublicName(g.lang.AsType(prop), "Object")
+		rType = g.lang.PublicName(g.lang.AsType(prop), "Object")
 	case eg.ARRAY:
-		name = g.lang.AsType(prop)
+		pa := prop.(eg.PropertyArray)
+		rType = g.lang.AsType(prop)
+		if pa.Items().Type() == eg.OBJECT {
+			g.includes.AddProperty(g.lang.AsType(pa.Items(), WithTypeSuffix("Object")), pa.Items())
+			rType = g.lang.AsType(pa, WithTypeSuffix("Object"))
+		}
 	default:
 		panic("generateToObject not implemented")
 	}
 	g.bodyWriter.WriteBlock(g.lang.Export(
 		g.lang.ReturnType(
 			g.lang.Call("function "+g.lang.PublicName(baseName, "ToObject"),
-				g.lang.ReturnType("v0", g.lang.AsType(prop))), name)), "", func(wr *eg.ForIfWhileLangWriter) {
+				g.lang.ReturnType("v0", g.lang.AsType(prop))), rType)), "", func(wr *eg.ForIfWhileLangWriter) {
 		// wr.FormatLine(
 		// 	g.lang.AssignDefault(
 		// 		g.lang.Const(g.lang.ReturnType("o0", g.lang.AsType(prop))), " []"))

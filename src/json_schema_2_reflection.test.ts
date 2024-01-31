@@ -1,6 +1,6 @@
+import { NodeFileService } from "@adviser/cement/node_file_service";
 import { fileSystemResolver, jsonSchema2Reflection } from "./json_schema_2_reflection";
 import { WuestenReflectionObject } from "./wueste";
-import { SimpleFileSystem } from "./simple_file_system";
 
 const refSchema: WuestenReflectionObject = {
   id: "GenerateGroupConfig",
@@ -80,6 +80,41 @@ const refSchema: WuestenReflectionObject = {
         required: ["x-key", "x-value"],
       },
     },
+    {
+      type: "objectitem",
+      name: "filters",
+      optional: true,
+      property: {
+        type: "array",
+        items: {
+          type: "object",
+          id: "Filter",
+          title: "Filter",
+          properties: [
+            {
+              type: "objectitem",
+              name: "x-key",
+              property: {
+                type: "string",
+                default: "x-groups",
+                "x-groups": ["primary-key", "sub-key"],
+              },
+              optional: false,
+            },
+            {
+              type: "objectitem",
+              name: "x-value",
+              property: {
+                type: "string",
+                default: "primary-key",
+              },
+              optional: false,
+            },
+          ],
+          required: ["x-key", "x-value"],
+        },
+      },
+    },
   ],
   required: ["input-files", "output-dir", "filter", "include-path"],
 };
@@ -89,7 +124,7 @@ it("json_schema_2_reflection", async () => {
     {
       $ref: "src/generate_group_type.schema.json",
     },
-    fileSystemResolver(new SimpleFileSystem()),
+    fileSystemResolver(new NodeFileService()),
   );
   expect(ref).toEqual(refSchema);
 });

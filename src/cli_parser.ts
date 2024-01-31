@@ -8,8 +8,8 @@ import {
   WuestenFactory,
   WuestenFactoryInferT,
 } from "./wueste";
+import { Logger } from "@adviser/cement";
 import { isOptional, sanitize, typeName, typePath } from "./js_code_writer";
-import { Logger } from "./logger";
 import { Result } from "@adviser/result";
 import { WalkSchemaObjectCollector, walkSchema, walkSchemaFilter } from "./helper";
 
@@ -30,6 +30,8 @@ function cliType(oi: WuestenReflection): TypeConstructor<unknown> {
       return Boolean;
     case "array":
       return cliType(oi.items);
+    case "object":
+      return () => ({});
     default:
       throw new Error("unknown type " + oi.type);
   }

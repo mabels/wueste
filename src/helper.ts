@@ -229,6 +229,7 @@ export function walkSchema(
   path = path.concat(reflection);
   switch (reflection.type) {
     case "object":
+      // console.log("object", reflection.properties)
       walkFn(path);
       (reflection.properties || [])
         .map((p: WuestenReflection) => walkSchema(p, walkFn, path))

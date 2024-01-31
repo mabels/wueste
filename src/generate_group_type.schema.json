@@ -25,6 +25,12 @@
     },
     "filter": {
       "$ref": "file://./filter.schema.json"
+    },
+    "filters": {
+      "type": "array",
+      "items": {
+        "$ref": "file://./filter.schema.json"
+      }
     }
   },
   "required": ["input-files", "output-dir", "filter", "include-path"]

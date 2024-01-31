@@ -1,10 +1,9 @@
 import { WuestenReflection, WuestenReflectionObject, WuestenReflectionObjectItem } from "./wueste";
 import { JSCodeWriter, sanitize, typeName, isOptional } from "./js_code_writer";
-import { FileSystem } from "./file_system";
-import { Logger } from "./logger";
 import { WalkSchemaObjectCollector, walkSchema, walkSchemaFilter, xFilter } from "./helper";
 import { GenerateGroupConfig$Filter } from "./generated/generategroupconfig$filter";
 import { fileSystemResolver, jsonSchema2Reflection } from "./json_schema_2_reflection";
+import { FileService, Logger } from "@adviser/cement";
 
 function importFileName(typ: WuestenReflection[], suffix?: string): string {
   return importTypeName(typ, suffix).toLowerCase();
@@ -20,7 +19,7 @@ function importedType(typ: WuestenReflection[]): string[] {
 }
 
 export interface GenerateGroupTypeParams {
-  readonly fs: FileSystem;
+  readonly fs: FileService;
   readonly log: Logger;
   readonly filter: GenerateGroupConfig$Filter;
   readonly includePath: string;

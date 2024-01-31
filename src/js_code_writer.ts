@@ -1,5 +1,5 @@
 import { WuestenReflection, WuestenReflectionObject, WuestenReflectionObjectItem } from "./wueste";
-import { FileSystem, NamedWritableStream } from "./file_system";
+import { FileService, NamedWritableStream } from "@adviser/cement";
 
 export function sanitize(str: string) {
   return str.replace(/[^a-zA-Z0-9_]/g, "_");
@@ -54,7 +54,7 @@ interface BlockOps {
   readonly resultStream: NamedWritableStream;
   readonly codeWriter: WritableStreamDefaultWriter<Uint8Array>;
   readonly codeBuffer: Uint8Array[];
-  readonly fileEngine: FileSystem;
+  readonly fileEngine: FileService;
 }
 
 type BlockFn = (writer: JSCodeWriter) => void;
@@ -76,7 +76,7 @@ export class JSCodeWriter {
   constructor(
     opts: Partial<BlockOps> & {
       resultStream: NamedWritableStream;
-      fileEngine: FileSystem;
+      fileEngine: FileService;
     },
   ) {
     let codeWriter: WritableStreamDefaultWriter<Uint8Array> | undefined = undefined;

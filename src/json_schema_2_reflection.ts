@@ -1,7 +1,7 @@
+import { FileService } from "@adviser/cement";
 import { WuestenReflection, WuestenReflectionArray, WuestenReflectionObject } from "./wueste";
-import { FileSystem } from "./file_system";
 
-export function fileSystemResolver(fs: FileSystem) {
+export function fileSystemResolver(fs: FileService) {
   return async (f: string, outerRef?: string): Promise<Record<string, unknown>> => {
     if (f.startsWith("file://")) {
       f = f.slice("file://".length);
@@ -62,7 +62,9 @@ export async function jsonSchema2Reflection(
       return {
         id: schema["$id"] as string,
         type: "array",
-        items: schema.items as WuestenReflection,
+        items: await jsonSchema2Reflection(schema.items, (f) => {
+          return resolver(f, schema.$fileref);
+        }),
       } as WuestenReflectionArray;
     case "string":
     case "number":
