@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const path = require("node:path");
 const fs = require("node:fs");
+const { LoggerImpl, NodeFileSystem } = require("@adviser/cement");
 
 let dist = __dirname;
 let distDir = path.join(dist, "../dist");
@@ -14,23 +15,20 @@ function nodeInclude(p) {
   return `./${p}`;
 }
 
-const { SimpleFileSystem } = require(nodeInclude(path.join(dist, "simple_file_system")));
-const { SimpleLogger } = require(nodeInclude(path.join(dist, "simple_logger")));
-
 const { generateGroupType } = require(nodeInclude(path.join(dist, "generate_group_type")));
 
 const { fromSystem } = require(nodeInclude(path.join(dist, "cli_parser")));
 
 const { GenerateGroupConfigFactory } = require(nodeInclude(path.join(dist, "generated", "generategroupconfig")));
 
-const log = new SimpleLogger();
+const log = new LoggerImpl();
 const cfg = fromSystem(GenerateGroupConfigFactory, {
   log,
   env: process.env,
   args: process.argv.slice(2),
 }).Ok();
 
-const sfs = new SimpleFileSystem();
+const sfs = new NodeFileSystem();
 
 (async () => {
   for (const f of cfg.input_files) {
