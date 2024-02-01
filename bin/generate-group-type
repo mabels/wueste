@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const path = require("node:path");
 const fs = require("node:fs");
-const { LoggerImpl, NodeFileSystem } = require("@adviser/cement");
+const { LoggerImpl, NodeFileService } = require("@adviser/cement");
 
 let dist = __dirname;
 let distDir = path.join(dist, "../dist");
@@ -28,7 +28,7 @@ const cfg = fromSystem(GenerateGroupConfigFactory, {
   args: process.argv.slice(2),
 }).Ok();
 
-const sfs = new NodeFileSystem();
+const sfs = new NodeFileService();
 
 (async () => {
   for (const f of cfg.input_files) {

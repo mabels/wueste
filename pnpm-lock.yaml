@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@adviser/cement':
-    specifier: ^0.0.1
-    version: 0.0.1
+    specifier: ^0.0.2
+    version: 0.0.2
   '@adviser/result':
     specifier: ^0.0.1
     version: 0.0.1
@@ -69,8 +69,8 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /@adviser/cement@0.0.1:
-    resolution: {integrity: sha512-cnxwrOAZibZMgC14fl6rekmGBRYUJlEFL6brONQxf4pjZcysESJsKFYea426o1XgmPMqOcZf28WOQFTHvUoklA==}
+  /@adviser/cement@0.0.2:
+    resolution: {integrity: sha512-gVDBn9xJTXHZpmt/HACMeTfG83AFH8uDKZckeGsB15UpD1fZqmhsp9Ph/JJoC5FQbnznefipD6zVlHhIBpadJA==}
     engines: {node: '>=16'}
     dev: false
 
