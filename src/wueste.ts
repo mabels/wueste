@@ -47,7 +47,9 @@ export type SchemaTypes = "string" | "number" | "integer" | "boolean" | "object"
 export type WuestenReflection =
   | WuestenReflectionObject
   | WuestenReflectionArray
-  | WuestenReflectionLiteral
+  | WuestenReflectionLiteralNumber
+  | WuestenReflectionLiteralInteger
+  | WuestenReflectionLiteralBoolean
   | WuestenReflectionLiteralString
   | WuestenReflectionObjectItem
   | WuestenReflectionArrayItem;
@@ -61,15 +63,28 @@ export type WuestenXKeyedMap = Partial<{
 export interface WuestenReflectionBase extends WuestenXKeyedMap {
   readonly type: SchemaTypes;
   readonly description?: string;
-  readonly default?: string;
   readonly ref?: string;
+  readonly default?: unknown;
 }
 
 // export type WuestenReflectionBase = WuestenReflectionForSchema | WuestenXKeyedMap
 
-export interface WuestenReflectionLiteral extends WuestenReflectionBase {
-  readonly type: "number" | "integer" | "boolean";
+export interface WuestenReflectionLiteralInteger extends WuestenReflectionBase {
+  readonly type: "integer";
   readonly format?: string;
+  readonly default?: number;
+}
+
+export interface WuestenReflectionLiteralNumber extends WuestenReflectionBase {
+  readonly type: "number";
+  readonly format?: string;
+  readonly default?: number;
+}
+
+export interface WuestenReflectionLiteralBoolean extends WuestenReflectionBase {
+  readonly type: "boolean";
+  readonly format?: string;
+  readonly default?: boolean;
 }
 
 export interface WuestenReflectionLiteralString extends WuestenReflectionBase {

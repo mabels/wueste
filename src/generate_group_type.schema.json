@@ -8,6 +8,16 @@
       "description": "this is debug",
       "x-groups": ["primary-key", "secondary-key"]
     },
+    "not-selected": {
+      "type": "boolean",
+      "description": "use all which is not filtered",
+      "default": false
+    },
+    "output-format": {
+      "type": "string",
+      "description": "format TS for Typescript, JSchema for JSON Schema",
+      "default": "TS"
+    },
     "output-dir": {
       "type": "string",
       "default": "./",
@@ -33,5 +43,5 @@
       }
     }
   },
-  "required": ["input-files", "output-dir", "filter", "include-path"]
+  "required": ["input-files", "output-dir", "filter", "include-path", "output-format"]
 }

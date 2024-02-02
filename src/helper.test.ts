@@ -155,6 +155,7 @@ describe("helper", () => {
           path: "helperTest.test",
           ref: "test",
           schema: {
+            default: "test-string",
             type: "string",
             "x-groups": ["group1", "test"],
           },
@@ -228,6 +229,7 @@ describe("helper", () => {
           ref: "test",
           schema: {
             type: "string",
+            default: "test-string",
             "x-groups": ["group1", "test"],
           },
         },

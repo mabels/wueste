@@ -157,13 +157,13 @@ export interface Groups {
 
 export type WalkPathFilterFN<T = unknown> = (key: string, val: T) => T | undefined;
 
-export function xFilter(xName = "x-groups", grp?: string): WalkPathFilterFN {
+export function xFilter(xName = "x-groups", grp?: string, notSelected = false): WalkPathFilterFN {
   xName = xName.toLocaleLowerCase();
   return (key: string, val: unknown) => {
     if (key.toLocaleLowerCase() === xName && (!grp || (Array.isArray(val) ? val : [val]).includes(grp))) {
-      return val;
+      return notSelected ? undefined : val;
     }
-    return undefined;
+    return notSelected ? val : undefined;
   };
 }
 

@@ -1,4 +1,4 @@
-import { generateGroupType } from "./generate_group_type";
+import { generateGroupTSType } from "./generate_group_tstype";
 import { GenerateGroupConfig } from "./generated/generategroupconfig";
 import { MockFileService, LoggerImpl } from "@adviser/cement";
 
@@ -13,6 +13,7 @@ it("test generated key types", async () => {
   const cfg: GenerateGroupConfig = {
     input_files: ["src/generate_group_type.schema.json"],
     output_dir: "src/generated/keys",
+    output_format: "TS",
     include_path: "src/generated/wasm",
     filter: {
       x_key: "x-groups",
@@ -21,12 +22,13 @@ it("test generated key types", async () => {
   };
   const fs = new MockFileService();
 
-  await generateGroupType(cfg.input_files[0], {
+  await generateGroupTSType(cfg.input_files[0], {
     log: new LoggerImpl(),
     fs,
     filter: cfg.filter,
     includePath: cfg.include_path,
     outDir: cfg.output_dir,
+    notSelected: false,
   });
   expect(Object.keys(fs.files).length).toBe(2);
   expect(Object.values(fs.files)[0].name).toBe(fs.abs("src/generated/keys/generategroupconfigkey.ts"));

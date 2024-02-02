@@ -19,6 +19,8 @@ describe("cli-test", () => {
       input_files: ["x", "z"],
       output_dir: "./",
       include_path: "./",
+      not_selected: false,
+      output_format: "TS",
       filter: {
         x_key: "emno",
         x_value: "primary-key",
@@ -42,6 +44,8 @@ describe("cli-test", () => {
       input_files: ["x", "z"],
       output_dir: "./",
       include_path: "./",
+      not_selected: false,
+      output_format: "TS",
       filter: {
         x_key: "emno",
         x_value: "primary-key",
@@ -84,6 +88,8 @@ describe("cli-test", () => {
       input_files: ["x", "z"],
       output_dir: "./",
       include_path: "./",
+      not_selected: false,
+      output_format: "TS",
       filter: {
         x_key: "emno",
         x_value: "primary-key",
@@ -106,6 +112,8 @@ describe("cli-test", () => {
       input_files: ["x", "z"],
       output_dir: "./",
       include_path: "./",
+      not_selected: false,
+      output_format: "TS",
       filter: {
         x_key: "emno",
         x_value: "the-key",
@@ -114,3 +122,12 @@ describe("cli-test", () => {
     });
   });
 });
+
+// it('help', () => {
+//   const out = fromSystem(GenerateGroupConfigFactory, {
+//     log: MockLogger().logger,
+//     env: {},
+//     args: ["--help"],
+//   });
+//   expect(out.Ok()).toEqual([1])
+// })

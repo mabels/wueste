@@ -698,7 +698,10 @@ func (g *tsGenerator) writeSchema(wr *eg.ForIfWhileLangWriter, prop eg.Property,
 			wr.WriteLine(g.lang.Comma(g.lang.ReturnType(string(jsonXk), string(jsonXv))))
 		}
 	}
-
+	pdefault := getDefaultForProperty(prop)
+	if pdefault != nil {
+		wr.WriteLine(g.lang.Comma(g.lang.ReturnType("default", *pdefault)))
+	}
 	switch prop.Type() {
 	case eg.BOOLEAN:
 	case eg.STRING, eg.INTEGER, eg.NUMBER:

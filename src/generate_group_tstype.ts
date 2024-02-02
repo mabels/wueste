@@ -23,16 +23,17 @@ export interface GenerateGroupTypeParams {
   readonly log: Logger;
   readonly filter: GenerateGroupConfig$Filter;
   readonly includePath: string;
+  readonly notSelected: boolean;
   readonly outDir: string;
 }
 
-export async function generateGroupType(iFile: string, opts: GenerateGroupTypeParams) {
+export async function generateGroupTSType(iFile: string, opts: GenerateGroupTypeParams) {
   const inputFile = opts.fs.abs(iFile);
   const outDir = opts.fs.abs(opts.outDir);
   const includePath = opts.fs.abs(opts.includePath);
   const schema = await jsonSchema2Reflection({ $ref: inputFile }, fileSystemResolver(opts.fs));
   const oc = new WalkSchemaObjectCollector();
-  walkSchema(schema, walkSchemaFilter(xFilter(opts.filter.x_key, opts.filter.x_value), oc.add));
+  walkSchema(schema, walkSchemaFilter(xFilter(opts.filter.x_key, opts.filter.x_value, opts.notSelected), oc.add));
 
   console.log("generate from: " + opts.fs.relative(inputFile));
 

@@ -18,6 +18,27 @@ const refSchema: WuestenReflectionObject = {
       optional: true,
     },
     {
+      name: "not-selected",
+      optional: true,
+      property: {
+        default: false,
+        description: "use all which is not filtered",
+        type: "boolean",
+      },
+      type: "objectitem",
+    },
+    {
+      name: "output-format",
+      optional: false,
+      property: {
+        default: "TS",
+        description: "format TS for Typescript, JSchema for JSON Schema",
+        type: "string",
+      },
+      type: "objectitem",
+    },
+
+    {
       type: "objectitem",
       name: "output-dir",
       property: {
@@ -116,7 +137,7 @@ const refSchema: WuestenReflectionObject = {
       },
     },
   ],
-  required: ["input-files", "output-dir", "filter", "include-path"],
+  required: ["input-files", "output-dir", "filter", "include-path", "output-format"],
 };
 
 it("json_schema_2_reflection", async () => {

@@ -61,9 +61,18 @@ export function fromSystem<F extends WuestenFactory<unknown, unknown, unknown>>(
 
 function parseCommandLine(types: WuestenReflection[][][], opts: FromSystemParams) {
   const argCfg = {} as ArgumentConfig<Record<string, unknown>>;
+  argCfg["help"] = {
+    type: Boolean,
+    optional: true,
+    description: "Prints this usage guide",
+  } as unknown as PropertyConfig<unknown>;
+  let topType: string | undefined = undefined;
   for (const subTypes of types) {
     for (const subType of subTypes) {
       const obj = subType[subType.length - 2] as WuestenReflectionObject;
+      if (!topType) {
+        topType = typeName(obj);
+      }
       const tpath = typePath(subType);
       const name = tpath.map((o) => o.name).join("-");
       const oi = tpath[tpath.length - 1] as WuestenReflectionObjectItem;
@@ -85,11 +94,13 @@ function parseCommandLine(types: WuestenReflection[][][], opts: FromSystemParams
           defaultValue = aval;
         }
       } else {
-        defaultValue = opts.env[envKey];
+        defaultValue = opts.env[envKey] || (oi.property as WuestenReflectionBase).default;
       }
+      // console.log("DEFAULT", oi.property)
+      // const defaultValueStr = defaultValue === undefined ? "" : ` [default: ${defaultValue}]`
       argCfg[name] = {
         type: cliType(oi.property),
-        description: (oi.property as WuestenReflectionBase).description,
+        description: `${(oi.property as WuestenReflectionBase).description} [env: ${envKey}]`,
         multiple: oi.property.type === "array",
         optional: isOptional(obj, oi),
         defaultValue,
@@ -106,8 +117,8 @@ function parseCommandLine(types: WuestenReflection[][][], opts: FromSystemParams
 
     helpArg: "help",
     baseCommand: "node exampleConfigWithHelp",
-    headerContentSections: [{ header: "My Example Config", content: "Thanks for using Our Awesome Library" }],
-    footerContentSections: [{ header: "Footer", content: `Copyright: Big Faceless Corp. inc.` }],
+    headerContentSections: [{ header: topType, content: `Configuration for ${topType}` }],
+    // footerContentSections: [{ header: "Footer", content: `Copyright: Big Faceless Corp. inc.` }],
     prependParamOptionsToDescription: true,
   });
   // console.log(parsed, argCfg)

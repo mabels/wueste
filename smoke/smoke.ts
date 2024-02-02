@@ -1,5 +1,6 @@
 import { SimpleTypeFactory } from "./generated/simpletype";
-import { SimpleTypeKey } from "./generated/simpletypekey";
+import { SimpleTypeKey as TS } from "./generated/ts/simpletypekey";
+import { SimpleTypeKeyFactory } from "./generated/jschema/simpletypekey";
 import { PayloadFactory } from "wueste/payload";
 import { WuestenRetVal, WuesteResult, WuesteResultOK, WuesteResultError } from "wueste/wueste";
 
@@ -29,9 +30,14 @@ builder.sub((sub) => {
   });
 });
 
-const key = SimpleTypeKey.Coerce(builder.Get().unwrap())
+const key = TS.Coerce(builder.Get().unwrap())
 if (JSON.stringify(key) !== '{"string":"test","float64":1.1}') {
 	throw new Error(`Key mismatch ${key}`)
+}
+const jschema = SimpleTypeKeyFactory.Builder().Coerce(builder.Get().unwrap()).unwrap()
+
+if (JSON.stringify(jschema) !== JSON.stringify(key)) {
+  throw new Error(`key mismatch `)
 }
 
 const payload = PayloadFactory.Builder().Coerce({
