@@ -21,6 +21,6 @@ if (fs.existsSync(path.join(whereAreMyDeps, "../dist"))) {
 }
 
 const execFile = path.join(whereAreMyDeps, "./wasm_exec_node.js");
-process.argv = ["node", execFile, path.join(whereAreMyDeps, "./generator.wasm"), ...process.argv.slice(2)];
+process.argv = ["node", execFile, path.join(whereAreMyDeps, "./generator.wasm"), ...process.argv];
 require(execFile);
 //.catch((e) => console.error(e));
