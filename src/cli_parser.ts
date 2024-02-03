@@ -41,25 +41,47 @@ export interface FromSystemParams {
   readonly args: string[];
   readonly env: Record<string, string>;
   readonly log: Logger;
+  readonly parseOut?: typeof console;
 }
+
+export interface FromSystemResultHelp {
+  readonly isHelp: true;
+}
+
+export interface FromSystemResultParsed<F extends WuestenFactory<unknown, unknown, unknown>> {
+  readonly isHelp: false;
+  readonly parsed: Result<WuestenFactoryInferT<F>>;
+}
+
+export type FromSystemResult<F extends WuestenFactory<unknown, unknown, unknown>> =
+  | FromSystemResultHelp
+  | FromSystemResultParsed<F>;
 
 export function fromSystem<F extends WuestenFactory<unknown, unknown, unknown>>(
   fac: F,
   opts: FromSystemParams,
-): Result<WuestenFactoryInferT<F>> {
+): FromSystemResult<F> {
   const oc = new WalkSchemaObjectCollector();
   walkSchema(
     fac.Schema(),
     walkSchemaFilter((key: string, val: unknown) => val, oc.add),
   );
   const coerceValue = parseCommandLine(Array.from(oc.objects.values()), opts);
+  if (coerceValue.help) {
+    return { isHelp: true };
+  }
   // console.log("CV=>", coerceValue)
   const builder = fac.Builder();
   builder.Coerce(coerceValue);
-  return builder.Get() as Result<WuestenFactoryInferT<F>>;
+  return {
+    isHelp: false,
+    parsed: builder.Get() as Result<WuestenFactoryInferT<F>>,
+  };
 }
 
-function parseCommandLine(types: WuestenReflection[][][], opts: FromSystemParams) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
+function parseCommandLine(types: WuestenReflection[][][], opts: FromSystemParams): Record<string, unknown> {
   const argCfg = {} as ArgumentConfig<Record<string, unknown>>;
   argCfg["help"] = {
     type: Boolean,
@@ -109,19 +131,26 @@ function parseCommandLine(types: WuestenReflection[][][], opts: FromSystemParams
     }
   }
 
-  const parsed = parse(argCfg, {
-    argv: opts.args,
-    partial: true,
-    stopAtFirstUnknown: true,
-    allowEmpty: false,
+  const parsed = parse(
+    argCfg,
+    {
+      logger: opts.parseOut || console,
+      argv: opts.args,
+      partial: true,
+      stopAtFirstUnknown: true,
+      allowEmpty: false,
 
-    helpArg: "help",
-    baseCommand: "node exampleConfigWithHelp",
-    headerContentSections: [{ header: topType, content: `Configuration for ${topType}` }],
-    // footerContentSections: [{ header: "Footer", content: `Copyright: Big Faceless Corp. inc.` }],
-    prependParamOptionsToDescription: true,
-  });
-  // console.log(parsed, argCfg)
+      helpArg: "help",
+      baseCommand: "node exampleConfigWithHelp",
+      headerContentSections: [{ header: topType, content: `Configuration for ${topType}` }],
+      // footerContentSections: [{ header: "Footer", content: `Copyright: Big Faceless Corp. inc.` }],
+      prependParamOptionsToDescription: true,
+    },
+    false,
+  );
+  if (parsed.help) {
+    return parsed;
+  }
 
   const coerceType = {} as Record<string, unknown>;
   for (const key of Object.keys(parsed)) {

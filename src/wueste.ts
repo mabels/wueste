@@ -460,11 +460,11 @@ export interface WuestenFactory<T, I, O> {
   Getter(typ: T, base: WuestenReflectionValue[]): WuestenGetterBuilder;
 }
 export type WuestenFactoryInferT<F extends WuestenFactory<unknown, unknown, unknown>> =
-  F extends WuestenFactory<infer T, unknown, unknown> ? T : unknown;
+  F extends WuestenFactory<infer T, unknown, unknown> ? T : never;
 export type WuestenFactoryInferI<F extends WuestenFactory<unknown, unknown, unknown>> =
-  F extends WuestenFactory<unknown, infer I, unknown> ? I : unknown;
+  F extends WuestenFactory<unknown, infer I, unknown> ? I : never;
 export type WuestenFactoryInferO<F extends WuestenFactory<unknown, unknown, unknown>> =
-  F extends WuestenFactory<unknown, unknown, infer O> ? O : unknown;
+  F extends WuestenFactory<unknown, unknown, infer O> ? O : never;
 
 export type WuestenObject = Record<string, unknown>;
 

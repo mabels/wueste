@@ -1,4 +1,5 @@
 **/dist/
+./bin/
 .vscode/
 **/*.tgz
 **/pubdir/

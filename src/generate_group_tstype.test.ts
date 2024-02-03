@@ -2,10 +2,20 @@ import { generateGroupTSType } from "./generate_group_tstype";
 import { GenerateGroupConfig } from "./generated/generategroupconfig";
 import { MockFileService, LoggerImpl } from "@adviser/cement";
 
-function cleanCode(code: string): string[] {
+export function ansiRegex({ onlyFirst = false } = {}) {
+  const pattern = [
+    "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
+    "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))",
+  ].join("|");
+
+  return new RegExp(pattern, onlyFirst ? undefined : "g");
+}
+
+export function cleanCode(code: string): string[] {
+  const reg = ansiRegex();
   return code
     .split("\n")
-    .map((i) => i.trim())
+    .map((i) => i.trim().replace(reg, ""))
     .filter((i) => i);
 }
 
