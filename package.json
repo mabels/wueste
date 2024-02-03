@@ -9,7 +9,7 @@
     "build": "pnpm run /build:/",
     "build:js": "tsc",
     "build:main-generate-group-type": "(echo '#!/usr/bin/env node' ; esbuild --minify --bundle --platform=node --target=node16 dist/main_generate_group_type.js) > bin/generate-group-type; chmod 755 bin/generate-group-type",
-    "build:main-generator": "(echo '#!/usr/bin/env node' ; esbuild --bundle --platform=node --target=node16 src/main_generator.ts) > bin/generator; chmod 755 bin/generator",
+    "build:main-generator": "mkdir -p ./bin; (echo '#!/usr/bin/env node' ; esbuild --bundle --platform=node --target=node16 src/main_generator.ts) > bin/generator; chmod 755 bin/generator",
     "build:wasm": "GOOS=js GOARCH=wasm go build -o dist/generator.wasm -ldflags=\"-s -w -X main.Version=$GITHUB_REF -X main.GitCommit=$(git rev-parse --short HEAD)\" entity-generator/cmd/generator.go",
     "pretest": "rm -rf pubdir",
     "test": "pnpm run test:go && pnpm run test:js",
