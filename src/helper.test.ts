@@ -9,6 +9,7 @@ import {
   xFilter,
   getValueByAttrName,
   WalkSchemaObjectCollector,
+  WalkObj,
 } from "./helper";
 import { helperTest, helperTestFactory, helperTestGetter } from "./generated/wasm/helpertest";
 import { WuestenFactory, WuestenReflection, WuestenReflectionObject, WuestenReflectionObjectItem, WuestenRetVal } from "./wueste";
@@ -627,11 +628,18 @@ function testRender(paths: WuestenReflection[][]): string {
 it("Key-Type-Generator", async () => {
   const helper = await import("./generated/wasm/helpertest");
 
-  const factory = getValueByAttrName(helper, (key, val) => {
-    if (key.endsWith("Factory")) {
-      return val;
+  const factory = getValueByAttrName(helper, (val) => {
+    for (const key of Object.keys(val)) {
+      if (key.endsWith("Factory")) {
+        return {
+          container: val,
+          key: key,
+          found: (val as WalkObj)[key],
+        };
+      }
     }
-  }) as WuestenFactory<unknown, unknown, unknown>;
+    return undefined;
+  })?.found as WuestenFactory<unknown, unknown, unknown>;
 
   const oc = new WalkSchemaObjectCollector();
   walkSchema(factory.Schema(), walkSchemaFilter(xFilter("x-groups", "group1"), oc.add));

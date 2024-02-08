@@ -155,23 +155,47 @@ export interface Groups {
   [key: string]: Group[];
 }
 
-export type WalkPathFilterFN<T = unknown> = (key: string, val: T) => T | undefined;
+export type WalkObj = Record<string, unknown>;
+export interface FilterResult<P, R> {
+  readonly container: P;
+  readonly key?: string;
+  readonly found?: R;
+}
 
-export function xFilter(xName = "x-groups", grp?: string, notSelected = false): WalkPathFilterFN {
+export type WalkPathFilterFN<P = WalkObj, R = unknown> = (prop: P) => FilterResult<P, R> | undefined;
+
+export function xFilter(xName = "x-groups", grp?: string, notSelected = false): WalkPathFilterFN<WuestenReflection, unknown> {
   xName = xName.toLocaleLowerCase();
-  return (key: string, val: unknown) => {
-    if (key.toLocaleLowerCase() === xName && (!grp || (Array.isArray(val) ? val : [val]).includes(grp))) {
-      return notSelected ? undefined : val;
+  return (prop: WuestenReflection) => {
+    for (const key of Object.keys(prop)) {
+      const val = (prop as unknown as WalkObj)[key];
+      if (key.toLocaleLowerCase() === xName && (!grp || (Array.isArray(val) ? val : [val]).includes(grp))) {
+        // console.log("==xFilter", xName, grp, notSelected)
+        return notSelected
+          ? undefined
+          : {
+              container: prop,
+              key,
+              found: val,
+            };
+      }
     }
-    return notSelected ? val : undefined;
+    // console.log("!!xFilter", xName, grp, notSelected)
+    return notSelected
+      ? {
+          container: prop,
+          key: undefined,
+          found: undefined,
+        }
+      : undefined;
   };
 }
 
-export function getValueByAttrName<T = unknown>(prop: unknown, fn: WalkPathFilterFN): T | undefined {
+export function getValueByAttrName<P = WalkObj, R = unknown>(prop: P, fn: WalkPathFilterFN<P, R>): FilterResult<P, R> | undefined {
   if (typeof prop === "object" && prop !== null) {
-    const x = Object.entries(prop).find(([k, v]) => fn(k, v));
+    const x = fn(prop); // Object.entries(prop).find(([k, v]) => fn(k, v));
     if (x) {
-      return x[1];
+      return x;
     }
   }
   return undefined;
@@ -179,12 +203,11 @@ export function getValueByAttrName<T = unknown>(prop: unknown, fn: WalkPathFilte
 
 export type WalkPathFn = (path: WuestenReflection[]) => void;
 
-export function walkSchemaFilter(fn: WalkPathFilterFN, walkFn: WalkPathFn = () => {}): WalkPathFn {
+export function walkSchemaFilter(fn: WalkPathFilterFN<WuestenReflection, unknown>, walkFn: WalkPathFn = () => {}): WalkPathFn {
   return (path: WuestenReflection[]) => {
     const rln = path[path.length - 1];
     if (rln.type === "objectitem") {
-      const unkProp = rln.property as unknown as Record<string, unknown>;
-      const val = getValueByAttrName(unkProp, fn);
+      const val = getValueByAttrName(rln.property, fn);
       if (val) {
         walkFn(path);
         return rln;
@@ -261,7 +284,7 @@ export function groups(ref: WuestenGetterBuilder, xName = "x-groups"): Groups {
     if (!_Groups) {
       return;
     }
-    const xGroups = Array.isArray(_Groups) ? _Groups : [_Groups];
+    const xGroups = Array.isArray(_Groups.found) ? _Groups.found : [_Groups.found];
     for (const g of xGroups) {
       if (!groups[g]) {
         groups[g] = [];

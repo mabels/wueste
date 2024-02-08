@@ -13,6 +13,11 @@
       "description": "use all which is not filtered",
       "default": false
     },
+    "type-name": {
+      "type": "string",
+      "description": "name of the type",
+      "default": "Key"
+    },
     "output-format": {
       "type": "string",
       "description": "format TS for Typescript, JSchema for JSON Schema",
@@ -25,7 +30,8 @@
     },
     "include-path": {
       "type": "string",
-      "default": "./"
+      "default": "./",
+      "x-groups": ["xcluded"]
     },
     "input-files": {
       "type": "array",
@@ -34,7 +40,8 @@
       }
     },
     "filter": {
-      "$ref": "file://./filter.schema.json"
+      "$ref": "file://./filter.schema.json",
+      "x-groups": ["xcluded"]
     },
     "filters": {
       "type": "array",
@@ -43,5 +50,5 @@
       }
     }
   },
-  "required": ["input-files", "output-dir", "filter", "include-path", "output-format"]
+  "required": ["input-files", "output-dir", "filter", "include-path", "output-format", "type-name"]
 }

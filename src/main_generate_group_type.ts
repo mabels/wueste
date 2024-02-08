@@ -1,8 +1,9 @@
 import { LoggerImpl, NodeFileService } from "@adviser/cement";
-import { GenerateGroupTypeParams, generateGroupTSType } from "./generate_group_tstype";
+import { generateGroupTSType } from "./generate_group_tstype";
 import { generateGroupJSONSchema } from "./generate_group_jsonschema";
 import { GenerateGroupConfig, GenerateGroupConfigFactory } from "./generated/generategroupconfig";
 import { fromSystem } from "./cli_parser";
+import { GenerateGroupTypeParams } from "./generate_group";
 
 const log = new LoggerImpl();
 const rcfg = fromSystem(GenerateGroupConfigFactory, {
@@ -33,10 +34,7 @@ const sfs = new NodeFileService();
     const gg: GenerateGroupTypeParams = {
       log,
       fs: sfs,
-      filter: cfg.filter,
-      includePath: cfg.include_path,
-      notSelected: !!cfg.not_selected,
-      outDir: cfg.output_dir,
+      cfg,
     };
     switch (cfg.output_format) {
       case "JSchema":

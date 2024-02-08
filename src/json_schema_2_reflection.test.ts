@@ -28,6 +28,16 @@ const refSchema: WuestenReflectionObject = {
       type: "objectitem",
     },
     {
+      name: "type-name",
+      optional: false,
+      property: {
+        default: "Key",
+        description: "name of the type",
+        type: "string",
+      },
+      type: "objectitem",
+    },
+    {
       name: "output-format",
       optional: false,
       property: {
@@ -54,6 +64,7 @@ const refSchema: WuestenReflectionObject = {
       property: {
         type: "string",
         default: "./",
+        "x-groups": ["xcluded"],
       },
       optional: false,
     },
@@ -77,6 +88,7 @@ const refSchema: WuestenReflectionObject = {
         type: "object",
         id: "Filter",
         title: "Filter",
+        "x-groups": ["xcluded"],
         properties: [
           {
             type: "objectitem",
@@ -137,7 +149,7 @@ const refSchema: WuestenReflectionObject = {
       },
     },
   ],
-  required: ["input-files", "output-dir", "filter", "include-path", "output-format"],
+  required: ["input-files", "output-dir", "filter", "include-path", "output-format", "type-name"],
 };
 
 it("json_schema_2_reflection", async () => {

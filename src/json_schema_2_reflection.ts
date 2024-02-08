@@ -1,5 +1,6 @@
 import { FileService } from "@adviser/cement";
 import { WuestenReflection, WuestenReflectionArray, WuestenReflectionObject } from "./wueste";
+import { WalkObj } from "./helper";
 
 export function fileSystemResolver(fs: FileService) {
   return async (f: string, outerRef?: string): Promise<Record<string, unknown>> => {
@@ -20,6 +21,19 @@ export function fileSystemResolver(fs: FileService) {
   };
 }
 
+function getXAttrs(obj: WalkObj): WalkObj {
+  return Object.keys(obj).reduce(
+    (acc, k) => {
+      if (k.startsWith("x-")) {
+        acc[k] = obj[k];
+        // console.log('x-', k, acc)
+      }
+      return acc;
+    },
+    {} as Record<string, unknown>,
+  );
+}
+
 export async function jsonSchema2Reflection(
   iSchema: unknown,
   resolver: (f: string, outerRef?: string) => Promise<Record<string, unknown>>,
@@ -35,7 +49,12 @@ export async function jsonSchema2Reflection(
   if (schema.$ref && !schema.$fileref) {
     const rschema = await resolver(schema.$ref, schema.$fileref);
     // console.log("resolved: " + rschema.$ref, rschema.$fileref);
-    return jsonSchema2Reflection(rschema, resolver);
+    const jschema = {
+      ...rschema,
+      ...getXAttrs(schema),
+    };
+    // console.log("resolved: ", jschema)
+    return jsonSchema2Reflection(jschema, resolver);
   }
   switch (schema.type) {
     case "object":
@@ -57,6 +76,7 @@ export async function jsonSchema2Reflection(
             };
           }),
         ),
+        ...getXAttrs(schema),
       } as WuestenReflectionObject;
     case "array":
       return {
@@ -65,6 +85,7 @@ export async function jsonSchema2Reflection(
         items: await jsonSchema2Reflection(schema.items, (f) => {
           return resolver(f, schema.$fileref);
         }),
+        ...getXAttrs(schema),
       } as WuestenReflectionArray;
     case "string":
     case "number":

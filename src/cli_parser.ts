@@ -8,9 +8,8 @@ import {
   WuestenFactory,
   WuestenFactoryInferT,
 } from "./wueste";
-import { Logger } from "@adviser/cement";
+import { Logger, Result } from "@adviser/cement";
 import { isOptional, sanitize, typeName, typePath } from "./js_code_writer";
-import { Result } from "@adviser/result";
 import { WalkSchemaObjectCollector, walkSchema, walkSchemaFilter } from "./helper";
 
 function toEnvKey(s: string) {
@@ -64,7 +63,7 @@ export function fromSystem<F extends WuestenFactory<unknown, unknown, unknown>>(
   const oc = new WalkSchemaObjectCollector();
   walkSchema(
     fac.Schema(),
-    walkSchemaFilter((key: string, val: unknown) => val, oc.add),
+    walkSchemaFilter((val: WuestenReflection) => ({ container: val }), oc.add),
   );
   const coerceValue = parseCommandLine(Array.from(oc.objects.values()), opts);
   if (coerceValue.help) {

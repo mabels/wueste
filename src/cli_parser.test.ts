@@ -20,6 +20,7 @@ describe("cli-test", () => {
       output_dir: "./",
       include_path: "./",
       not_selected: false,
+      type_name: "Key",
       output_format: "TS",
       filter: {
         x_key: "emno",
@@ -45,6 +46,7 @@ describe("cli-test", () => {
       output_dir: "./",
       include_path: "./",
       not_selected: false,
+      type_name: "Key",
       output_format: "TS",
       filter: {
         x_key: "emno",
@@ -66,6 +68,7 @@ describe("cli-test", () => {
       output_dir: "./",
       include_path: "./",
       not_selected: false,
+      type_name: "Key",
       output_format: "TS",
       filter: {
         x_key: "emno",
@@ -90,6 +93,7 @@ describe("cli-test", () => {
       output_dir: "./",
       include_path: "./",
       not_selected: false,
+      type_name: "Key",
       output_format: "TS",
       filter: {
         x_key: "emno",

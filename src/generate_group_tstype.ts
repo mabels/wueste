@@ -1,9 +1,6 @@
 import { WuestenReflection, WuestenReflectionObject, WuestenReflectionObjectItem } from "./wueste";
 import { JSCodeWriter, sanitize, typeName, isOptional } from "./js_code_writer";
-import { WalkSchemaObjectCollector, walkSchema, walkSchemaFilter, xFilter } from "./helper";
-import { GenerateGroupConfig$Filter } from "./generated/generategroupconfig$filter";
-import { fileSystemResolver, jsonSchema2Reflection } from "./json_schema_2_reflection";
-import { FileService, Logger } from "@adviser/cement";
+import { GenerateGroupTypeParams, prepareGenerateGroup } from "./generate_group";
 
 function importFileName(typ: WuestenReflection[], suffix?: string): string {
   return importTypeName(typ, suffix).toLowerCase();
@@ -18,24 +15,18 @@ function importedType(typ: WuestenReflection[]): string[] {
   return typ.filter((o) => o.type === "object").map((o) => typeName(o as WuestenReflectionObject));
 }
 
-export interface GenerateGroupTypeParams {
-  readonly fs: FileService;
-  readonly log: Logger;
-  readonly filter: GenerateGroupConfig$Filter;
-  readonly includePath: string;
-  readonly notSelected: boolean;
-  readonly outDir: string;
-}
-
 export async function generateGroupTSType(iFile: string, opts: GenerateGroupTypeParams) {
-  const inputFile = opts.fs.abs(iFile);
-  const outDir = opts.fs.abs(opts.outDir);
-  const includePath = opts.fs.abs(opts.includePath);
-  const schema = await jsonSchema2Reflection({ $ref: inputFile }, fileSystemResolver(opts.fs));
-  const oc = new WalkSchemaObjectCollector();
-  walkSchema(schema, walkSchemaFilter(xFilter(opts.filter.x_key, opts.filter.x_value, opts.notSelected), oc.add));
+  const { inputFile, includePath, oc, outputDir } = await prepareGenerateGroup(iFile, opts);
 
-  console.log("generate from: " + opts.fs.relative(inputFile));
+  console.log(
+    "generate from: " + opts.fs.relative(inputFile),
+    "filtered by:",
+    opts.cfg.filter.x_key,
+    "/",
+    opts.cfg.filter.x_value,
+    "not selected:",
+    opts.cfg.not_selected,
+  );
 
   for (const typ of Array.from(oc.objects.values())) {
     const obj = typ[0][typ[0].length - 2] as WuestenReflectionObject;
@@ -43,8 +34,8 @@ export async function generateGroupTSType(iFile: string, opts: GenerateGroupType
       opts.log.Error().Str("type", obj.type).Msg("object expected");
       continue;
     }
-    const resultFname = importFileName(typ[0], "Key") + ".ts";
-    const out = await opts.fs.create(opts.fs.join(outDir, resultFname));
+    const resultFname = importFileName(typ[0], opts.cfg.type_name) + ".ts";
+    const out = await opts.fs.create(opts.fs.join(outputDir, resultFname));
     console.log("  creating file: " + opts.fs.relative(out.name));
     // const log = ctx.log.With().Str("type", typeName(obj)).Logger();
     const w = new JSCodeWriter({
@@ -52,16 +43,18 @@ export async function generateGroupTSType(iFile: string, opts: GenerateGroupType
       fileEngine: opts.fs,
     });
 
-    w.block(["export", "interface", importTypeName(typ[0], "KeyType")], (w) => {
+    const typeName = `${opts.cfg.type_name}Type`;
+
+    w.block(["export", "interface", importTypeName(typ[0], typeName)], (w) => {
       for (const attr of typ) {
         const oi = attr[attr.length - 1] as WuestenReflectionObjectItem;
         w.writeLn(w.line(w.readonly(w.declareType(oi.property.type, sanitize(oi.name), isOptional(obj, oi)))));
       }
     });
     w.writeLn();
-    w.block(["export", "class", importTypeName(typ[0], "Key")], (w) => {
+    w.block(["export", "class", importTypeName(typ[0], opts.cfg.type_name)], (w) => {
       w.block(
-        w.static(w.declareType(importTypeName(typ[0], "KeyType"), w.call("Coerce", w.declareType(importTypeName(typ[0]), "val")))),
+        w.static(w.declareType(importTypeName(typ[0], typeName), w.call("Coerce", w.declareType(importTypeName(typ[0]), "val")))),
         (w) => {
           w.block(
             "return",
