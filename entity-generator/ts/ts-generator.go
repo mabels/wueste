@@ -583,10 +583,12 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 				})
 			})
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestePayload")
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenDecoder")
 			wr.WriteBlock("",
 				g.lang.ReturnType(
 					g.lang.Call("FromPayload", g.lang.ReturnType("val",
-						g.lang.OrType(g.lang.PublicName(getObjectName(prop), "Payload"), "WuestePayload")), "decoder = WuestenJSONPassThroughDecoder"),
+						g.lang.OrType(g.lang.PublicName(getObjectName(prop), "Payload"), "WuestePayload")),
+						"decoder: WuestenDecoder = WuestenJSONPassThroughDecoder"),
 					g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop)))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.WriteBlock("if", "(!this.Names().names.includes(val.Type))", func(wr *eg.ForIfWhileLangWriter) {
@@ -605,11 +607,12 @@ func (g *tsGenerator) generateFactory(prop eg.PropertyObject) {
 				})
 
 			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenJSONPassThroughEncoder")
+			g.includes.AddType(g.cfg.EntityCfg.FromWueste, "WuestenEncoder")
 			name := g.lang.PublicName(getObjectName(prop))
 			wr.WriteBlock("",
 				g.lang.ReturnType(
 					g.lang.Call("ToPayload", g.lang.ReturnType("val", g.lang.OrType(g.lang.Generics("WuesteResult", name), name)),
-						"encoder = WuestenJSONPassThroughEncoder"), g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop), "Payload"))),
+						"encoder: WuestenEncoder = WuestenJSONPassThroughEncoder"), g.lang.Generics("WuesteResult", g.lang.PublicName(getObjectName(prop), "Payload"))),
 				func(wr *eg.ForIfWhileLangWriter) {
 					wr.FormatLine("let toEncode: %s;", name)
 					wr.WriteIf("(WuesteResult.Is(val))", func(wr *eg.ForIfWhileLangWriter) {
