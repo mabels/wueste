@@ -1,6 +1,7 @@
 import { generateGroupTSType } from "./generate_group_tstype";
 import { GenerateGroupConfig, GenerateGroupConfigFactory } from "./generated/generategroupconfig";
-import { MockFileService, LoggerImpl } from "@adviser/cement";
+import { LoggerImpl } from "@adviser/cement";
+import { MockFileService } from "@adviser/cement/node";
 
 export function ansiRegex({ onlyFirst = false } = {}) {
   const pattern = [

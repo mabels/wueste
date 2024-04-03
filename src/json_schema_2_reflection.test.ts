@@ -1,4 +1,4 @@
-import { NodeFileService } from "@adviser/cement/node_file_service";
+import { NodeFileService } from "@adviser/cement/node";
 import { fileSystemResolver, jsonSchema2Reflection } from "./json_schema_2_reflection";
 import { WuestenReflectionObject } from "./wueste";
 

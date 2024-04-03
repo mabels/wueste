@@ -1,6 +1,7 @@
 import { generateGroupJSONSchema } from "./generate_group_jsonschema";
 import { GenerateGroupConfig, GenerateGroupConfigFactory } from "./generated/generategroupconfig";
-import { MockFileService, LoggerImpl } from "@adviser/cement";
+import { LoggerImpl } from "@adviser/cement";
+import { MockFileService } from "@adviser/cement/node";
 
 it("test generated json-schema", async () => {
   const cfg: GenerateGroupConfig = GenerateGroupConfigFactory.Builder()

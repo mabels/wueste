@@ -48,6 +48,8 @@ interface BlockOps {
   readonly open: string;
   readonly close: string;
   readonly indent: string;
+  readonly elseFn?: BlockFn;
+  readonly else: string;
   readonly indentStep: string;
   readonly noCloseingNewLine: boolean;
   readonly importCollector: ImportCollector;
@@ -97,6 +99,7 @@ export class JSCodeWriter {
       noCloseingNewLine: false,
       importCollector: opts?.importCollector ?? new ImportCollector(this),
       ...opts,
+      else: opts?.else ?? " else ",
       open: opts?.open ?? "{",
       close: opts?.close ?? "}",
     };
@@ -114,6 +117,16 @@ export class JSCodeWriter {
         indent: this.opts.indent + this.opts.indentStep,
       }),
     );
+    if (opts.elseFn) {
+      this.writeLn(opts.close + opts.else + opts.open);
+      opts.elseFn(
+        new JSCodeWriter({
+          ...this.opts,
+          ...opts,
+          indent: this.opts.indent + this.opts.indentStep,
+        }),
+      );
+    }
     opts.noCloseingNewLine ? this.write(opts.close) : this.writeLn(opts.close);
   }
 
