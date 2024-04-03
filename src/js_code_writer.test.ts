@@ -2,12 +2,15 @@ import { JSCodeWriter } from "./js_code_writer";
 import { MockFileService } from "@adviser/cement/node/mock_file_service";
 
 function toCode(s: string): string[] {
-    return s.split("\n") .map((i) => i.trim()) .filter((i) => i.length);
+  return s
+    .split("\n")
+    .map((i) => i.trim())
+    .filter((i) => i.length);
 }
 
 it("wr.block", async () => {
   const sfs = new MockFileService();
-  const rs = await sfs.create("test.js")
+  const rs = await sfs.create("test.js");
   const writer = new JSCodeWriter({
     resultStream: rs,
     fileEngine: sfs,
@@ -16,12 +19,12 @@ it("wr.block", async () => {
     wr.writeLn("console.log('true')");
   });
   await writer.close();
-  expect(toCode(sfs.files['test.js'].content)).toEqual(["if (true) {", "console.log('true')", "}"]);
+  expect(toCode(sfs.files["test.js"].content)).toEqual(["if (true) {", "console.log('true')", "}"]);
 });
 
 it("else wr.block", async () => {
   const sfs = new MockFileService();
-  const rs = await sfs.create("test.js")
+  const rs = await sfs.create("test.js");
   const writer = new JSCodeWriter({
     resultStream: rs,
     fileEngine: sfs,
@@ -39,5 +42,11 @@ it("else wr.block", async () => {
     },
   );
   await writer.close();
-  expect(toCode(sfs.files['test.js'].content)).toEqual(["if (true) {", "console.log('true')", "}dann{", "console.log('false')", "}"]);
+  expect(toCode(sfs.files["test.js"].content)).toEqual([
+    "if (true) {",
+    "console.log('true')",
+    "}dann{",
+    "console.log('false')",
+    "}",
+  ]);
 });

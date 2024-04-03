@@ -1,5 +1,5 @@
 import { LoggerImpl } from "@adviser/cement";
-import { NodeFileService  } from "@adviser/cement/node";
+import { NodeFileService } from "@adviser/cement/node";
 import { generateGroupTSType } from "./generate_group_tstype";
 import { generateGroupJSONSchema } from "./generate_group_jsonschema";
 import { GenerateGroupConfig, GenerateGroupConfigFactory } from "./generated/generategroupconfig";
