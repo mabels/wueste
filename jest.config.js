@@ -2,5 +2,6 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
+  modulePathIgnorePatterns: ["dist/"],
   // globalSetup: "./types/entities/setup.js"
 };

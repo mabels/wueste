@@ -59,7 +59,7 @@ interface BlockOps {
   readonly fileEngine: FileService;
 }
 
-type BlockFn = (writer: JSCodeWriter) => void;
+type BlockFn = (writer: JSCodeWriter) => void | Promise<void>;
 
 function toArray<T>(v: T | T[]): T[] {
   if (Array.isArray(v)) {
@@ -73,6 +73,22 @@ const encoder = new TextEncoder();
 
 export class JSCodeWriterContext {}
 
+function isPromise<T>(v: unknown): v is Promise<T> {
+  return !!v && (v as { then: () => void }).then !== undefined;
+}
+
+function resolve(v: void | Promise<void>, next?: () => void | Promise<void>): void | Promise<void> {
+  if (isPromise(v)) {
+    return v.then(() => {
+      if (next) {
+        return resolve(next());
+      }
+    });
+  }
+  if (next) {
+    return resolve(next());
+  }
+}
 export class JSCodeWriter {
   readonly opts: BlockOps;
   constructor(
@@ -104,30 +120,47 @@ export class JSCodeWriter {
       close: opts?.close ?? "}",
     };
   }
-  block(iStmts: string | string[], fn: BlockFn, iOpts?: Partial<BlockOps>) {
+  blockClose(opts: BlockOps) {
+    opts.noCloseingNewLine ? this.write(opts.close) : this.writeLn(opts.close);
+  }
+  blockElse(opts: BlockOps): void | Promise<void> {
+    if (opts.elseFn) {
+      this.writeLn(opts.close + opts.else + opts.open);
+      return resolve(
+        opts.elseFn!(
+          new JSCodeWriter({
+            ...this.opts,
+            ...opts,
+            indent: this.opts.indent + this.opts.indentStep,
+          }),
+        ),
+        () => {
+          this.blockClose(opts);
+        },
+      );
+    } else {
+      this.blockClose(opts);
+    }
+  }
+
+  block(iStmts: string | string[], fn: BlockFn, iOpts?: Partial<BlockOps>): void | Promise<void> {
     const opts = {
       ...this.opts,
       ...iOpts,
     };
     this.writeLn([...toArray(iStmts), opts.open].join(" "));
-    fn(
-      new JSCodeWriter({
-        ...this.opts,
-        ...opts,
-        indent: this.opts.indent + this.opts.indentStep,
-      }),
-    );
-    if (opts.elseFn) {
-      this.writeLn(opts.close + opts.else + opts.open);
-      opts.elseFn(
+    return resolve(
+      fn(
         new JSCodeWriter({
           ...this.opts,
           ...opts,
           indent: this.opts.indent + this.opts.indentStep,
         }),
-      );
-    }
-    opts.noCloseingNewLine ? this.write(opts.close) : this.writeLn(opts.close);
+      ),
+      () => {
+        return resolve(this.blockElse(opts));
+      },
+    );
   }
 
   write(...iStmts: string[]) {
